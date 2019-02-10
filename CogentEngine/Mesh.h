@@ -16,11 +16,20 @@ public:
 	ID3D12Resource * GetVertexBuffer();
 	ID3D12Resource * GetIndexBuffer();
 	int GetIndexCount();
+	D3D12_VERTEX_BUFFER_VIEW &GetVertexBufferView();
+	D3D12_INDEX_BUFFER_VIEW &GetIndexBufferView();
 
-	void CreateBasicGeometry(Vertex* vertices, UINT vertexCount, UINT* indices, UINT indexCount, ID3D12Device* device);
+
+	HRESULT CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12Resource** uploadHeap);
+	HRESULT CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, D3D12_VERTEX_BUFFER_VIEW * vbView, ID3D12Device * device, ID3D12GraphicsCommandList* commandList);
+	HRESULT CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void * data, ID3D12Resource ** buffer, D3D12_INDEX_BUFFER_VIEW * ibView, ID3D12Device * device, ID3D12GraphicsCommandList* commandList);
+	void CreateBasicGeometry(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+
 private:
 	ID3D12Resource * vertexBuffer;
 	ID3D12Resource * indexBuffer;
+	ID3D12Resource* vbUploadHeap;
+	ID3D12Resource* ibUploadHeap;
 
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	D3D12_INDEX_BUFFER_VIEW ibView;

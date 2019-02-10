@@ -2,6 +2,7 @@
 
 #include "DXCore.h"
 #include <DirectXMath.h>
+#include "Mesh.h"
 
 class Game
 	: public DXCore
@@ -62,6 +63,8 @@ private:
 	DirectX::XMFLOAT4X4 worldMatrix;
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projectionMatrix;
+
+	Mesh* mesh;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

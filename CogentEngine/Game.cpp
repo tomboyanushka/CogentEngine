@@ -59,8 +59,9 @@ Game::~Game()
 	WaitForGPU();
 
 	// Release DX resources
-	vertexBuffer->Release();
-	indexBuffer->Release();
+	//vertexBuffer->Release();
+	//indexBuffer->Release();
+	delete mesh;
 
 	vsConstBufferDescriptorHeap->Release();
 	vsConstBufferUploadHeap->Release();
@@ -204,33 +205,9 @@ void Game::CreateMatrices()
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	// Create some temporary variables to represent colors
-	// - Not necessary, just makes things more readable
-	XMFLOAT4 red = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 green = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	XMFLOAT4 blue = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
-
-	// Set up the vertices of the triangle we would like to draw
-	// - We're going to copy this array, exactly as it exists in memory
-	//    over to a DirectX-controlled data structure (the vertex buffer)
-	Vertex vertices[] =
-	{
-		{ XMFLOAT3(+0.0f, +1.0f, +0.0f), red },
-		{ XMFLOAT3(+1.5f, -1.0f, +0.0f), blue },
-		{ XMFLOAT3(-1.5f, -1.0f, +0.0f), green },
-	};
-
-	// Set up the indices, which tell us which vertices to use and in which order
-	// - This is somewhat redundant for just 3 vertices (it's a simple example)
-	// - Indices are technically not required if the vertices are in the buffer 
-	//    in the correct order and each one will be used exactly once
-	// - But just to see how it's done...
-	int indices[] = { 0, 1, 2 };
-
-
-	// Create geometry buffers  ------------------------------------
-	CreateVertexBuffer(sizeof(Vertex), 3, vertices, &vertexBuffer, &vbView);
-	CreateIndexBuffer(DXGI_FORMAT_R32_UINT, 3, indices, &indexBuffer, &ibView);
+	mesh = new Mesh(nullptr, nullptr);
+	mesh->CreateBasicGeometry(device, commandList);
+	CloseExecuteAndResetCommandList();
 }
 
 void Game::CreateRootSigAndPipelineState()
@@ -458,8 +435,8 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->OMSetRenderTargets(1, &rtvHandles[currentSwapBuffer], true, &dsvHandle);
 		commandList->RSSetViewports(1, &viewport);
 		commandList->RSSetScissorRects(1, &scissorRect);
-		commandList->IASetVertexBuffers(0, 1, &vbView);
-		commandList->IASetIndexBuffer(&ibView);
+		commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
+		commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		// Draw
