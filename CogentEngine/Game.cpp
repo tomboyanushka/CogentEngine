@@ -61,7 +61,7 @@ Game::~Game()
 	// Release DX resources
 	//vertexBuffer->Release();
 	//indexBuffer->Release();
-	delete mesh;
+	delete mesh1;
 
 	vsConstBufferDescriptorHeap->Release();
 	vsConstBufferUploadHeap->Release();
@@ -109,7 +109,7 @@ void Game::LoadShaders()
 	D3D12_DESCRIPTOR_HEAP_DESC cbDesc = {};
 	cbDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbDesc.NodeMask = 0;
-	cbDesc.NumDescriptors = 1;
+	cbDesc.NumDescriptors = 3;
 	cbDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	device->CreateDescriptorHeap(&cbDesc, IID_PPV_ARGS(&vsConstBufferDescriptorHeap));
 
@@ -136,7 +136,9 @@ void Game::LoadShaders()
 	resDesc.MipLevels = 1;
 	resDesc.SampleDesc.Count = 1;
 	resDesc.SampleDesc.Quality = 0;
-	resDesc.Width = bufferSize;
+	resDesc.Width = 3 * bufferSize;
+
+	auto incrementSize = device->GetDescriptorHandleIncrementSize(cbDesc.Type);
 
 	// Create a constant buffer resource heap
 	device->CreateCommittedResource(
@@ -152,6 +154,16 @@ void Game::LoadShaders()
 	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress();
 	cbvDesc.SizeInBytes = bufferSize; // Must be 256-byte aligned!
 	device->CreateConstantBufferView(&cbvDesc, vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = {};
+	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(incrementSize);
+	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + bufferSize;
+	device->CreateConstantBufferView(&cbvDesc, handle);
+
+	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(2*incrementSize);
+	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (2 * bufferSize);
+	device->CreateConstantBufferView(&cbvDesc, handle);
+
 
 }
 
@@ -170,7 +182,13 @@ void Game::CreateMatrices()
 	//    an identity matrix.  This is just to show that HLSL expects a different
 	//    matrix (column major vs row major) than the DirectX Math library
 	XMMATRIX W = XMMatrixIdentity();
-	XMStoreFloat4x4(&worldMatrix, XMMatrixTranspose(W)); // Transpose for HLSL!
+	XMStoreFloat4x4(&worldMatrix1, XMMatrixTranspose(W)); // Transpose for HLSL!
+
+	XMMATRIX W2 = XMMatrixTranslation(-1, 0, 0);
+	XMMATRIX W3 = XMMatrixTranslation(1, 0, 0);
+	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
+	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
+
 
 	// Create the View matrix
 	// - In an actual game, recreate this matrix every time the camera 
@@ -205,8 +223,8 @@ void Game::CreateMatrices()
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	mesh = new Mesh(nullptr, nullptr);
-	mesh->CreateBasicGeometry(device, commandList);
+	mesh1 = new Mesh(nullptr, nullptr);
+	mesh1->CreateBasicGeometry(device, commandList);
 	CloseExecuteAndResetCommandList();
 }
 
@@ -363,19 +381,42 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
+	XMMATRIX W2 = XMMatrixTranslation(-(sin(totalTime)), 0, 0);
+	XMMATRIX W3 = XMMatrixTranslation((sin(totalTime)), 0, 0);
+	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
+	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
 	// Collect data
-	VertShaderExternalData data = {};
-	data.world = worldMatrix;
-	data.view = viewMatrix;
-	data.proj = projectionMatrix;
+	VertShaderExternalData data1 = {};
+	data1.world = worldMatrix1;
+	data1.view = viewMatrix;
+	data1.proj = projectionMatrix;
+
+	VertShaderExternalData data2 = {};
+	data2.world = worldMatrix2;
+	data2.view = viewMatrix;
+	data2.proj = projectionMatrix;
+
+	VertShaderExternalData data3 = {};
+	data3.world = worldMatrix3;
+	data3.view = viewMatrix;
+	data3.proj = projectionMatrix;
 
 	// Copy data to the constant buffer
 	// Note: Apparently upload heaps (like constant buffers) do NOT need to be
 	// unmapped to be used by the GPU.  Keeping it mapped can speed things up.
 	// See examples here: https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/nf-d3d12-id3d12resource-map
+
+	unsigned int bufferSize = sizeof(VertShaderExternalData);
+	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
+	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
+
 	void* gpuAddress;
 	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
-	memcpy(gpuAddress, &data, sizeof(VertShaderExternalData));
+
+	char* address = reinterpret_cast<char*>(gpuAddress);
+	memcpy(gpuAddress, &data1, sizeof(VertShaderExternalData));
+	memcpy(address + bufferSize, &data2, sizeof(VertShaderExternalData));
+	memcpy(address + (2*bufferSize), &data3, sizeof(VertShaderExternalData));
 	vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
@@ -400,7 +441,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->ResourceBarrier(1, &rb);
 
 		// Background color (Cornflower Blue in this case) for clearing
-		float color[] = { 0.4f, 0.6f, 0.75f, 1.0f };
+		float color[] = { 0.0f, 0.2f, 0.3f, 1.0f };
 
 		// Clear the RTV
 		commandList->ClearRenderTargetView(
@@ -425,19 +466,42 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Root sig (must happen before root descriptor table)
 		commandList->SetGraphicsRootSignature(rootSignature);
 
-		// Set constant buffer
-		commandList->SetDescriptorHeaps(1, &vsConstBufferDescriptorHeap);
-		commandList->SetGraphicsRootDescriptorTable(
-			0,
-			vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		auto incrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
+		handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
 
 		// Set up other commands for rendering
 		commandList->OMSetRenderTargets(1, &rtvHandles[currentSwapBuffer], true, &dsvHandle);
 		commandList->RSSetViewports(1, &viewport);
 		commandList->RSSetScissorRects(1, &scissorRect);
-		commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
-		commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// Set constant buffer
+		commandList->SetDescriptorHeaps(1, &vsConstBufferDescriptorHeap);
+		//set const buffer for current mesh
+		commandList->SetGraphicsRootDescriptorTable(
+			0,
+			vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
+		//set mesh buffer
+		commandList->IASetVertexBuffers(0, 1, &mesh1->GetVertexBufferView());
+		commandList->IASetIndexBuffer(&mesh1->GetIndexBufferView());
+
+
+		// Draw
+		commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+		handle.ptr = handle.ptr + incrementSize;
+		commandList->SetGraphicsRootDescriptorTable(
+			0,
+			handle);
+
+
+		// Draw
+		commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+		handle.ptr += incrementSize;
+		commandList->SetGraphicsRootDescriptorTable(
+			0,
+			handle);
 
 		// Draw
 		commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);

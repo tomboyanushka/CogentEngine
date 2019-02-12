@@ -60,11 +60,15 @@ private:
 
 
 	// The matrices to go from model space to screen space
-	DirectX::XMFLOAT4X4 worldMatrix;
+	DirectX::XMFLOAT4X4 worldMatrix1;
+	DirectX::XMFLOAT4X4 worldMatrix2;
+	DirectX::XMFLOAT4X4 worldMatrix3;
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projectionMatrix;
 
-	Mesh* mesh;
+	Mesh* mesh1;
+	Mesh* mesh2;
+	Mesh* mesh3;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.
