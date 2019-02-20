@@ -223,7 +223,7 @@ void Game::CreateMatrices()
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	mesh1 = new Mesh(nullptr, nullptr);
+	mesh1 = new Mesh(nullptr, nullptr, nullptr);
 	mesh1->CreateBasicGeometry(device, commandList);
 	CloseExecuteAndResetCommandList();
 }

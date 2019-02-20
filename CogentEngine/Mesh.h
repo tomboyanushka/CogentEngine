@@ -10,7 +10,7 @@ class Mesh
 {
 public:
 
-	Mesh(const char* file, ID3D12Device* device);
+	Mesh(const char* file, ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 	~Mesh();
 
 	ID3D12Resource * GetVertexBuffer();
