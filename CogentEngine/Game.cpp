@@ -223,8 +223,7 @@ void Game::CreateMatrices()
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	mesh1 = new Mesh(nullptr, nullptr, nullptr);
-	mesh1->CreateBasicGeometry(device, commandList);
+	mesh1 = new Mesh("../../Assets/Models/Lion.obj", device, commandList);
 	CloseExecuteAndResetCommandList();
 }
 
@@ -237,20 +236,16 @@ void Game::CreateRootSigAndPipelineState()
 	//     sitting inside a vertex buffer
 	//  - Doing this NOW because it requires a vertex shader's byte code to verify against!
 	//  - Luckily, we already have that loaded (the blob above)
-	const unsigned int inputElementCount = 2;
-	D3D12_INPUT_ELEMENT_DESC inputElements[inputElementCount] = {};
+	const unsigned int inputElementCount = 4;
+	
 
-	// Set up the first element - a position, which is 3 float values
-	inputElements[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT; // How far into the vertex is this?  Assume it's after the previous element
-	inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;		// Most formats are described as color channels, really it just means "Three 32-bit floats"
-	inputElements[0].SemanticName = "POSITION";					// This is "POSITTION" - needs to match the semantics in our vertex shader input!
-	inputElements[0].SemanticIndex = 0;							// This is the 0th position (there could be more)
-
-	// Set up the second element - a color, which is 4 more float values
-	inputElements[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;	// After the previous element
-	inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;	// 4x 32-bit floats
-	inputElements[1].SemanticName = "COLOR";					// Match our vertex shader input!
-	inputElements[1].SemanticIndex = 0;							// This is the 0th color (there could be more)
+	D3D12_INPUT_ELEMENT_DESC inputElements[inputElementCount] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};					
 
 
 	// Root Sig
@@ -381,8 +376,8 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
-	XMMATRIX W2 = XMMatrixTranslation(-(sin(totalTime)), 0, 0);
-	XMMATRIX W3 = XMMatrixTranslation((sin(totalTime)), 0, 0);
+	XMMATRIX W2 = XMMatrixTranslation(sin(totalTime), 0, 0);
+	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime), 0, 0);
 	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
 	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
 	// Collect data
@@ -489,7 +484,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 		// Draw
-		commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+		commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
 		handle.ptr = handle.ptr + incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
@@ -497,14 +492,14 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 		// Draw
-		commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+		commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
 		handle.ptr += incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
 			handle);
 
 		// Draw
-		commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+		commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
 	}
 
 	// Present

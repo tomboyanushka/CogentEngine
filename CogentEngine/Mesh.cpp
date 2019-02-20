@@ -63,8 +63,10 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 		}
 	}
 
+	vertexCount = vertices.size();
+	indexCount = indexVals.size();
 
-	CreateBasicGeometry(device, commandList);
+	CreateBasicGeometry(vertices.data(), vertexCount, indexVals.data(), indexCount, device, commandList);
 }
 
 Mesh::~Mesh()
@@ -217,27 +219,10 @@ HRESULT Mesh::CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void
 	return S_OK;
 }
 
-void Mesh::CreateBasicGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* commandList)
+void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount, ID3D12Device * device, ID3D12GraphicsCommandList* commandList)
 {
 
-	// Set up the vertices of the triangle we would like to draw
-	// - We're going to copy this array, exactly as it exists in memory
-	//    over to a DirectX-controlled data structure (the vertex buffer)
-	//Vertex v1[] =
-	//{
-	//{ XMFLOAT3(+0.0f, +1.0f, +0.0f), red },
-	//{ XMFLOAT3(+1.5f, -1.0f, +0.0f), blue },
-	//{ XMFLOAT3(-1.5f, -1.0f, +0.0f), green },
-	//};
-
-	// Set up the indices, which tell us which vertices to use and in which order
-	// - This is somewhat redundant for just 3 vertices (it's a simple example)
-	// - Indices are technically not required if the vertices are in the buffer 
-	//    in the correct order and each one will be used exactly once
-	// - But just to see how it's done...
-	//int i1[] = { 0, 1, 2 };
-
 	//// Create geometry buffers  ------------------------------------
-	//CreateVertexBuffer(sizeof(Vertex), 3, v1, &vertexBuffer, &vbView, device, commandList);
-	//CreateIndexBuffer(DXGI_FORMAT_R32_UINT, 3, i1, &indexBuffer, &ibView, device, commandList);
+	CreateVertexBuffer(sizeof(Vertex), vertexCount, vertices, &vertexBuffer, &vbView, device, commandList);
+	CreateIndexBuffer(DXGI_FORMAT_R32_UINT, indexCount, indices, &indexBuffer, &ibView, device, commandList);
 }
