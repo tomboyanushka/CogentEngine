@@ -3,6 +3,7 @@
 #include "DXCore.h"
 #include <DirectXMath.h>
 #include "Mesh.h"
+#include "Camera.h"
 
 class Game
 	: public DXCore
@@ -69,6 +70,8 @@ private:
 	Mesh* mesh1;
 	Mesh* mesh2;
 	Mesh* mesh3;
+
+	Camera* camera;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

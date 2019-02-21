@@ -13,7 +13,7 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 	std::vector<Vertex> verts;           // Verts we're assembling
 	std::vector<UINT> indices;           // Indices of these verts
 	unsigned int vertCounter = 0;        // Count of vertices/indices
-	char chars[100];                     // String for line reading
+	//char chars[100];                     // String for line reading
 
 
 	std::vector<Vertex> vertices;           // Verts we're assembling
@@ -63,8 +63,8 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 		}
 	}
 
-	vertexCount = vertices.size();
-	indexCount = indexVals.size();
+	vertexCount = uint32_t(vertices.size());
+	indexCount = uint32_t(indexVals.size());
 
 	CreateBasicGeometry(vertices.data(), vertexCount, indexVals.data(), indexCount, device, commandList);
 }

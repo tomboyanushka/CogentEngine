@@ -37,8 +37,9 @@ Game::Game(HINSTANCE hInstance)
 		true)			   // Show extra stats (fps) in title bar?
 {
 	// Initialize fields
-	/*vertexBuffer = 0;
-	indexBuffer = 0;*/
+	vertexBuffer = 0;
+	indexBuffer = 0;
+	camera = 0;
 
 #if defined(DEBUG) || defined(_DEBUG)
 	// Do we want a console window?  Probably only in debug mode
@@ -62,6 +63,7 @@ Game::~Game()
 	//vertexBuffer->Release();
 	//indexBuffer->Release();
 	delete mesh1;
+	delete camera;
 
 	vsConstBufferDescriptorHeap->Release();
 	vsConstBufferUploadHeap->Release();
@@ -215,6 +217,9 @@ void Game::CreateMatrices()
 		0.1f,						// Near clip plane distance
 		100.0f);					// Far clip plane distance
 	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); // Transpose for HLSL!
+
+	camera = new Camera(0, 0, -5);
+	camera->UpdateProjectionMatrix((float)width / height);
 }
 
 
@@ -376,6 +381,8 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
+	camera->Update(deltaTime);
+
 	XMMATRIX W2 = XMMatrixTranslation(sin(totalTime), 0, 0);
 	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime), 0, 0);
 	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
@@ -383,18 +390,18 @@ void Game::Update(float deltaTime, float totalTime)
 	// Collect data
 	VertShaderExternalData data1 = {};
 	data1.world = worldMatrix1;
-	data1.view = viewMatrix;
-	data1.proj = projectionMatrix;
+	data1.view = camera->GetViewMatrix();
+	data1.proj = camera->GetProjectionMatrix();
 
 	VertShaderExternalData data2 = {};
 	data2.world = worldMatrix2;
-	data2.view = viewMatrix;
-	data2.proj = projectionMatrix;
+	data2.view = camera->GetViewMatrix();
+	data2.proj = camera->GetProjectionMatrix();
 
 	VertShaderExternalData data3 = {};
 	data3.world = worldMatrix3;
-	data3.view = viewMatrix;
-	data3.proj = projectionMatrix;
+	data3.view = camera->GetViewMatrix();
+	data3.proj = camera->GetProjectionMatrix();
 
 	// Copy data to the constant buffer
 	// Note: Apparently upload heaps (like constant buffers) do NOT need to be
@@ -570,6 +577,12 @@ void Game::OnMouseUp(WPARAM buttonState, int x, int y)
 void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 {
 	// Add any custom code here...
+	if (buttonState & 0x0001)
+	{
+		float xDiff = (x - prevMousePos.x) * 0.005f;
+		float yDiff = (y - prevMousePos.y) * 0.005f;
+		camera->Rotate(yDiff, xDiff);
+	}
 
 	// Save the previous mouse position, so we have it for the future
 	prevMousePos.x = x;

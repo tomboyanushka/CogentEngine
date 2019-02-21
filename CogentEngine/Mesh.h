@@ -33,8 +33,8 @@ private:
 
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	D3D12_INDEX_BUFFER_VIEW ibView;
-	int indexCount;
-	int vertexCount;
+	uint32_t indexCount;
+	uint32_t vertexCount;
 
 };
 
