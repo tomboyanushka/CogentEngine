@@ -46,6 +46,7 @@ struct VertexToPixel
 	float3 normal		: NORMAL;
 	float2 uv           : TEXCOORD;
 	float3 tangent		: TANGENT;
+	float3 worldPos		: POSITION;
 };
 
 // --------------------------------------------------------
@@ -68,8 +69,10 @@ VertexToPixel main(VertexShaderInput input)
 	// First we multiply them together to get a single matrix which represents
 	// all of those transformations (world to view to projection space)
 	matrix worldViewProj = mul(mul(world, view), projection);
-
 	output.position = mul(float4(input.position, 1.0f), worldViewProj);
+
+	// Pass through the transformed world position
+	output.worldPos = mul(float4(input.position, 1.0f), world).xyz;
 
 	//normal to world space
 	output.normal = mul(input.normal, (float3x3)world);

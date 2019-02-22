@@ -1,9 +1,11 @@
+#include "Lighting.hlsli"
+cbuffer lightData : register(b0)
+{
+	DirectionalLight dirLight;
+	float3 cameraPosition;
+}
 
-// Struct representing the data we expect to receive from earlier pipeline stages
-// - Should match the output of our corresponding vertex shader
-// - The name of the struct itself is unimportant
-// - The variable names don't have to match other shaders (just the semantics)
-// - Each variable must have a semantic, which defines its usage
+
 struct VertexToPixel
 {
 	// Data type
@@ -15,22 +17,28 @@ struct VertexToPixel
 	float3 normal			: NORMAL;
 	float2 uv				: TEXCOORD;
 	float3 tangent			: TANGENT;
+	float3 worldPos			: POSITION;
 };
 
-// --------------------------------------------------------
-// The entry point (main method) for our pixel shader
-// 
-// - Input is the data coming down the pipeline (defined by the struct)
-// - Output is a single color (float4)
-// - Has a special semantic (SV_TARGET), which means 
-//    "put the output of this into the current render target"
-// - Named "main" because that's the default the shader compiler looks for
-// --------------------------------------------------------
+//float calculateSpecular(float3 normal, float3 worldPos, float3 dirToLight, float3 camPos)
+//{
+//	float3 dirToCamera = normalize(camPos - worldPos);
+//	float3 halfwayVector = normalize(dirToLight + dirToCamera);
+//	//float3 refl = reflect(-dirToLight, normal);
+//	float shininess = 64;
+//	//float spec = pow(saturate(dot(dirToCamera, refl)), shininess);
+//	return shininess == 0 ? 0.0f : pow(max(dot(halfwayVector, normal), 0), shininess);
+//	//return spec;
+//}
+
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Just return the input color
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-	return float4(1,1,1,1);
+	// Renormalize any interpolated normals
+	input.normal = normalize(input.normal);
+	float3 dirToLight = normalize(-dirLight.Direction);
+	float NdotL = dot(input.normal, dirToLight);
+	NdotL = saturate(NdotL);
+	//float spec = calculateSpecular(input.normal, input.worldPos, dirToLight, cameraPosition) * roughness;
+	float3 totalLight = dirLight.DiffuseColor * NdotL + dirLight.AmbientColor;
+	return float4(totalLight,1);
 }
