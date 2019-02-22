@@ -1,5 +1,6 @@
 #include "Game.h"
 #include "Vertex.h"
+#include "ConstantBuffer.h"
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -13,12 +14,12 @@ using namespace DirectX;
 // collect the data locally (CPU-side) with the
 // same layout as the GPU's cbuffer, and then
 // simply copy it to GPU memory in one step
-struct VertShaderExternalData
-{
-	XMFLOAT4X4 world;
-	XMFLOAT4X4 view;
-	XMFLOAT4X4 proj;
-};
+//struct VertShaderExternalData
+//{
+//	XMFLOAT4X4 world;
+//	XMFLOAT4X4 view;
+//	XMFLOAT4X4 proj;
+//};
 
 // --------------------------------------------------------
 // Constructor
@@ -78,6 +79,7 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
+	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.2f, +0.2f, +0.2f, +1.0f), XMFLOAT3(+1.0f, +0.0f, 0.8f), float(5)};
 	// Reset the command list to start
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
@@ -111,7 +113,7 @@ void Game::LoadShaders()
 	D3D12_DESCRIPTOR_HEAP_DESC cbDesc = {};
 	cbDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbDesc.NodeMask = 0;
-	cbDesc.NumDescriptors = 3;
+	cbDesc.NumDescriptors = 4;
 	cbDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	device->CreateDescriptorHeap(&cbDesc, IID_PPV_ARGS(&vsConstBufferDescriptorHeap));
 
@@ -263,18 +265,33 @@ void Game::CreateRootSigAndPipelineState()
 		cbvTable.RegisterSpace = 0;
 		cbvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+		D3D12_DESCRIPTOR_RANGE cbvTable2 = {};
+		cbvTable2.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		cbvTable2.NumDescriptors = 1;
+		cbvTable2.BaseShaderRegister = 0;
+		cbvTable2.RegisterSpace = 0;
+		cbvTable2.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
 		// Create the root parameter
 		D3D12_ROOT_PARAMETER rootParam = {};
 		rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-		rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+		rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 		rootParam.DescriptorTable.NumDescriptorRanges = 1;
 		rootParam.DescriptorTable.pDescriptorRanges = &cbvTable;
+
+		D3D12_ROOT_PARAMETER rootParam2 = {};
+		rootParam2.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParam2.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParam2.DescriptorTable.NumDescriptorRanges = 1;
+		rootParam2.DescriptorTable.pDescriptorRanges = &cbvTable2;
+
+		D3D12_ROOT_PARAMETER params[] = {rootParam, rootParam2};
 
 		// Describe and serialize the root signature
 		D3D12_ROOT_SIGNATURE_DESC rootSig = {};
 		rootSig.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		rootSig.NumParameters = 1;
-		rootSig.pParameters = &rootParam;
+		rootSig.NumParameters = 2;
+		rootSig.pParameters = params;
 		rootSig.NumStaticSamplers = 0;
 		rootSig.pStaticSamplers = 0;
 

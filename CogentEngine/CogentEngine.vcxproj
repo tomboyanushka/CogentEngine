@@ -146,9 +146,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="DXCore.h" />
     <ClInclude Include="Game.h" />
-    <ClInclude Include="Lights.h" />
+    <ClInclude Include="Light.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
