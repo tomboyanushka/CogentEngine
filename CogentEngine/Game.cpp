@@ -79,7 +79,7 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
-	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.2f, +0.2f, +0.2f, +1.0f), XMFLOAT3(+1.0f, +0.0f, 0.8f), float(5)};
+	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.7f, +0.2f, +0.2f, +1.0f), XMFLOAT3(+1.0f, +0.0f, 0.8f), float(5)};
 	// Reset the command list to start
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
@@ -128,6 +128,9 @@ void Game::LoadShaders()
 	unsigned int bufferSize = sizeof(VertShaderExternalData);
 	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
 	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
+	unsigned int pixelBufferSize = sizeof(PixelShaderExternalData);
+	pixelBufferSize = (pixelBufferSize + 255); // Add 255 so we can drop last few bits
+	pixelBufferSize = pixelBufferSize & ~255;  // Flip 255 and then use it to mask 
 
 	D3D12_RESOURCE_DESC resDesc = {};
 	resDesc.Alignment = 0;
@@ -140,7 +143,7 @@ void Game::LoadShaders()
 	resDesc.MipLevels = 1;
 	resDesc.SampleDesc.Count = 1;
 	resDesc.SampleDesc.Quality = 0;
-	resDesc.Width = 3 * bufferSize;
+	resDesc.Width = 3 * bufferSize + pixelBufferSize;
 
 	auto incrementSize = device->GetDescriptorHandleIncrementSize(cbDesc.Type);
 
@@ -166,6 +169,12 @@ void Game::LoadShaders()
 
 	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(2*incrementSize);
 	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (2 * bufferSize);
+	device->CreateConstantBufferView(&cbvDesc, handle);
+
+
+	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(3 * incrementSize);
+	cbvDesc.SizeInBytes = pixelBufferSize;
+	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (3 * bufferSize);
 	device->CreateConstantBufferView(&cbvDesc, handle);
 
 
@@ -400,8 +409,8 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
-	XMMATRIX W2 = XMMatrixTranslation(sin(totalTime), 0, 0);
-	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime), 0, 0);
+	XMMATRIX W2 = XMMatrixTranslation(sin(totalTime) - 6, 0, 0);
+	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime) + 6, 0, 0);
 	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
 	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
 	// Collect data
@@ -420,6 +429,9 @@ void Game::Update(float deltaTime, float totalTime)
 	data3.view = camera->GetViewMatrix();
 	data3.proj = camera->GetProjectionMatrix();
 
+	pixelData.cameraPosition = camera->GetPosition();
+	pixelData.dirLight = light;
+
 	// Copy data to the constant buffer
 	// Note: Apparently upload heaps (like constant buffers) do NOT need to be
 	// unmapped to be used by the GPU.  Keeping it mapped can speed things up.
@@ -436,6 +448,7 @@ void Game::Update(float deltaTime, float totalTime)
 	memcpy(gpuAddress, &data1, sizeof(VertShaderExternalData));
 	memcpy(address + bufferSize, &data2, sizeof(VertShaderExternalData));
 	memcpy(address + (2*bufferSize), &data3, sizeof(VertShaderExternalData));
+	memcpy(address + (3 * bufferSize), &pixelData, sizeof(PixelShaderExternalData));
 	vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
@@ -487,7 +500,10 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		auto incrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
+		D3D12_GPU_DESCRIPTOR_HANDLE pixelHandle = {};
 		handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
+
+		pixelHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + (3 * incrementSize);
 
 		// Set up other commands for rendering
 		commandList->OMSetRenderTargets(1, &rtvHandles[currentSwapBuffer], true, &dsvHandle);
@@ -497,6 +513,12 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Set constant buffer
 		commandList->SetDescriptorHeaps(1, &vsConstBufferDescriptorHeap);
+
+		//for pixel shader
+		commandList->SetGraphicsRootDescriptorTable(
+			1,
+			pixelHandle);
+
 		//set const buffer for current mesh
 		commandList->SetGraphicsRootDescriptorTable(
 			0,

@@ -5,6 +5,7 @@
 #include "Mesh.h"
 #include "Camera.h"
 #include "Light.h"
+#include "ConstantBuffer.h"
 
 class Game
 	: public DXCore
@@ -67,6 +68,8 @@ private:
 	DirectX::XMFLOAT4X4 worldMatrix3;
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projectionMatrix;
+
+	PixelShaderExternalData pixelData;
 
 	Mesh* mesh1;
 	Mesh* mesh2;
