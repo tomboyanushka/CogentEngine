@@ -410,21 +410,24 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
+	XMMATRIX W2 = XMMatrixTranslation(-6, 0, 0);
+	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime) + 6, 0, 0);
+	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
+	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
 
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
 
 
-	if (job2.IsCompleted())
-		auto f2 = pool.Enqueue(&job2);
+	//if (job2.IsCompleted())
+	//{
+	//	job2.W = W2;
+	//	//XMStoreFloat4x4(&worldMatrix2, job2.W);
+	//	auto f2 = pool.Enqueue(&job2);
+	//}
+	
 
 	pool.ExecuteCallbacks();
-
-
-	XMMATRIX W2 = XMMatrixTranslation(sin(totalTime) - 6, 0, 0);
-	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime) + 6, 0, 0);
-	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
-	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
 	// Collect data
 	VertShaderExternalData data1 = {};
 	data1.world = worldMatrix1;

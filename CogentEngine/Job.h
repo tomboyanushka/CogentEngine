@@ -17,10 +17,13 @@ public:
 
 class UpdatePosJob : public IJob
 {
-	DirectX::XMFLOAT3 pos;
-	float totalTime;
+
 
 public:
+	DirectX::XMFLOAT3 pos;
+	DirectX::XMMATRIX W;
+	DirectX::XMFLOAT4X4 worldMatrix;
+	float totalTime;
 	// Inherited via IJob
 	virtual void Execute() override;
 	virtual void Callback() override;
