@@ -6,6 +6,9 @@
 #include "Camera.h"
 #include "Light.h"
 #include "ConstantBuffer.h"
+#include "ThreadPool.h"
+#include "IJob.h"
+#include "Job.h"
 
 class Game
 	: public DXCore
@@ -78,6 +81,9 @@ private:
 	DirectionalLight light;
 
 	Camera* camera;
+
+	ThreadPool pool{ 4 };
+	MyJob job1;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

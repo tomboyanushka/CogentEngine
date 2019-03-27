@@ -2,6 +2,7 @@
 #include "Vertex.h"
 #include "ConstantBuffer.h"
 
+
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
 #include <d3dcompiler.h>
@@ -94,6 +95,7 @@ void Game::Init()
 
 	// Wait here until GPU is actually done
 	WaitForGPU();
+
 }
 
 // --------------------------------------------------------
@@ -408,6 +410,13 @@ void Game::Update(float deltaTime, float totalTime)
 		Quit();
 
 	camera->Update(deltaTime);
+
+	while (true)
+	{
+		if (job1.IsCompleted())
+			auto f1 = pool.Enqueue(&job1);
+		pool.ExecuteCallbacks();
+	}
 
 	XMMATRIX W2 = XMMatrixTranslation(sin(totalTime) - 6, 0, 0);
 	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime) + 6, 0, 0);
