@@ -84,6 +84,7 @@ private:
 
 	ThreadPool pool{ 4 };
 	MyJob job1;
+	UpdatePosJob job2;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

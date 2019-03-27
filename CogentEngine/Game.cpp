@@ -80,7 +80,7 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
-	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.7f, +0.2f, +0.2f, +1.0f), XMFLOAT3(+1.0f, +0.0f, 0.8f), float(5)};
+	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.7f, +0.2f, +0.2f, +1.0f), XMFLOAT3(+1.0f, +0.0f, 0.8f), float(5) };
 	// Reset the command list to start
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
@@ -95,7 +95,6 @@ void Game::Init()
 
 	// Wait here until GPU is actually done
 	WaitForGPU();
-
 }
 
 // --------------------------------------------------------
@@ -169,7 +168,7 @@ void Game::LoadShaders()
 	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + bufferSize;
 	device->CreateConstantBufferView(&cbvDesc, handle);
 
-	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(2*incrementSize);
+	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(2 * incrementSize);
 	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (2 * bufferSize);
 	device->CreateConstantBufferView(&cbvDesc, handle);
 
@@ -255,7 +254,7 @@ void Game::CreateRootSigAndPipelineState()
 	//  - Doing this NOW because it requires a vertex shader's byte code to verify against!
 	//  - Luckily, we already have that loaded (the blob above)
 	const unsigned int inputElementCount = 4;
-	
+
 
 	D3D12_INPUT_ELEMENT_DESC inputElements[inputElementCount] =
 	{
@@ -263,7 +262,7 @@ void Game::CreateRootSigAndPipelineState()
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};					
+	};
 
 
 	// Root Sig
@@ -296,7 +295,7 @@ void Game::CreateRootSigAndPipelineState()
 		rootParam2.DescriptorTable.NumDescriptorRanges = 1;
 		rootParam2.DescriptorTable.pDescriptorRanges = &cbvTable2;
 
-		D3D12_ROOT_PARAMETER params[] = {rootParam, rootParam2};
+		D3D12_ROOT_PARAMETER params[] = { rootParam, rootParam2 };
 
 		// Describe and serialize the root signature
 		D3D12_ROOT_SIGNATURE_DESC rootSig = {};
@@ -411,12 +410,16 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
-	while (true)
-	{
-		if (job1.IsCompleted())
-			auto f1 = pool.Enqueue(&job1);
-		pool.ExecuteCallbacks();
-	}
+
+	if (job1.IsCompleted())
+		auto f1 = pool.Enqueue(&job1);
+
+
+	if (job2.IsCompleted())
+		auto f2 = pool.Enqueue(&job2);
+
+	pool.ExecuteCallbacks();
+
 
 	XMMATRIX W2 = XMMatrixTranslation(sin(totalTime) - 6, 0, 0);
 	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime) + 6, 0, 0);
@@ -456,7 +459,7 @@ void Game::Update(float deltaTime, float totalTime)
 	char* address = reinterpret_cast<char*>(gpuAddress);
 	memcpy(gpuAddress, &data1, sizeof(VertShaderExternalData));
 	memcpy(address + bufferSize, &data2, sizeof(VertShaderExternalData));
-	memcpy(address + (2*bufferSize), &data3, sizeof(VertShaderExternalData));
+	memcpy(address + (2 * bufferSize), &data3, sizeof(VertShaderExternalData));
 	memcpy(address + (3 * bufferSize), &pixelData, sizeof(PixelShaderExternalData));
 	vsConstBufferUploadHeap->Unmap(0, 0);
 }
