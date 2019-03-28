@@ -415,20 +415,6 @@ void Game::Update(float deltaTime, float totalTime)
 	//XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
 	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
 
-	if (job1.IsCompleted())
-		auto f1 = pool.Enqueue(&job1);
-
-
-	if (job2.IsCompleted())
-	{
-		job2.W = W2;
-		job2.totalTime = totalTime;
-		//XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(job2.worldMatrix));
-		auto f2 = pool.Enqueue(&job2);
-	}
-	
-
-	pool.ExecuteCallbacks();
 	// Collect data
 	VertShaderExternalData data1 = {};
 	data1.world = worldMatrix1;
@@ -436,7 +422,7 @@ void Game::Update(float deltaTime, float totalTime)
 	data1.proj = camera->GetProjectionMatrix();
 
 	VertShaderExternalData data2 = {};
-	data2.world = job2.worldMatrix;
+
 	data2.view = camera->GetViewMatrix();
 	data2.proj = camera->GetProjectionMatrix();
 
@@ -444,6 +430,22 @@ void Game::Update(float deltaTime, float totalTime)
 	data3.world = worldMatrix3;
 	data3.view = camera->GetViewMatrix();
 	data3.proj = camera->GetProjectionMatrix();
+
+
+	if (job1.IsCompleted())
+		auto f1 = pool.Enqueue(&job1);
+
+
+	if (job2.IsCompleted())
+	{
+		//job2.W = W2;
+		job2.totalTime = totalTime;
+		data2.world = job2.worldMatrix;
+		auto f2 = pool.Enqueue(&job2);
+	}
+
+
+	pool.ExecuteCallbacks();
 
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.dirLight = light;
@@ -541,12 +543,13 @@ void Game::Draw(float deltaTime, float totalTime)
 			vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 		//set mesh buffer
-		commandList->IASetVertexBuffers(0, 1, &mesh1->GetVertexBufferView());
-		commandList->IASetIndexBuffer(&mesh1->GetIndexBufferView());
+		//commandList->IASetVertexBuffers(0, 1, &mesh1->GetVertexBufferView());
+		//commandList->IASetIndexBuffer(&mesh1->GetIndexBufferView());
 
 
 		// Draw
-		commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
+		DrawMesh(mesh1);
+		//commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
 		handle.ptr = handle.ptr + incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
@@ -554,14 +557,16 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 		// Draw
-		commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
+		DrawMesh(mesh1);
+		//commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
 		handle.ptr += incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
 			handle);
 
 		// Draw
-		commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
+		DrawMesh(mesh1);
+		//commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
 	}
 
 	// Present
@@ -588,6 +593,14 @@ void Game::Draw(float deltaTime, float totalTime)
 			currentSwapBuffer = 0;
 
 	}
+}
+
+void Game::DrawMesh(Mesh* mesh)
+{
+	commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
+	commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
+	// Draw
+	commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
 }
 
 
