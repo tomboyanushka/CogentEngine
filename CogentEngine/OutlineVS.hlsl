@@ -4,6 +4,7 @@ cbuffer externalData : register(b0)
 	matrix world;
 	matrix view;
 	matrix projection;
+	float lineThickness;
 };
 
 
@@ -32,16 +33,13 @@ VertexToPixel main(VertexShaderInput input)
 	// Set up output struct
 	VertexToPixel output;
 
-	matrix worldViewProj = mul(mul(world, view), projection);
-	output.position = mul(float4(input.position, 1.0f), worldViewProj);
-	output.worldPos = mul(float4(input.position, 1.0f), world).xyz;
-
-	//normal to world space
-	output.normal = mul(input.normal, (float3x3)world);
-
-	output.tangent = normalize(mul(input.tangent, (float3x3)world));
-
-	output.uv = input.uv;
+	float4 original = mul(mul(mul(input.position, world), view), projection);
+	float4 normal = mul(mul(mul(input.normal, world), view), projection);
+	// Take the correct "original" location and translate the vertex a little
+	// bit in the direction of the normal to draw a slightly expanded object.
+	// Later, we will draw over most of this with the right color, except the expanded
+	// part, which will leave the outline that we want.
+	output.position = original + (mul(lineThickness, normal));
 
 	return output;
 }

@@ -8,11 +8,6 @@ cbuffer externalData : register(b0)
 
 struct VertexToPixel
 {
-	// Data type
-	//  |
-	//  |   Name          Semantic
-	//  |    |                |
-	//  v    v                v
 	float4 position			: SV_POSITION;
 	float3 normal			: NORMAL;
 	float2 uv				: TEXCOORD;

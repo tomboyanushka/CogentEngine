@@ -16,6 +16,12 @@
     <Filter Include="Header Files\Shaders">
       <UniqueIdentifier>{6f84386c-195e-42ec-952e-06c8287d37cd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\JobSystem">
+      <UniqueIdentifier>{7c96d3b6-e609-46fd-98ad-a66ae630ed00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\JobSytsem">
+      <UniqueIdentifier>{3852b58c-89ed-4499-8139-cf4fb0e784a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DXCore.h">
@@ -43,13 +49,13 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IJob.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ThreadPool.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\JobSystem</Filter>
     </ClInclude>
     <ClInclude Include="Job.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>Header Files\JobSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -72,13 +78,13 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="IJob.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ThreadPool.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\JobSytsem</Filter>
     </ClCompile>
     <ClCompile Include="Job.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\JobSytsem</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadPool.cpp">
+      <Filter>Source Files\JobSytsem</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -86,6 +92,12 @@
       <Filter>Header Files\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="VertexShader.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="OutlineVS.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="OutlinePS.hlsl">
       <Filter>Header Files\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
