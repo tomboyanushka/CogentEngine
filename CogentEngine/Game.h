@@ -52,9 +52,13 @@ private:
 
 	ID3D12RootSignature* rootSignature;
 	ID3D12PipelineState* pipeState;
+	ID3D12PipelineState* pipeState2;
 
 	ID3DBlob* vertexShaderByteCode;
 	ID3DBlob* pixelShaderByteCode;
+
+	ID3DBlob* outlineVS;
+	ID3DBlob* outlinePS;
 
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	ID3D12Resource* vertexBuffer;

@@ -72,6 +72,7 @@ Game::~Game()
 
 	rootSignature->Release();
 	pipeState->Release();
+	pipeState2->Release();
 }
 
 // --------------------------------------------------------
@@ -108,6 +109,9 @@ void Game::LoadShaders()
 	// - Essentially just "open the file and plop its contents here"
 	D3DReadFileToBlob(L"VertexShader.cso", &vertexShaderByteCode);
 	D3DReadFileToBlob(L"PixelShader.cso", &pixelShaderByteCode);
+
+	D3DReadFileToBlob(L"OutlineVS.cso", &outlineVS);
+	D3DReadFileToBlob(L"OutlinePS.cso", &outlinePS);
 
 	// Create a descriptor heap to store constant buffer descriptors.  
 	// One big heap is good enough to hold all cbv/srv/uav descriptors.
@@ -376,6 +380,18 @@ void Game::CreateRootSigAndPipelineState()
 
 		// Create the pipe state object
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipeState));
+
+
+		// -- Shaders (VS/PS) --- 
+		psoDesc.VS.pShaderBytecode = outlineVS->GetBufferPointer();
+		psoDesc.VS.BytecodeLength = outlineVS->GetBufferSize();
+		psoDesc.PS.pShaderBytecode = outlinePS->GetBufferPointer();
+		psoDesc.PS.BytecodeLength = outlinePS->GetBufferSize();
+
+		psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
+		//psoDesc.DepthStencilState.DepthEnable = false;
+
+		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipeState2));
 	}
 
 }
@@ -511,7 +527,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	// Rendering here!
 	{
 		// Set overall pipeline state
-		commandList->SetPipelineState(pipeState);
+		commandList->SetPipelineState(pipeState2);
 
 		// Root sig (must happen before root descriptor table)
 		commandList->SetGraphicsRootSignature(rootSignature);
@@ -542,23 +558,19 @@ void Game::Draw(float deltaTime, float totalTime)
 			0,
 			vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
-		//set mesh buffer
-		//commandList->IASetVertexBuffers(0, 1, &mesh1->GetVertexBufferView());
-		//commandList->IASetIndexBuffer(&mesh1->GetIndexBufferView());
 
-
-		// Draw
+		// Draw outline for mesh 1
 		DrawMesh(mesh1);
-		//commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
+		commandList->SetPipelineState(pipeState);
+
+		DrawMesh(mesh1);
 		handle.ptr = handle.ptr + incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
 			handle);
 
-
 		// Draw
 		DrawMesh(mesh1);
-		//commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
 		handle.ptr += incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
@@ -566,7 +578,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Draw
 		DrawMesh(mesh1);
-		//commandList->DrawIndexedInstanced(mesh1->GetIndexCount(), 1, 0, 0, 0);
+
 	}
 
 	// Present
