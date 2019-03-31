@@ -382,7 +382,7 @@ void Game::CreateRootSigAndPipelineState()
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipeState));
 
 
-		// -- Shaders (VS/PS) --- 
+		// -- Outline (VS/PS) --- 
 		psoDesc.VS.pShaderBytecode = outlineVS->GetBufferPointer();
 		psoDesc.VS.BytecodeLength = outlineVS->GetBufferSize();
 		psoDesc.PS.pShaderBytecode = outlinePS->GetBufferPointer();

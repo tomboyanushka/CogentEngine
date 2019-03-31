@@ -32,16 +32,18 @@ VertexToPixel main(VertexShaderInput input)
 {
 	// Set up output struct
 	VertexToPixel output;
-
+	float lineThickness = 0.01f;
 	matrix worldViewProj = mul(mul(world, view), projection);
-	float4 original = mul(float4(input.position, 1.0f), worldViewProj);
+	float4 original = mul(float4(input.position + input.normal * lineThickness , 1.0f), worldViewProj);
+	//float4 original = mul(input.position, worldViewProj);
 	
-	output.normal = mul(input.normal, (float3x3)world);
+	//output.normal = mul(input.normal, (float3x3)world);
+	//float4 normal = mul(input.normal, worldViewProj);
 	// Take the correct "original" location and translate the vertex a little
 	// bit in the direction of the normal to draw a slightly expanded object.
 	// Later, we will draw over most of this with the right color, except the expanded
 	// part, which will leave the outline that we want.
-	output.position = original +(mul(0.003f, float4(output.normal, 1)));
+	output.position = original;// +(mul(1, normal));
 
 	return output;
 }
