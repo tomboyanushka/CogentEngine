@@ -562,21 +562,24 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Draw outline for mesh 1
 		DrawMesh(mesh1);
 		commandList->SetPipelineState(pipeState);
-
 		DrawMesh(mesh1);
+
 		handle.ptr = handle.ptr + incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
 			handle);
-
-		// Draw
+		commandList->SetPipelineState(pipeState2);
 		DrawMesh(mesh1);
+		commandList->SetPipelineState(pipeState);
+		DrawMesh(mesh1);
+
 		handle.ptr += incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
 			handle);
-
-		// Draw
+		commandList->SetPipelineState(pipeState2);
+		DrawMesh(mesh1);
+		commandList->SetPipelineState(pipeState);
 		DrawMesh(mesh1);
 
 	}
