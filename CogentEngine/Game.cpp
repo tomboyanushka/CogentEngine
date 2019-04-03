@@ -396,6 +396,16 @@ void Game::CreateRootSigAndPipelineState()
 
 }
 
+void Game::DrawEntity(Entity * entity)
+{
+	vertexData->world = entity->GetWorldMatrix();
+	vertexData->view = camera->GetViewMatrix();
+	vertexData->proj = camera->GetProjectionMatrix();
+
+	/*pixelData->cameraPosition = camera->GetPosition();
+	pixelData->dirLight = light;*/
+}
+
 
 // --------------------------------------------------------
 // Handle resizing DirectX "stuff" to match the new window size.

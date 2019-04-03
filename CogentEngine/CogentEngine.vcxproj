@@ -149,6 +149,7 @@
     <ClInclude Include="ConcurrentQueue.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="DXCore.h" />
+    <ClInclude Include="Entity.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="IJob.h" />
     <ClInclude Include="Job.h" />
@@ -161,6 +162,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ConcurrentQueue.cpp" />
     <ClCompile Include="DXCore.cpp" />
+    <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="IJob.cpp" />
     <ClCompile Include="Job.cpp" />

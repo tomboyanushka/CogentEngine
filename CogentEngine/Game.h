@@ -2,13 +2,19 @@
 
 #include "DXCore.h"
 #include <DirectXMath.h>
-#include "Mesh.h"
-#include "Camera.h"
-#include "Light.h"
-#include "ConstantBuffer.h"
+
 #include "ThreadPool.h"
 #include "IJob.h"
 #include "Job.h"
+
+#include "ConstantBuffer.h"
+#include "Camera.h"
+#include "Light.h"
+
+#include "Mesh.h"
+#include "Entity.h"
+
+
 
 class Game
 	: public DXCore
@@ -69,6 +75,8 @@ private:
 	ID3D12DescriptorHeap* vsConstBufferDescriptorHeap;
 	ID3D12Resource* vsConstBufferUploadHeap;
 
+	VertShaderExternalData* vertexData;
+	PixelShaderExternalData pixelData;
 
 	// The matrices to go from model space to screen space
 	DirectX::XMFLOAT4X4 worldMatrix1;
@@ -77,7 +85,7 @@ private:
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projectionMatrix;
 
-	PixelShaderExternalData pixelData;
+	
 
 	Mesh* mesh1;
 	Mesh* mesh2;
@@ -86,6 +94,8 @@ private:
 	DirectionalLight light;
 
 	Camera* camera;
+
+	void DrawEntity(Entity* entity);
 
 	ThreadPool pool{ 4 };
 	MyJob job1;

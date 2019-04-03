@@ -16,7 +16,6 @@ void UpdatePosJob::Execute()
 {
 	W = DirectX::XMMatrixTranslation(sin(totalTime) - 6, 0, 0);
 	XMStoreFloat4x4(&worldMatrix, DirectX::XMMatrixTranspose(W));
-	//pos = DirectX::XMFLOAT3(3, 2, 3 * x);
 }
 
 void UpdatePosJob::Callback()
