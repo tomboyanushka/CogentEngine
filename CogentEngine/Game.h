@@ -77,6 +77,7 @@ private:
 
 	VertShaderExternalData* vertexData;
 	PixelShaderExternalData pixelData;
+	//PixelShaderExternalData* pixelShaderData;
 
 	// The matrices to go from model space to screen space
 	DirectX::XMFLOAT4X4 worldMatrix1;
@@ -90,6 +91,8 @@ private:
 	Mesh* mesh1;
 	Mesh* mesh2;
 	Mesh* mesh3;
+
+	std::vector<Entity*> entities;
 
 	DirectionalLight light;
 

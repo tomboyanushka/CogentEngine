@@ -67,6 +67,11 @@ Game::~Game()
 	delete mesh1;
 	delete camera;
 
+	for (auto e : entities)
+	{
+		delete e;
+	}
+
 	vsConstBufferDescriptorHeap->Release();
 	vsConstBufferUploadHeap->Release();
 
@@ -245,6 +250,8 @@ void Game::CreateMatrices()
 void Game::CreateBasicGeometry()
 {
 	mesh1 = new Mesh("../../Assets/Models/Lion.obj", device, commandList);
+	entities.push_back(new Entity(mesh1));
+
 	CloseExecuteAndResetCommandList();
 }
 
@@ -402,8 +409,10 @@ void Game::DrawEntity(Entity * entity)
 	vertexData->view = camera->GetViewMatrix();
 	vertexData->proj = camera->GetProjectionMatrix();
 
-	/*pixelData->cameraPosition = camera->GetPosition();
-	pixelData->dirLight = light;*/
+	pixelData.cameraPosition = camera->GetPosition();
+	pixelData.dirLight = light;
+
+	DrawMesh(entity->GetMesh());
 }
 
 
