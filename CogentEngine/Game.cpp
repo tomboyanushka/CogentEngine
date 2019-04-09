@@ -10,26 +10,6 @@
 // For the DirectX Math library
 using namespace DirectX;
 
-// Creating a struct that matches the cbuffer 
-// definition in our shader.  This allows us to
-// collect the data locally (CPU-side) with the
-// same layout as the GPU's cbuffer, and then
-// simply copy it to GPU memory in one step
-//struct VertShaderExternalData
-//{
-//	XMFLOAT4X4 world;
-//	XMFLOAT4X4 view;
-//	XMFLOAT4X4 proj;
-//};
-
-// --------------------------------------------------------
-// Constructor
-//
-// DXCore (base class) constructor will set up underlying fields.
-// DirectX itself, and our window, are not ready yet!
-//
-// hInstance - the application's OS-level handle (unique ID)
-// --------------------------------------------------------
 Game::Game(HINSTANCE hInstance)
 	: DXCore(
 		hInstance,		   // The application's handle
@@ -51,21 +31,15 @@ Game::Game(HINSTANCE hInstance)
 
 }
 
-// --------------------------------------------------------
-// Destructor - Clean up anything our game has created:
-//  - Release all DirectX objects created here
-//  - Delete any objects to prevent memory leaks
-// --------------------------------------------------------
+
 Game::~Game()
 {
 	// Don't clean up until GPU is actually done
 	WaitForGPU();
 
-	// Release DX resources
-	//vertexBuffer->Release();
-	//indexBuffer->Release();
 	delete mesh1;
 	delete camera;
+	delete lion;
 
 	for (auto e : entities)
 	{
@@ -250,8 +224,8 @@ void Game::CreateMatrices()
 void Game::CreateBasicGeometry()
 {
 	mesh1 = new Mesh("../../Assets/Models/Lion.obj", device, commandList);
-	entities.push_back(new Entity(mesh1));
-
+	//entities.push_back(new Entity(mesh1));
+	lion = new Entity(mesh1);
 	CloseExecuteAndResetCommandList();
 }
 
@@ -405,9 +379,10 @@ void Game::CreateRootSigAndPipelineState()
 
 void Game::DrawEntity(Entity * entity)
 {
-	vertexData->world = entity->GetWorldMatrix();
-	vertexData->view = camera->GetViewMatrix();
-	vertexData->proj = camera->GetProjectionMatrix();
+	VertShaderExternalData vertexData = {};
+	vertexData.world = entity->GetWorldMatrix();
+	vertexData.view = camera->GetViewMatrix();
+	vertexData.proj = camera->GetProjectionMatrix();
 
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.dirLight = light;
@@ -452,7 +427,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	// Collect data
 	VertShaderExternalData data1 = {};
-	data1.world = worldMatrix1;
+	data1.world = lion->GetWorldMatrix();
 	data1.view = camera->GetViewMatrix();
 	data1.proj = camera->GetProjectionMatrix();
 
@@ -579,11 +554,13 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 		// Draw outline for mesh 1
-		DrawMesh(mesh1);
+		//DrawMesh(mesh1);
+		DrawEntity(lion);
 		commandList->SetPipelineState(pipeState);
-		DrawMesh(mesh1);
+		DrawEntity(lion);
+		//DrawMesh(mesh1);
 
-		handle.ptr = handle.ptr + incrementSize;
+		/*handle.ptr = handle.ptr + incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
 			handle);
@@ -599,7 +576,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->SetPipelineState(pipeState2);
 		DrawMesh(mesh1);
 		commandList->SetPipelineState(pipeState);
-		DrawMesh(mesh1);
+		DrawMesh(mesh1);*/
 
 	}
 

@@ -75,7 +75,6 @@ private:
 	ID3D12DescriptorHeap* vsConstBufferDescriptorHeap;
 	ID3D12Resource* vsConstBufferUploadHeap;
 
-	VertShaderExternalData* vertexData;
 	PixelShaderExternalData pixelData;
 	//PixelShaderExternalData* pixelShaderData;
 
@@ -93,6 +92,8 @@ private:
 	Mesh* mesh3;
 
 	std::vector<Entity*> entities;
+
+	Entity* lion;
 
 	DirectionalLight light;
 
