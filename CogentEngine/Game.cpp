@@ -39,7 +39,9 @@ Game::~Game()
 
 	delete mesh1;
 	delete camera;
-	delete lion;
+	delete lion1;
+	delete lion2;
+	delete lion3;
 
 	for (auto e : entities)
 	{
@@ -225,7 +227,20 @@ void Game::CreateBasicGeometry()
 {
 	mesh1 = new Mesh("../../Assets/Models/Lion.obj", device, commandList);
 	//entities.push_back(new Entity(mesh1));
-	lion = new Entity(mesh1);
+	unsigned int bufferSize = sizeof(VertShaderExternalData);
+	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
+	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
+
+	void* gpuAddress;
+	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
+
+	char* address1 = reinterpret_cast<char*>(gpuAddress);
+	char* address2 = address1 + bufferSize;
+	char* address3 = address2 + bufferSize;
+
+	lion1 = new Entity(mesh1, address1);
+	lion2 = new Entity(mesh1, address2);
+	lion3 = new Entity(mesh1, address3);
 	CloseExecuteAndResetCommandList();
 }
 
@@ -387,6 +402,8 @@ void Game::DrawEntity(Entity * entity)
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.dirLight = light;
 
+	memcpy(entity->GetAddress(), &vertexData, sizeof(VertShaderExternalData));
+
 	DrawMesh(entity->GetMesh());
 }
 
@@ -420,26 +437,8 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
-	XMMATRIX W2; // = XMMatrixTranslation(-6, 0, 0);
-	XMMATRIX W3 = XMMatrixTranslation(cos(totalTime) + 6, 0, 0);
-	//XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
-	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
-
-	// Collect data
-	VertShaderExternalData data1 = {};
-	data1.world = lion->GetWorldMatrix();
-	data1.view = camera->GetViewMatrix();
-	data1.proj = camera->GetProjectionMatrix();
-
-	VertShaderExternalData data2 = {};
-
-	data2.view = camera->GetViewMatrix();
-	data2.proj = camera->GetProjectionMatrix();
-
-	VertShaderExternalData data3 = {};
-	data3.world = worldMatrix3;
-	data3.view = camera->GetViewMatrix();
-	data3.proj = camera->GetProjectionMatrix();
+	lion2->SetPosition(job2.pos);
+	lion3->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
 
 
 	if (job1.IsCompleted())
@@ -450,15 +449,12 @@ void Game::Update(float deltaTime, float totalTime)
 	{
 		//job2.W = W2;
 		job2.totalTime = totalTime;
-		data2.world = job2.worldMatrix;
 		auto f2 = pool.Enqueue(&job2);
 	}
 
 
 	pool.ExecuteCallbacks();
 
-	pixelData.cameraPosition = camera->GetPosition();
-	pixelData.dirLight = light;
 
 	// Copy data to the constant buffer
 	// Note: Apparently upload heaps (like constant buffers) do NOT need to be
@@ -473,11 +469,8 @@ void Game::Update(float deltaTime, float totalTime)
 	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
 
 	char* address = reinterpret_cast<char*>(gpuAddress);
-	memcpy(gpuAddress, &data1, sizeof(VertShaderExternalData));
-	memcpy(address + bufferSize, &data2, sizeof(VertShaderExternalData));
-	memcpy(address + (2 * bufferSize), &data3, sizeof(VertShaderExternalData));
 	memcpy(address + (3 * bufferSize), &pixelData, sizeof(PixelShaderExternalData));
-	vsConstBufferUploadHeap->Unmap(0, 0);
+	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
 // --------------------------------------------------------
@@ -554,29 +547,27 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 		// Draw outline for mesh 1
-		//DrawMesh(mesh1);
-		DrawEntity(lion);
+		DrawEntity(lion1);
 		commandList->SetPipelineState(pipeState);
-		DrawEntity(lion);
-		//DrawMesh(mesh1);
+		DrawEntity(lion1);
 
-		/*handle.ptr = handle.ptr + incrementSize;
+		handle.ptr = handle.ptr + incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
 			handle);
 		commandList->SetPipelineState(pipeState2);
-		DrawMesh(mesh1);
+		DrawEntity(lion2);
 		commandList->SetPipelineState(pipeState);
-		DrawMesh(mesh1);
+		DrawEntity(lion2);
 
 		handle.ptr += incrementSize;
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
 			handle);
 		commandList->SetPipelineState(pipeState2);
-		DrawMesh(mesh1);
+		DrawEntity(lion3);
 		commandList->SetPipelineState(pipeState);
-		DrawMesh(mesh1);*/
+		DrawEntity(lion3);
 
 	}
 

@@ -2,11 +2,12 @@
 
 
 
-Entity::Entity(Mesh * mesh)
+Entity::Entity(Mesh * mesh, char* address)
 {
 	this->mesh = mesh;
 	this->SetPosition(XMFLOAT3(0.0, 0.0, 0.0));
 	this->SetScale(XMFLOAT3(1.0, 1.0, 1.0));
+	this->gpuAddress = address;
 }
 
 Entity::~Entity()
@@ -82,4 +83,9 @@ void Entity::UpdateWorldMatrix()
 
 	XMMATRIX total = sc * rotZ * rotY * rotX * trans;
 	XMStoreFloat4x4(&worldMatrix, XMMatrixTranspose(total));
+}
+
+char * Entity::GetAddress()
+{
+	return gpuAddress;
 }

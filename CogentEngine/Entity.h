@@ -5,7 +5,7 @@ using namespace DirectX;
 class Entity
 {
 public:
-	Entity(Mesh* mesh);
+	Entity(Mesh* mesh, char* address);
 	~Entity();
 
 	//VertShaderExternalData* data;
@@ -20,6 +20,7 @@ public:
 	Mesh* GetMesh();
 	XMFLOAT4X4 GetWorldMatrix();
 	void UpdateWorldMatrix();
+	char* GetAddress();
 
 private:
 	XMFLOAT4X4 worldMatrix;
@@ -27,5 +28,7 @@ private:
 	XMFLOAT3 rotation;
 	XMFLOAT3 scale;
 	Mesh* mesh;
+	char* gpuAddress;
+
 };
 

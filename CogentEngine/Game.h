@@ -93,7 +93,9 @@ private:
 
 	std::vector<Entity*> entities;
 
-	Entity* lion;
+	Entity* lion1;
+	Entity* lion2;
+	Entity* lion3;
 
 	DirectionalLight light;
 
