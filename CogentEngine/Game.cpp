@@ -39,9 +39,6 @@ Game::~Game()
 
 	delete mesh1;
 	delete camera;
-	delete lion1;
-	delete lion2;
-	delete lion3;
 
 	for (auto e : entities)
 	{
@@ -235,11 +232,7 @@ void Game::CreateBasicGeometry()
 
 	void* gpuAddress;
 	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
-	//char* address = reinterpret_cast<char*>(gpuAddress);
-	//for (int i = 0; i < 3; ++i)
-	//{
-	//	entities.push_back(new Entity(mesh1, address + i * bufferSize));
-	//}
+
 
 	auto incrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
@@ -249,11 +242,13 @@ void Game::CreateBasicGeometry()
 	char* address2 = address1 + bufferSize;
 	char* address3 = address2 + bufferSize;
 
-	lion1 = new Entity(mesh1, address1, handle);
-	handle.ptr += incrementSize;
-	lion2 = new Entity(mesh1, address2, handle);
-	handle.ptr += incrementSize;
-	lion3 = new Entity(mesh1, address3, handle);
+	char* address = reinterpret_cast<char*>(gpuAddress);
+	for (int i = 0; i < 3; ++i)
+	{
+		entities.push_back(new Entity(mesh1, (address + (i * bufferSize)), handle));
+		handle.ptr += incrementSize;
+	}
+
 	CloseExecuteAndResetCommandList();
 }
 
@@ -416,10 +411,11 @@ void Game::DrawEntity(Entity * entity)
 	pixelData.dirLight = light;
 
 	memcpy(entity->GetAddress(), &vertexData, sizeof(VertShaderExternalData));
+	commandList->SetGraphicsRootDescriptorTable(0, entity->GetHandle());
 
 	DrawMesh(entity->GetMesh());
 
-	commandList->SetGraphicsRootDescriptorTable(0, entity->GetHandle());
+	
 }
 
 
@@ -452,8 +448,8 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
-	lion2->SetPosition(job2.pos);
-	lion3->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
+	entities[1]->SetPosition(job2.pos);
+	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
 
 
 	if (job1.IsCompleted())
@@ -561,15 +557,17 @@ void Game::Draw(float deltaTime, float totalTime)
 			vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 		// Draw outline for mesh 
-		DrawEntity(lion1);
-		DrawEntity(lion2);
-		DrawEntity(lion3);
+		for (auto e : entities)
+		{
+			DrawEntity(e);
+		}
 
 		//Draw cel shaded mesh
 		commandList->SetPipelineState(pipeState);
-		DrawEntity(lion1);
-		DrawEntity(lion2);
-		DrawEntity(lion3);
+		for (auto e : entities)
+		{
+			DrawEntity(e);
+		}
 
 	}
 
