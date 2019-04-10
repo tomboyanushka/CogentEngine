@@ -2,12 +2,13 @@
 
 
 
-Entity::Entity(Mesh * mesh, char* address)
+Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp)
 {
 	this->mesh = mesh;
 	this->SetPosition(XMFLOAT3(0.0, 0.0, 0.0));
 	this->SetScale(XMFLOAT3(1.0, 1.0, 1.0));
 	this->gpuAddress = address;
+	this->handle = hp;
 }
 
 Entity::~Entity()
@@ -88,4 +89,9 @@ void Entity::UpdateWorldMatrix()
 char * Entity::GetAddress()
 {
 	return gpuAddress;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE Entity::GetHandle()
+{
+	return handle;
 }

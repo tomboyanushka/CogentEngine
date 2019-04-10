@@ -226,6 +226,8 @@ void Game::CreateMatrices()
 void Game::CreateBasicGeometry()
 {
 	mesh1 = new Mesh("../../Assets/Models/Lion.obj", device, commandList);
+
+
 	//entities.push_back(new Entity(mesh1));
 	unsigned int bufferSize = sizeof(VertShaderExternalData);
 	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
@@ -233,14 +235,25 @@ void Game::CreateBasicGeometry()
 
 	void* gpuAddress;
 	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
+	//char* address = reinterpret_cast<char*>(gpuAddress);
+	//for (int i = 0; i < 3; ++i)
+	//{
+	//	entities.push_back(new Entity(mesh1, address + i * bufferSize));
+	//}
 
+	auto incrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
+	handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
+	
 	char* address1 = reinterpret_cast<char*>(gpuAddress);
 	char* address2 = address1 + bufferSize;
 	char* address3 = address2 + bufferSize;
 
-	lion1 = new Entity(mesh1, address1);
-	lion2 = new Entity(mesh1, address2);
-	lion3 = new Entity(mesh1, address3);
+	lion1 = new Entity(mesh1, address1, handle);
+	handle.ptr += incrementSize;
+	lion2 = new Entity(mesh1, address2, handle);
+	handle.ptr += incrementSize;
+	lion3 = new Entity(mesh1, address3, handle);
 	CloseExecuteAndResetCommandList();
 }
 
@@ -405,6 +418,8 @@ void Game::DrawEntity(Entity * entity)
 	memcpy(entity->GetAddress(), &vertexData, sizeof(VertShaderExternalData));
 
 	DrawMesh(entity->GetMesh());
+
+	commandList->SetGraphicsRootDescriptorTable(0, entity->GetHandle());
 }
 
 
@@ -520,10 +535,10 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->SetGraphicsRootSignature(rootSignature);
 
 		auto incrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
-		D3D12_GPU_DESCRIPTOR_HANDLE pixelHandle = {};
-		handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
+		//D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
+		//handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
 
+		D3D12_GPU_DESCRIPTOR_HANDLE pixelHandle = {};
 		pixelHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + (3 * incrementSize);
 
 		// Set up other commands for rendering
@@ -545,28 +560,15 @@ void Game::Draw(float deltaTime, float totalTime)
 			0,
 			vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
-
-		// Draw outline for mesh 1
+		// Draw outline for mesh 
 		DrawEntity(lion1);
-		commandList->SetPipelineState(pipeState);
-		DrawEntity(lion1);
-
-		handle.ptr = handle.ptr + incrementSize;
-		commandList->SetGraphicsRootDescriptorTable(
-			0,
-			handle);
-		commandList->SetPipelineState(pipeState2);
 		DrawEntity(lion2);
-		commandList->SetPipelineState(pipeState);
-		DrawEntity(lion2);
-
-		handle.ptr += incrementSize;
-		commandList->SetGraphicsRootDescriptorTable(
-			0,
-			handle);
-		commandList->SetPipelineState(pipeState2);
 		DrawEntity(lion3);
+
+		//Draw cel shaded mesh
 		commandList->SetPipelineState(pipeState);
+		DrawEntity(lion1);
+		DrawEntity(lion2);
 		DrawEntity(lion3);
 
 	}

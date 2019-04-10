@@ -5,7 +5,7 @@ using namespace DirectX;
 class Entity
 {
 public:
-	Entity(Mesh* mesh, char* address);
+	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp);
 	~Entity();
 
 	//VertShaderExternalData* data;
@@ -21,6 +21,8 @@ public:
 	XMFLOAT4X4 GetWorldMatrix();
 	void UpdateWorldMatrix();
 	char* GetAddress();
+	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
+	
 
 private:
 	XMFLOAT4X4 worldMatrix;
@@ -29,6 +31,8 @@ private:
 	XMFLOAT3 scale;
 	Mesh* mesh;
 	char* gpuAddress;
+	D3D12_GPU_DESCRIPTOR_HANDLE handle; // = {};
+	UINT64 handlePtr;
 
 };
 
