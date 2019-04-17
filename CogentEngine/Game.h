@@ -24,6 +24,9 @@ public:
 	Game(HINSTANCE hInstance);
 	~Game();
 
+
+	int numEntities = 4;
+
 	// Overridden setup and game loop methods, which
 	// will be called automatically
 	void Init();
@@ -92,6 +95,7 @@ private:
 	Mesh* mesh3;
 
 	std::vector<Entity*> entities;
+
 
 	Entity* lion1;
 	Entity* lion2;

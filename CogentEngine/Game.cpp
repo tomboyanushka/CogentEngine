@@ -38,6 +38,7 @@ Game::~Game()
 	WaitForGPU();
 
 	delete mesh1;
+	delete mesh2;
 	delete camera;
 
 	for (auto e : entities)
@@ -59,6 +60,7 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
+	//ambient diffuse direction intensity
 	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.7f, +0.2f, +0.2f, +1.0f), XMFLOAT3(+1.0f, +0.0f, 0.8f), float(5) };
 	// Reset the command list to start
 	commandAllocator->Reset();
@@ -96,7 +98,7 @@ void Game::LoadShaders()
 	D3D12_DESCRIPTOR_HEAP_DESC cbDesc = {};
 	cbDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbDesc.NodeMask = 0;
-	cbDesc.NumDescriptors = 4;
+	cbDesc.NumDescriptors = numEntities + 1;
 	cbDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	device->CreateDescriptorHeap(&cbDesc, IID_PPV_ARGS(&vsConstBufferDescriptorHeap));
 
@@ -126,7 +128,7 @@ void Game::LoadShaders()
 	resDesc.MipLevels = 1;
 	resDesc.SampleDesc.Count = 1;
 	resDesc.SampleDesc.Quality = 0;
-	resDesc.Width = 3 * bufferSize + pixelBufferSize;
+	resDesc.Width = numEntities * bufferSize + pixelBufferSize;
 
 	auto incrementSize = device->GetDescriptorHandleIncrementSize(cbDesc.Type);
 
@@ -146,18 +148,30 @@ void Game::LoadShaders()
 	device->CreateConstantBufferView(&cbvDesc, vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	D3D12_CPU_DESCRIPTOR_HANDLE handle = {};
-	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(incrementSize);
-	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + bufferSize;
-	device->CreateConstantBufferView(&cbvDesc, handle);
 
-	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(2 * incrementSize);
-	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (2 * bufferSize);
-	device->CreateConstantBufferView(&cbvDesc, handle);
+	for (int i = 1; i < numEntities; ++i)
+	{
+		handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(i * incrementSize);
+		cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (i * bufferSize);
+		device->CreateConstantBufferView(&cbvDesc, handle);
+	}
+
+	//handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(incrementSize);
+	//cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + bufferSize;
+	//device->CreateConstantBufferView(&cbvDesc, handle);
+
+	//handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(2 * incrementSize);
+	//cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (2 * bufferSize);
+	//device->CreateConstantBufferView(&cbvDesc, handle);
+
+	//handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(3 * incrementSize);
+	//cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (3 * bufferSize);
+	//device->CreateConstantBufferView(&cbvDesc, handle);
 
 
-	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(3 * incrementSize);
+	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(numEntities * incrementSize);
 	cbvDesc.SizeInBytes = pixelBufferSize;
-	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (3 * bufferSize);
+	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (numEntities * bufferSize);
 	device->CreateConstantBufferView(&cbvDesc, handle);
 
 
@@ -223,6 +237,7 @@ void Game::CreateMatrices()
 void Game::CreateBasicGeometry()
 {
 	mesh1 = new Mesh("../../Assets/Models/Lion.obj", device, commandList);
+	mesh2 = new Mesh("../../Assets/Models/quad.obj", device, commandList);
 
 
 	//entities.push_back(new Entity(mesh1));
@@ -238,9 +253,6 @@ void Game::CreateBasicGeometry()
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
 	handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
 	
-	char* address1 = reinterpret_cast<char*>(gpuAddress);
-	char* address2 = address1 + bufferSize;
-	char* address3 = address2 + bufferSize;
 
 	char* address = reinterpret_cast<char*>(gpuAddress);
 	for (int i = 0; i < 3; ++i)
@@ -248,6 +260,8 @@ void Game::CreateBasicGeometry()
 		entities.push_back(new Entity(mesh1, (address + (i * bufferSize)), handle));
 		handle.ptr += incrementSize;
 	}
+	entities.push_back(new Entity(mesh2, (address + (3 * bufferSize)), handle));
+	handle.ptr += incrementSize;
 
 	CloseExecuteAndResetCommandList();
 }
@@ -480,7 +494,7 @@ void Game::Update(float deltaTime, float totalTime)
 	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
 
 	char* address = reinterpret_cast<char*>(gpuAddress);
-	memcpy(address + (3 * bufferSize), &pixelData, sizeof(PixelShaderExternalData));
+	memcpy(address + (numEntities * bufferSize), &pixelData, sizeof(PixelShaderExternalData));
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
