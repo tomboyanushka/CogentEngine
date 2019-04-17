@@ -61,7 +61,7 @@ Game::~Game()
 void Game::Init()
 {
 	//ambient diffuse direction intensity
-	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.7f, +0.2f, +0.2f, +1.0f), XMFLOAT3(+1.0f, +0.0f, 0.8f), float(5) };
+	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.7f, +0.2f, +0.2f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(5) };
 	// Reset the command list to start
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
@@ -464,6 +464,9 @@ void Game::Update(float deltaTime, float totalTime)
 
 	entities[1]->SetPosition(job2.pos);
 	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
+	entities[3]->SetScale(XMFLOAT3(20, 20, 20));
+	entities[3]->SetPosition(XMFLOAT3(0, -5, 0));
+	
 
 
 	if (job1.IsCompleted())
@@ -549,7 +552,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		//handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
 
 		D3D12_GPU_DESCRIPTOR_HANDLE pixelHandle = {};
-		pixelHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + (3 * incrementSize);
+		pixelHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + (numEntities * incrementSize);
 
 		// Set up other commands for rendering
 		commandList->OMSetRenderTargets(1, &rtvHandles[currentSwapBuffer], true, &dsvHandle);
