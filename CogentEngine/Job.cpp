@@ -3,13 +3,13 @@
 
 void MyJob::Execute()
 {
-	cout << 1;
+	//cout << 1;
 	this_thread::sleep_for(50ms);
 }
 
 void MyJob::Callback()
 {
-	cout << "Test \n";
+	//cout << "Test \n";
 }
 
 void UpdatePosJob::Execute()
@@ -21,5 +21,5 @@ void UpdatePosJob::Execute()
 
 void UpdatePosJob::Callback()
 {
-	cout << "Job 2 \n";
+	//cout << "Job 2 \n";
 }

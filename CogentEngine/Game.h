@@ -14,6 +14,8 @@
 #include "Mesh.h"
 #include "Entity.h"
 
+#include "AStar.h"
+
 
 
 class Game
@@ -34,6 +36,7 @@ public:
 	void Update(float deltaTime, float totalTime);
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
+	void CreateNavmesh();
 
 	// Overridden mouse input helper methods
 	void OnMouseDown(WPARAM buttonState, int x, int y);

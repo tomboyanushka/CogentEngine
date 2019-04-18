@@ -74,6 +74,8 @@ void Game::Init()
 	CreateBasicGeometry();
 	CreateRootSigAndPipelineState();
 
+	CreateNavmesh();
+
 	// Wait here until GPU is actually done
 	WaitForGPU();
 }
@@ -252,7 +254,7 @@ void Game::CreateBasicGeometry()
 	auto incrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
 	handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
-	
+
 
 	char* address = reinterpret_cast<char*>(gpuAddress);
 	for (int i = 0; i < 3; ++i)
@@ -429,7 +431,7 @@ void Game::DrawEntity(Entity * entity)
 
 	DrawMesh(entity->GetMesh());
 
-	
+
 }
 
 
@@ -462,11 +464,12 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
+
 	entities[1]->SetPosition(job2.pos);
 	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
 	entities[3]->SetScale(XMFLOAT3(20, 20, 20));
 	entities[3]->SetPosition(XMFLOAT3(0, -5, 0));
-	
+
 
 
 	if (job1.IsCompleted())
@@ -586,6 +589,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			DrawEntity(e);
 		}
 
+
 	}
 
 	// Present
@@ -620,6 +624,21 @@ void Game::DrawMesh(Mesh* mesh)
 	commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
 	// Draw
 	commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
+}
+
+void Game::CreateNavmesh()
+{
+	AStar::Generator generator;
+	generator.setWorldSize({ 20,20 });
+	generator.setHeuristic(AStar::Heuristic::euclidean);
+	generator.setDiagonalMovement(true);
+	generator.addCollision({ 13,13 });
+
+	auto path = generator.findPath({ 0, 0 }, { 15, 15 });
+	for (auto& coordinate : path)
+	{
+		cout << coordinate.x << " " << coordinate.y << "\n";
+	}
 }
 
 
