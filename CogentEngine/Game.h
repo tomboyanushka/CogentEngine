@@ -37,6 +37,7 @@ public:
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
 	void CreateNavmesh();
+	AStar::CoordinateList FindPath(AStar::Vec2i source, AStar::Vec2i target);
 
 	// Overridden mouse input helper methods
 	void OnMouseDown(WPARAM buttonState, int x, int y);
@@ -107,6 +108,8 @@ private:
 	DirectionalLight light;
 
 	Camera* camera;
+
+	AStar::Generator generator;
 
 	void DrawEntity(Entity* entity);
 

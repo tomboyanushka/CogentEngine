@@ -628,18 +628,25 @@ void Game::DrawMesh(Mesh* mesh)
 
 void Game::CreateNavmesh()
 {
-	AStar::Generator generator;
 	generator.setWorldSize({ 20,20 });
 	generator.setHeuristic(AStar::Heuristic::euclidean);
 	generator.setDiagonalMovement(true);
 	generator.addCollision({ 13,13 });
 
-	auto path = generator.findPath({ 0, 0 }, { 15, 15 });
-	for (auto& coordinate : path)
-	{
-		cout << coordinate.x << " " << coordinate.y << "\n";
-	}
+	//auto path = FindPath({ 0,0 }, { 19,19 });
+	//for (auto& coordinate : path)
+	//{
+	//	cout << coordinate.x << " " << coordinate.y << "\n";
+	//}
 }
+
+AStar::CoordinateList Game::FindPath(AStar::Vec2i source, AStar::Vec2i target)
+{
+	auto path = generator.findPath(source, target);
+	return path;
+}
+
+
 
 
 #pragma region Mouse Input
