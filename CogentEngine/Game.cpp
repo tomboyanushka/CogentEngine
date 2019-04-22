@@ -39,6 +39,7 @@ Game::~Game()
 
 	delete mesh1;
 	delete mesh2;
+	delete mesh3;
 	delete camera;
 
 	for (auto e : entities)
@@ -74,7 +75,11 @@ void Game::Init()
 	CreateBasicGeometry();
 	CreateRootSigAndPipelineState();
 
+	//AI Initialization
+	entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
+	currentIndex = 0;
 	CreateNavmesh();
+	path = FindPath({ 0,0 }, {15,15});
 
 	// Wait here until GPU is actually done
 	WaitForGPU();
@@ -158,19 +163,6 @@ void Game::LoadShaders()
 		device->CreateConstantBufferView(&cbvDesc, handle);
 	}
 
-	//handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(incrementSize);
-	//cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + bufferSize;
-	//device->CreateConstantBufferView(&cbvDesc, handle);
-
-	//handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(2 * incrementSize);
-	//cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (2 * bufferSize);
-	//device->CreateConstantBufferView(&cbvDesc, handle);
-
-	//handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(3 * incrementSize);
-	//cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (3 * bufferSize);
-	//device->CreateConstantBufferView(&cbvDesc, handle);
-
-
 	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(numEntities * incrementSize);
 	cbvDesc.SizeInBytes = pixelBufferSize;
 	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (numEntities * bufferSize);
@@ -240,6 +232,7 @@ void Game::CreateBasicGeometry()
 {
 	mesh1 = new Mesh("../../Assets/Models/Lion.obj", device, commandList);
 	mesh2 = new Mesh("../../Assets/Models/quad.obj", device, commandList);
+	mesh3 = new Mesh("../../Assets/Models/cube.obj", device, commandList);
 
 
 	//entities.push_back(new Entity(mesh1));
@@ -464,11 +457,30 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
+	//entities[0]->SetPosition(XMFLOAT3(4, -4, 4));
+	XMVECTOR currentPos = XMLoadFloat3(&entities[0]->position);
+	XMVECTOR targetPos;
+	
+
+	if (currentIndex < path.size())
+	{
+		XMFLOAT3 newPosition = XMFLOAT3(path[path.size() - currentIndex - 1].x, -4.0f, path[path.size() - currentIndex - 1].y);
+		targetPos = XMLoadFloat3(&newPosition);
+		XMStoreFloat3(&entities[0]->position, MoveTowards(currentPos, targetPos, deltaTime));
+	}
+	entities[0]->SetMesh(mesh3);
+	entities[0]->position.y = -4;
 
 	entities[1]->SetPosition(job2.pos);
 	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
+
+
 	entities[3]->SetScale(XMFLOAT3(20, 20, 20));
-	entities[3]->SetPosition(XMFLOAT3(0, -5, 0));
+	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
+	
+	
+
+
 
 
 
@@ -645,6 +657,32 @@ AStar::CoordinateList Game::FindPath(AStar::Vec2i source, AStar::Vec2i target)
 	auto path = generator.findPath(source, target);
 	return path;
 }
+
+XMVECTOR Game::MoveTowards(XMVECTOR current, XMVECTOR target, float distanceDelta)
+{
+	XMVECTOR diff = XMVectorSubtract(target, current);
+	XMVECTOR length = XMVector3Length(diff);
+
+	float currentDist = 0;
+	XMStoreFloat(&currentDist, length);
+
+	if (currentDist <= distanceDelta || currentDist == 0)
+	{
+		currentIndex++;
+		return target;
+		
+	}
+	auto v = current + diff / currentDist * distanceDelta;
+	return v;
+}
+
+bool Game::HasReached(XMVECTOR current, XMVECTOR target)
+{
+	/*distance(current, target);*/
+	return false;
+}
+
+
 
 
 

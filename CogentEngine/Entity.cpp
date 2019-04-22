@@ -49,6 +49,11 @@ Mesh * Entity::GetMesh()
 	return mesh;
 }
 
+void Entity::SetMesh(Mesh * mesh)
+{
+	this->mesh = mesh;
+}
+
 XMFLOAT4X4 Entity::GetWorldMatrix()
 {
 	//coverting them to vectors
@@ -77,12 +82,13 @@ XMFLOAT4X4 Entity::GetWorldMatrix()
 void Entity::UpdateWorldMatrix()
 {
 	XMMATRIX trans = XMMatrixTranslation(position.x, position.y, position.z);
-	XMMATRIX rotX = XMMatrixRotationX(rotation.x);
-	XMMATRIX rotY = XMMatrixRotationY(rotation.y);
-	XMMATRIX rotZ = XMMatrixRotationZ(rotation.z);
+	XMMATRIX rot = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+	//XMMATRIX rotX = XMMatrixRotationX(rotation.x);
+	//XMMATRIX rotY = XMMatrixRotationY(rotation.y);
+	//XMMATRIX rotZ = XMMatrixRotationZ(rotation.z);
 	XMMATRIX sc = XMMatrixScaling(scale.x, scale.y, scale.z);
 
-	XMMATRIX total = sc * rotZ * rotY * rotX * trans;
+	XMMATRIX total = sc * rot * trans;
 	XMStoreFloat4x4(&worldMatrix, XMMatrixTranspose(total));
 }
 

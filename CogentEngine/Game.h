@@ -16,8 +16,6 @@
 
 #include "AStar.h"
 
-
-
 class Game
 	: public DXCore
 {
@@ -26,8 +24,12 @@ public:
 	Game(HINSTANCE hInstance);
 	~Game();
 
-
+	//ints
 	int numEntities = 4;
+	int currentIndex;
+
+
+	AStar::CoordinateList path;
 
 	// Overridden setup and game loop methods, which
 	// will be called automatically
@@ -38,6 +40,8 @@ public:
 	void DrawMesh(Mesh* mesh);
 	void CreateNavmesh();
 	AStar::CoordinateList FindPath(AStar::Vec2i source, AStar::Vec2i target);
+	XMVECTOR MoveTowards(XMVECTOR current, XMVECTOR target, float distanceDelta);
+	bool HasReached(XMVECTOR current, XMVECTOR target);
 
 	// Overridden mouse input helper methods
 	void OnMouseDown(WPARAM buttonState, int x, int y);
