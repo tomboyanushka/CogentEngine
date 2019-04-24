@@ -477,7 +477,7 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
 	
 	entities[4]->SetMesh(cube);
-	entities[4]->SetPosition(XMFLOAT3(13, -4, 13));
+	entities[4]->SetPosition(XMFLOAT3(14, -4, 13));
 
 	entities[5]->SetMesh(cube);
 	entities[5]->SetPosition(XMFLOAT3(6, -4, 6));
@@ -644,7 +644,7 @@ void Game::CreateNavmesh()
 	generator.setWorldSize({ 20, 20 });
 	generator.setHeuristic(AStar::Heuristic::euclidean);
 	generator.setDiagonalMovement(true);
-	AddCollider(generator, { 13, 13 });
+	AddCollider(generator, { 14, 13 });
 	AddCollider(generator, { 6, 6 });
 	/*generator.addCollision({ 6,8 });*/
 
