@@ -29,3 +29,13 @@ public:
 	virtual void Callback() override;
 
 };
+
+class PathFinder : public IJob
+{
+public:
+
+	// Inherited via IJob
+	virtual void Execute() override;
+	virtual void Callback() override;
+
+};

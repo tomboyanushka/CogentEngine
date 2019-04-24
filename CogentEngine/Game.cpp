@@ -37,9 +37,9 @@ Game::~Game()
 	// Don't clean up until GPU is actually done
 	WaitForGPU();
 
-	delete mesh1;
-	delete mesh2;
-	delete mesh3;
+	delete sphere;
+	delete quad;
+	delete cube;
 	delete camera;
 
 	for (auto e : entities)
@@ -79,7 +79,7 @@ void Game::Init()
 	entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
 	currentIndex = 0;
 	CreateNavmesh();
-	path = FindPath({ 0,0 }, {15,15});
+	path = FindPath({ 0,0 }, {16 , 16});
 
 	// Wait here until GPU is actually done
 	WaitForGPU();
@@ -230,9 +230,9 @@ void Game::CreateMatrices()
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	mesh1 = new Mesh("../../Assets/Models/Lion.obj", device, commandList);
-	mesh2 = new Mesh("../../Assets/Models/quad.obj", device, commandList);
-	mesh3 = new Mesh("../../Assets/Models/cube.obj", device, commandList);
+	sphere = new Mesh("../../Assets/Models/sphere.obj", device, commandList);
+	quad = new Mesh("../../Assets/Models/quad.obj", device, commandList);
+	cube = new Mesh("../../Assets/Models/cube.obj", device, commandList);
 
 
 	//entities.push_back(new Entity(mesh1));
@@ -250,13 +250,11 @@ void Game::CreateBasicGeometry()
 
 
 	char* address = reinterpret_cast<char*>(gpuAddress);
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < numEntities; ++i)
 	{
-		entities.push_back(new Entity(mesh1, (address + (i * bufferSize)), handle));
+		entities.push_back(new Entity(sphere, (address + (i * bufferSize)), handle));
 		handle.ptr += incrementSize;
 	}
-	entities.push_back(new Entity(mesh2, (address + (3 * bufferSize)), handle));
-	handle.ptr += incrementSize;
 
 	CloseExecuteAndResetCommandList();
 }
@@ -468,21 +466,24 @@ void Game::Update(float deltaTime, float totalTime)
 		targetPos = XMLoadFloat3(&newPosition);
 		XMStoreFloat3(&entities[0]->position, MoveTowards(currentPos, targetPos, deltaTime));
 	}
-	entities[0]->SetMesh(mesh3);
+	
 	entities[0]->position.y = -4;
 
 	entities[1]->SetPosition(job2.pos);
 	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
 
-
+	entities[3]->SetMesh(quad);
 	entities[3]->SetScale(XMFLOAT3(20, 20, 20));
 	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
 	
-	
+	entities[4]->SetMesh(cube);
+	entities[4]->SetPosition(XMFLOAT3(13, -4, 13));
 
+	entities[5]->SetMesh(cube);
+	entities[5]->SetPosition(XMFLOAT3(6, -4, 6));
 
-
-
+	entities[6]->SetScale(XMFLOAT3(0.3f, 0.3f, 0.3f));
+	entities[6]->SetPosition(XMFLOAT3(16, -4, 16));
 
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
@@ -495,7 +496,7 @@ void Game::Update(float deltaTime, float totalTime)
 		auto f2 = pool.Enqueue(&job2);
 	}
 
-
+	//for the callback functions
 	pool.ExecuteCallbacks();
 
 
@@ -640,16 +641,13 @@ void Game::DrawMesh(Mesh* mesh)
 
 void Game::CreateNavmesh()
 {
-	generator.setWorldSize({ 20,20 });
+	generator.setWorldSize({ 20, 20 });
 	generator.setHeuristic(AStar::Heuristic::euclidean);
 	generator.setDiagonalMovement(true);
-	generator.addCollision({ 13,13 });
+	AddCollider(generator, { 13, 13 });
+	AddCollider(generator, { 6, 6 });
+	/*generator.addCollision({ 6,8 });*/
 
-	//auto path = FindPath({ 0,0 }, { 19,19 });
-	//for (auto& coordinate : path)
-	//{
-	//	cout << coordinate.x << " " << coordinate.y << "\n";
-	//}
 }
 
 AStar::CoordinateList Game::FindPath(AStar::Vec2i source, AStar::Vec2i target)
@@ -676,16 +674,16 @@ XMVECTOR Game::MoveTowards(XMVECTOR current, XMVECTOR target, float distanceDelt
 	return v;
 }
 
-bool Game::HasReached(XMVECTOR current, XMVECTOR target)
+void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 {
-	/*distance(current, target);*/
-	return false;
+	generator.addCollision({ coordinates.x ,coordinates.y });
+	generator.addCollision({ coordinates.x , coordinates.y - 1 });
+	generator.addCollision({ coordinates.x ,coordinates.y + 1 });
+
+	generator.addCollision({ coordinates.x ,coordinates.y });
+	generator.addCollision({ coordinates.x + 1 , coordinates.y });
+	generator.addCollision({ coordinates.x - 1,coordinates.y });
 }
-
-
-
-
-
 
 #pragma region Mouse Input
 

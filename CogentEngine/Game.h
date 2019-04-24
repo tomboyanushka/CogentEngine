@@ -25,7 +25,7 @@ public:
 	~Game();
 
 	//ints
-	int numEntities = 4;
+	int numEntities = 7;
 	int currentIndex;
 
 
@@ -38,10 +38,12 @@ public:
 	void Update(float deltaTime, float totalTime);
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
+
+	///AI functions
 	void CreateNavmesh();
 	AStar::CoordinateList FindPath(AStar::Vec2i source, AStar::Vec2i target);
 	XMVECTOR MoveTowards(XMVECTOR current, XMVECTOR target, float distanceDelta);
-	bool HasReached(XMVECTOR current, XMVECTOR target);
+	void AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates);
 
 	// Overridden mouse input helper methods
 	void OnMouseDown(WPARAM buttonState, int x, int y);
@@ -96,18 +98,12 @@ private:
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projectionMatrix;
 
-	
-
-	Mesh* mesh1;
-	Mesh* mesh2;
-	Mesh* mesh3;
+	Mesh* sphere;
+	Mesh* quad;
+	Mesh* cube;
 
 	std::vector<Entity*> entities;
 
-
-	Entity* lion1;
-	Entity* lion2;
-	Entity* lion3;
 
 	DirectionalLight light;
 
@@ -120,6 +116,7 @@ private:
 	ThreadPool pool{ 4 };
 	MyJob job1;
 	UpdatePosJob job2;
+	PathFinder pathFinderJob;
 
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.

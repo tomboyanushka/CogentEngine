@@ -15,11 +15,20 @@ void MyJob::Callback()
 void UpdatePosJob::Execute()
 {
 	pos = DirectX::XMFLOAT3(sin(totalTime) - 6, 0, 0);
-	/*W = DirectX::XMMatrixTranslation(sin(totalTime) - 6, 0, 0);
-	XMStoreFloat4x4(&worldMatrix, DirectX::XMMatrixTranspose(W));*/
+
 }
 
 void UpdatePosJob::Callback()
 {
 	//cout << "Job 2 \n";
+}
+
+void PathFinder::Execute()
+{
+
+}
+
+void PathFinder::Callback()
+{
+
 }
