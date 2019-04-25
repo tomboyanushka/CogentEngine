@@ -9,6 +9,7 @@ Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp)
 	this->SetScale(XMFLOAT3(1.0, 1.0, 1.0));
 	this->gpuAddress = address;
 	this->handle = hp;
+	this->bounds = mesh->GetBounds();
 }
 
 Entity::~Entity()
@@ -23,6 +24,10 @@ void Entity::SetPosition(XMFLOAT3 setPos)
 void Entity::SetScale(XMFLOAT3 setScale)
 {
 	scale = setScale;
+	//this->bounds = GetBounds();
+	bounds.Extents.x *= setScale.x;
+	bounds.Extents.y *= setScale.y;
+	bounds.Extents.z *= setScale.z;
 }
 
 void Entity::SetRotation(XMFLOAT3 setRot)
@@ -100,4 +105,9 @@ char * Entity::GetAddress()
 D3D12_GPU_DESCRIPTOR_HANDLE Entity::GetHandle()
 {
 	return handle;
+}
+
+BoundingBox Entity::GetBounds()
+{
+	return bounds;
 }

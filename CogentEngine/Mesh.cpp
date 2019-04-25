@@ -1,7 +1,7 @@
 #include "Mesh.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-#include <DirectXCollision.h>
+
 
 
 Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandList* commandList)
@@ -102,6 +102,11 @@ D3D12_VERTEX_BUFFER_VIEW &Mesh::GetVertexBufferView()
 D3D12_INDEX_BUFFER_VIEW &Mesh::GetIndexBufferView()
 {
 	return ibView;
+}
+
+BoundingBox Mesh::GetBounds()
+{
+	return bounds;
 }
 
 HRESULT Mesh::CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12Resource** uploadHeap)
@@ -238,6 +243,9 @@ void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t*
 		vMin = XMVectorMin(vMin, P);
 		vMax = XMVectorMax(vMax, P);
 	}
+	
+	XMStoreFloat3(&bounds.Center, 0.5f * (vMin + vMax));
+	XMStoreFloat3(&bounds.Extents, 0.5f * (vMax - vMin));
 	
 
 }

@@ -18,12 +18,15 @@ public:
 	void Move(float x, float y, float z);
 	void Rotate(float x, float y, float z);
 
+	
+
 	Mesh* GetMesh();
 	void SetMesh(Mesh* mesh);
 	XMFLOAT4X4 GetWorldMatrix();
 	void UpdateWorldMatrix();
 	char* GetAddress();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
+	BoundingBox GetBounds();
 	
 
 private:
@@ -35,6 +38,7 @@ private:
 	char* gpuAddress;
 	D3D12_GPU_DESCRIPTOR_HANDLE handle; // = {};
 	UINT64 handlePtr;
+	BoundingBox bounds;
 
 };
 

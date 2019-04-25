@@ -4,6 +4,7 @@
 #include <DirectXMath.h>
 #include "Vertex.h"
 #include <vector>
+#include <DirectXCollision.h>
 
 using namespace DirectX;
 class Mesh
@@ -18,6 +19,8 @@ public:
 	int GetIndexCount();
 	D3D12_VERTEX_BUFFER_VIEW &GetVertexBufferView();
 	D3D12_INDEX_BUFFER_VIEW &GetIndexBufferView();
+	BoundingBox GetBounds();
+	
 
 
 	HRESULT CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12Resource** uploadHeap);
@@ -35,6 +38,9 @@ private:
 	D3D12_INDEX_BUFFER_VIEW ibView;
 	uint32_t indexCount;
 	uint32_t vertexCount;
+
+	BoundingBox bounds;
+	
 
 };
 

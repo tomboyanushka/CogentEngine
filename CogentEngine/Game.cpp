@@ -474,6 +474,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	entities[3]->SetMesh(quad);
 	entities[3]->SetScale(XMFLOAT3(20, 20, 20));
+	//auto bounds = entities[3]->GetBounds();
 	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
 	
 	entities[4]->SetMesh(cube);
