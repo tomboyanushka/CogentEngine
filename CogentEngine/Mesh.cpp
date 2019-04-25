@@ -1,7 +1,7 @@
 #include "Mesh.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-
+#include <DirectXCollision.h>
 
 
 Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandList* commandList)
@@ -24,6 +24,7 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 	std::vector<tinyobj::material_t> materials;
 	std::string err;
 	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, &warnings, objFile);
+
 
 	for (size_t s = 0; s < shapes.size(); s++) {
 		// Loop over faces(polygon)
@@ -60,6 +61,7 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 
 			// per-face material
 			shapes[s].mesh.material_ids[f];
+			
 		}
 	}
 
@@ -225,4 +227,17 @@ void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t*
 	//// Create geometry buffers  ------------------------------------
 	CreateVertexBuffer(sizeof(Vertex), vertexCount, vertices, &vertexBuffer, &vbView, device, commandList);
 	CreateIndexBuffer(DXGI_FORMAT_R32_UINT, indexCount, indices, &indexBuffer, &ibView, device, commandList);
+	XMFLOAT3 vMinf3(FLT_MAX, FLT_MAX, FLT_MAX);
+	XMFLOAT3 vMaxf3(FLT_MIN, FLT_MIN, FLT_MIN);
+
+	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+	for (UINT i = 0; i < vertexCount; ++i)
+	{
+		XMVECTOR P = XMLoadFloat3(&vertices[i].Position);
+		vMin = XMVectorMin(vMin, P);
+		vMax = XMVectorMax(vMax, P);
+	}
+	
+
 }
