@@ -26,7 +26,7 @@ public:
 	void UpdateWorldMatrix();
 	char* GetAddress();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
-	BoundingBox GetBounds();
+	BoundingBox GetBoundingBox();
 	
 
 private:

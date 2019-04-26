@@ -686,6 +686,42 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 	generator.addCollision({ coordinates.x - 1,coordinates.y });
 }
 
+bool Game::IsIntersecting(Entity * entity, Camera * camera, int mouseX, int mouseY, float distance)
+{
+
+	uint16_t screenWidth = 1280;
+	uint16_t screenHeight = 720;
+	auto viewMatrix = XMLoadFloat4x4(&camera->GetViewMatrix());
+	auto projMatrix = XMLoadFloat4x4(&camera->GetProjectionMatrix());
+
+	auto orig = XMVector3Unproject(XMVectorSet(mouseX, mouseY, 0.f, 0.f),
+		0,
+		0,
+		screenWidth,
+		screenHeight,
+		0,
+		1,
+		projMatrix,
+		viewMatrix,
+		XMMatrixIdentity());
+
+	auto dest = XMVector3Unproject(XMVectorSet(mouseX, mouseY, 1.f, 0.f),
+		0,
+		0,
+		screenWidth,
+		screenHeight,
+		0,
+		1,
+		projMatrix,
+		viewMatrix,
+		XMMatrixIdentity());
+
+	auto direction = dest - orig;
+	direction = XMVector3Normalize(direction);
+
+	return entity->GetBoundingBox().Intersects(orig, direction, distance);
+}
+
 #pragma region Mouse Input
 
 // --------------------------------------------------------
@@ -705,6 +741,19 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	// events even if the mouse leaves the window.  we'll be
 	// releasing the capture once a mouse button is released
 	SetCapture(hWnd);
+
+	selectedEntities.clear();
+	for (int i = 0; i < entities.size(); ++i)
+	{
+		float distance = 5;
+		if (IsIntersecting(entities[i], camera, x, y, distance))
+		{
+			selectedEntities.push_back(entities[i]);
+			printf("Intersecting %d\n", i);
+			break;
+		}
+	}
+
 }
 
 // --------------------------------------------------------

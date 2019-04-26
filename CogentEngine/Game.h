@@ -45,6 +45,9 @@ public:
 	XMVECTOR MoveTowards(XMVECTOR current, XMVECTOR target, float distanceDelta);
 	void AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates);
 
+	///Ray picking
+	bool IsIntersecting(Entity* entity, Camera* camera, int mouseX, int mouseY, float distance);
+
 	// Overridden mouse input helper methods
 	void OnMouseDown(WPARAM buttonState, int x, int y);
 	void OnMouseUp(WPARAM buttonState, int x, int y);
@@ -103,6 +106,8 @@ private:
 	Mesh* cube;
 
 	std::vector<Entity*> entities;
+	std::vector<Entity*> selectedEntities;
+
 
 
 	DirectionalLight light;

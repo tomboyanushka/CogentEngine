@@ -104,7 +104,7 @@ D3D12_INDEX_BUFFER_VIEW &Mesh::GetIndexBufferView()
 	return ibView;
 }
 
-BoundingBox Mesh::GetBounds()
+BoundingBox Mesh::GetBoundingBox()
 {
 	return bounds;
 }
