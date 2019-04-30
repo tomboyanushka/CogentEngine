@@ -469,10 +469,12 @@ void Game::Update(float deltaTime, float totalTime)
 	
 	entities[0]->position.y = -4;
 
+	
 	entities[1]->SetPosition(job2.pos);
 	auto bounds = entities[1]->GetBoundingOrientedBox();
 	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
 
+	/*entities[3]->Rotate(0.1, 0, 0);*/
 	entities[3]->SetMesh(quad);
 	entities[3]->SetScale(XMFLOAT3(1, 1, 1));
 	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));

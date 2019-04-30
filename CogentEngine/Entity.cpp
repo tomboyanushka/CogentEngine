@@ -19,7 +19,6 @@ Entity::~Entity()
 void Entity::SetPosition(XMFLOAT3 setPos)
 {
 	position = setPos;
-	
 }
 
 void Entity::SetScale(XMFLOAT3 setScale)
@@ -58,7 +57,7 @@ Mesh * Entity::GetMesh()
 void Entity::SetMesh(Mesh * mesh)
 {
 	this->mesh = mesh;
-	boundingOrientedBox = mesh->GetBoundingBox();
+	
 }
 
 XMFLOAT4X4 Entity::GetWorldMatrix()
@@ -113,6 +112,13 @@ BoundingOrientedBox & Entity::GetBoundingOrientedBox()
 {
 	BoundingOrientedBox box = mesh->GetBoundingBox();
 	box.Center = position;
+	box.Extents.x *= scale.x;
+	box.Extents.y *= scale.y;
+	box.Extents.z *= scale.z;
+	XMVECTOR quaternion = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&rotation));
+	XMFLOAT4 rotationQuaternion;
+	XMStoreFloat4(&rotationQuaternion, quaternion);
+	box.Orientation = rotationQuaternion;
 	return box;
 }
 
