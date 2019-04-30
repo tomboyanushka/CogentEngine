@@ -15,8 +15,8 @@ public:
 
 	//Getters
 	XMFLOAT3 GetPosition();
-	XMFLOAT4X4 GetViewMatrix();
-	XMFLOAT4X4 GetProjectionMatrix();
+	XMFLOAT4X4 GetViewMatrixTransposed();
+	XMFLOAT4X4 GetProjectionMatrixTransposed();
 
 
 	void Update(float dt);

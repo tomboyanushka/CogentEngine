@@ -46,7 +46,7 @@ public:
 	void AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates);
 
 	///Ray picking
-	bool IsIntersecting(Entity* entity, Camera* camera, int mouseX, int mouseY, float distance);
+	bool IsIntersecting(DirectX::BoundingOrientedBox boundingBox, Camera* camera, int mouseX, int mouseY, float& distance);
 
 	// Overridden mouse input helper methods
 	void OnMouseDown(WPARAM buttonState, int x, int y);

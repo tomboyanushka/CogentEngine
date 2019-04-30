@@ -52,12 +52,12 @@ XMFLOAT3 Camera::GetPosition()
 	return position;
 }
 
-XMFLOAT4X4 Camera::GetViewMatrix()
+XMFLOAT4X4 Camera::GetViewMatrixTransposed()
 {
 	return viewMatrix;
 }
 
-XMFLOAT4X4 Camera::GetProjectionMatrix()
+XMFLOAT4X4 Camera::GetProjectionMatrixTransposed()
 {
 	return projMatrix;
 }

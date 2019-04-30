@@ -411,8 +411,8 @@ void Game::DrawEntity(Entity * entity)
 {
 	VertShaderExternalData vertexData = {};
 	vertexData.world = entity->GetWorldMatrix();
-	vertexData.view = camera->GetViewMatrix();
-	vertexData.proj = camera->GetProjectionMatrix();
+	vertexData.view = camera->GetViewMatrixTransposed();
+	vertexData.proj = camera->GetProjectionMatrixTransposed();
 
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.dirLight = light;
@@ -470,12 +470,13 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[0]->position.y = -4;
 
 	entities[1]->SetPosition(job2.pos);
+	auto bounds = entities[1]->GetBoundingOrientedBox();
 	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
 
 	entities[3]->SetMesh(quad);
-	entities[3]->SetScale(XMFLOAT3(20, 20, 20));
-	//auto bounds = entities[3]->GetBounds();
+	entities[3]->SetScale(XMFLOAT3(1, 1, 1));
 	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
+	
 	
 	entities[4]->SetMesh(cube);
 	entities[4]->SetPosition(XMFLOAT3(14, -4, 13));
@@ -686,13 +687,13 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 	generator.addCollision({ coordinates.x - 1,coordinates.y });
 }
 
-bool Game::IsIntersecting(Entity * entity, Camera * camera, int mouseX, int mouseY, float distance)
+bool Game::IsIntersecting(DirectX::BoundingOrientedBox boundingBox, Camera * camera, int mouseX, int mouseY, float& distance)
 {
 
 	uint16_t screenWidth = 1280;
 	uint16_t screenHeight = 720;
-	auto viewMatrix = XMLoadFloat4x4(&camera->GetViewMatrix());
-	auto projMatrix = XMLoadFloat4x4(&camera->GetProjectionMatrix());
+	auto viewMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetViewMatrixTransposed()));
+	auto projMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetProjectionMatrixTransposed()));
 
 	auto orig = XMVector3Unproject(XMVectorSet(mouseX, mouseY, 0.f, 0.f),
 		0,
@@ -718,8 +719,8 @@ bool Game::IsIntersecting(Entity * entity, Camera * camera, int mouseX, int mous
 
 	auto direction = dest - orig;
 	direction = XMVector3Normalize(direction);
-
-	return entity->GetBoundingBox().Intersects(orig, direction, distance);
+	bool intersecting = boundingBox.Intersects(orig, direction, distance);
+	return intersecting;
 }
 
 #pragma region Mouse Input
@@ -741,18 +742,18 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	// events even if the mouse leaves the window.  we'll be
 	// releasing the capture once a mouse button is released
 	SetCapture(hWnd);
-
+	float distance;
 	selectedEntities.clear();
 	for (int i = 0; i < entities.size(); ++i)
 	{
-		float distance = 5;
-		if (IsIntersecting(entities[i], camera, x, y, distance))
+		if (IsIntersecting(entities[i]->GetBoundingOrientedBox(), camera, x, y, distance))
 		{
 			selectedEntities.push_back(entities[i]);
 			printf("Intersecting %d\n", i);
 			break;
 		}
 	}
+
 
 }
 

@@ -104,10 +104,11 @@ D3D12_INDEX_BUFFER_VIEW &Mesh::GetIndexBufferView()
 	return ibView;
 }
 
-BoundingBox Mesh::GetBoundingBox()
+BoundingOrientedBox & Mesh::GetBoundingBox()
 {
-	return bounds;
+	return boundingBox;
 }
+
 
 HRESULT Mesh::CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12Resource** uploadHeap)
 {
@@ -244,8 +245,8 @@ void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t*
 		vMax = XMVectorMax(vMax, P);
 	}
 	
-	XMStoreFloat3(&bounds.Center, 0.5f * (vMin + vMax));
-	XMStoreFloat3(&bounds.Extents, 0.5f * (vMax - vMin));
+	XMStoreFloat3(&boundingBox.Center, 0.5f * (vMin + vMax));
+	XMStoreFloat3(&boundingBox.Extents, 0.5f * (vMax - vMin));
 	
 
 }

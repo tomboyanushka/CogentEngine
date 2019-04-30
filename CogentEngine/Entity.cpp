@@ -9,7 +9,7 @@ Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp)
 	this->SetScale(XMFLOAT3(1.0, 1.0, 1.0));
 	this->gpuAddress = address;
 	this->handle = hp;
-	this->bounds = mesh->GetBoundingBox();
+	this->boundingOrientedBox = mesh->GetBoundingBox();
 }
 
 Entity::~Entity()
@@ -19,15 +19,16 @@ Entity::~Entity()
 void Entity::SetPosition(XMFLOAT3 setPos)
 {
 	position = setPos;
+	
 }
 
 void Entity::SetScale(XMFLOAT3 setScale)
 {
 	scale = setScale;
-	this->bounds = GetBoundingBox();
-	bounds.Extents.x *= setScale.x;
-	bounds.Extents.y *= setScale.y;
-	bounds.Extents.z *= setScale.z;
+	this->boundingOrientedBox = GetBoundingOrientedBox();
+	boundingOrientedBox.Extents.x *= setScale.x;
+	boundingOrientedBox.Extents.y *= setScale.y;
+	boundingOrientedBox.Extents.z *= setScale.z;
 }
 
 void Entity::SetRotation(XMFLOAT3 setRot)
@@ -57,6 +58,7 @@ Mesh * Entity::GetMesh()
 void Entity::SetMesh(Mesh * mesh)
 {
 	this->mesh = mesh;
+	boundingOrientedBox = mesh->GetBoundingBox();
 }
 
 XMFLOAT4X4 Entity::GetWorldMatrix()
@@ -107,7 +109,10 @@ D3D12_GPU_DESCRIPTOR_HANDLE Entity::GetHandle()
 	return handle;
 }
 
-BoundingBox Entity::GetBoundingBox()
+BoundingOrientedBox & Entity::GetBoundingOrientedBox()
 {
-	return bounds;
+	BoundingOrientedBox box = mesh->GetBoundingBox();
+	box.Center = position;
+	return box;
 }
+

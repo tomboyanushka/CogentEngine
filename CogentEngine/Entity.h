@@ -26,7 +26,7 @@ public:
 	void UpdateWorldMatrix();
 	char* GetAddress();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
-	BoundingBox GetBoundingBox();
+	BoundingOrientedBox& GetBoundingOrientedBox();
 	
 
 private:
@@ -38,7 +38,7 @@ private:
 	char* gpuAddress;
 	D3D12_GPU_DESCRIPTOR_HANDLE handle; // = {};
 	UINT64 handlePtr;
-	BoundingBox bounds;
+	BoundingOrientedBox boundingOrientedBox;
 
 };
 
