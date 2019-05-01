@@ -79,7 +79,7 @@ void Game::Init()
 	entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
 	currentIndex = 0;
 	CreateNavmesh();
-	path = FindPath({ 0,0 }, {16 , 16});
+	path = FindPath({ 0,0 }, { 16 , 16 });
 
 	// Wait here until GPU is actually done
 	WaitForGPU();
@@ -458,7 +458,7 @@ void Game::Update(float deltaTime, float totalTime)
 	//entities[0]->SetPosition(XMFLOAT3(4, -4, 4));
 	XMVECTOR currentPos = XMLoadFloat3(&entities[0]->position);
 	XMVECTOR targetPos;
-	
+
 
 	if (currentIndex < path.size())
 	{
@@ -466,10 +466,10 @@ void Game::Update(float deltaTime, float totalTime)
 		targetPos = XMLoadFloat3(&newPosition);
 		XMStoreFloat3(&entities[0]->position, MoveTowards(currentPos, targetPos, deltaTime));
 	}
-	
+
 	entities[0]->position.y = -4;
 
-	
+
 	entities[1]->SetPosition(job2.pos);
 	auto bounds = entities[1]->GetBoundingOrientedBox();
 	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
@@ -478,8 +478,8 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[3]->SetMesh(cube);
 	entities[3]->SetScale(XMFLOAT3(20, 0.5f, 20));
 	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
-	
-	
+
+
 	entities[4]->SetMesh(cube);
 	entities[4]->SetPosition(XMFLOAT3(14, -4, 13));
 
@@ -672,7 +672,7 @@ XMVECTOR Game::MoveTowards(XMVECTOR current, XMVECTOR target, float distanceDelt
 	{
 		currentIndex++;
 		return target;
-		
+
 	}
 	auto v = current + diff / currentDist * distanceDelta;
 	return v;
@@ -691,7 +691,7 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 
 bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouseY, float& distance)
 {
-	newDestination = XMFLOAT3(0,0,0);
+	newDestination = XMFLOAT3(0, 0, 0);
 	uint16_t screenWidth = 1280;
 	uint16_t screenHeight = 720;
 	auto viewMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetViewMatrixTransposed()));
@@ -723,10 +723,37 @@ bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouse
 	direction = XMVector3Normalize(direction);
 	auto box = entity->GetBoundingOrientedBox();
 	bool intersecting = box.Intersects(orig, direction, distance);
+
+	//world space to local space
 	float tMin = 0.0f;
+	XMMATRIX W = XMLoadFloat4x4(&entity->GetWorldMatrix());
+	XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
+	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(viewMatrix), viewMatrix);
+	XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(projMatrix), projMatrix);
+	XMFLOAT4X4 P;
+	XMStoreFloat4x4(&P, projMatrix);
+
+	// Tranform ray to vi space of Mesh.
+	XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
+	XMMATRIX toWorld = XMMatrixMultiply(invView, XMMatrixInverse(&XMMatrixDeterminant(toLocal), toLocal));
+
+	// Compute picking ray in view space.
+	float vx = (+2.0f* (float)mouseX / screenWidth - 1.0f) / P(0, 0);
+	float vy = (-2.0f* (float)mouseX / screenHeight + 1.0f) / P(1, 1);
+
+	// Ray definition in view space.
+	XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	XMVECTOR rayDir = XMVectorSet(vx, vy, 1.0f, 0.0f);
+
+	rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
+	rayDir = XMVector3TransformNormal(rayDir, toLocal);
+
+	// Make the ray direction unit length for the intersection tests.
+	rayDir = XMVector3Normalize(rayDir);
 
 	if (intersecting)
 	{
+		auto temp = orig + distance * direction;
 		auto mesh = entity->GetMesh();
 		auto vertices = mesh->GetVertices();
 		auto indices = mesh->GetIndices();
@@ -749,30 +776,33 @@ bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouse
 
 			// We have to iterate over all the triangles in order to find the nearest intersection.
 			float t = 0.0f;
+			//To Do: 
+			//if (TriangleTests::Intersects(rayOrigin, rayDir, v0, v1, v2, t))
+			//{
+			//	if (t < tMin)
+			//	{
+			//		tMin = t;
+			//		UINT pickedTriangle = i;
 
-			if (TriangleTests::Intersects(orig, direction, v0, v1, v2, t))
-			{
-				if (t < tMin)
-				{
-					tMin = t;
-					UINT pickedTriangle = i;
+			//		//mPickedRitem->Visible = true;
+			//		//mPickedRitem->IndexCount = 3;
+			//		//mPickedRitem->BaseVertexLocation = 0;
 
-					//mPickedRitem->Visible = true;
-					//mPickedRitem->IndexCount = 3;
-					//mPickedRitem->BaseVertexLocation = 0;
+			//		//// Picked render item needs same world matrix as object picked.
+			//		//mPickedRitem->World = ri->World;
+			//		//mPickedRitem->NumFramesDirty = gNumFrameResources;
 
-					//// Picked render item needs same world matrix as object picked.
-					//mPickedRitem->World = ri->World;
-					//mPickedRitem->NumFramesDirty = gNumFrameResources;
-
-					//// Offset to the picked triangle in the mesh index buffer.
-					//mPickedRitem->StartIndexLocation = 3 * pickedTriangle;
-				}
-			}
+			//		//// Offset to the picked triangle in the mesh index buffer.
+			//		//mPickedRitem->StartIndexLocation = 3 * pickedTriangle;
+			//	}
+			//}
 
 		}
-		
-		auto intersectionPoint = direction * tMin + orig;
+
+		auto intersectionPoint = direction * distance + orig;
+
+		//intersectionPoint = XMVector3TransformCoord(intersectionPoint,  W);
+
 		XMStoreFloat3(&newDestination, intersectionPoint);
 	}
 	return intersecting;
@@ -811,7 +841,7 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 
 	if (IsIntersecting(entities[3], camera, x, y, distance))
 	{
-		printf("Intersecting at %d %d %d\n", newDestination.x, newDestination.y, newDestination.z);
+		printf("Intersecting at %f %f %f\n", newDestination.x, newDestination.y, newDestination.z);
 	}
 
 }
