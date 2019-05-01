@@ -475,8 +475,8 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
 
 	/*entities[3]->Rotate(0.1, 0, 0);*/
-	entities[3]->SetMesh(quad);
-	entities[3]->SetScale(XMFLOAT3(1, 1, 1));
+	entities[3]->SetMesh(cube);
+	entities[3]->SetScale(XMFLOAT3(20, 0.5f, 20));
 	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
 	
 	
@@ -689,15 +689,15 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 	generator.addCollision({ coordinates.x - 1,coordinates.y });
 }
 
-bool Game::IsIntersecting(DirectX::BoundingOrientedBox boundingBox, Camera * camera, int mouseX, int mouseY, float& distance)
+bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouseY, float& distance)
 {
-
+	newDestination = XMFLOAT3(0,0,0);
 	uint16_t screenWidth = 1280;
 	uint16_t screenHeight = 720;
 	auto viewMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetViewMatrixTransposed()));
 	auto projMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetProjectionMatrixTransposed()));
 
-	auto orig = XMVector3Unproject(XMVectorSet(mouseX, mouseY, 0.f, 0.f),
+	auto orig = XMVector3Unproject(XMVectorSet((float)mouseX, (float)mouseY, 0.f, 0.f),
 		0,
 		0,
 		screenWidth,
@@ -708,7 +708,7 @@ bool Game::IsIntersecting(DirectX::BoundingOrientedBox boundingBox, Camera * cam
 		viewMatrix,
 		XMMatrixIdentity());
 
-	auto dest = XMVector3Unproject(XMVectorSet(mouseX, mouseY, 1.f, 0.f),
+	auto dest = XMVector3Unproject(XMVectorSet((float)mouseX, (float)mouseY, 1.f, 0.f),
 		0,
 		0,
 		screenWidth,
@@ -721,7 +721,60 @@ bool Game::IsIntersecting(DirectX::BoundingOrientedBox boundingBox, Camera * cam
 
 	auto direction = dest - orig;
 	direction = XMVector3Normalize(direction);
-	bool intersecting = boundingBox.Intersects(orig, direction, distance);
+	auto box = entity->GetBoundingOrientedBox();
+	bool intersecting = box.Intersects(orig, direction, distance);
+	float tMin = 0.0f;
+
+	if (intersecting)
+	{
+		auto mesh = entity->GetMesh();
+		auto vertices = mesh->GetVertices();
+		auto indices = mesh->GetIndices();
+
+		UINT triCount = mesh->GetIndexCount() / 3;
+
+		tMin = FLT_MAX;
+
+		for (UINT i = 0; i < triCount; ++i)
+		{
+			// Indices for this triangle.
+			UINT i0 = indices[i * 3 + 0];
+			UINT i1 = indices[i * 3 + 1];
+			UINT i2 = indices[i * 3 + 2];
+
+			// Vertices for this triangle.
+			XMVECTOR v0 = XMLoadFloat3(&vertices[i0].Position);
+			XMVECTOR v1 = XMLoadFloat3(&vertices[i1].Position);
+			XMVECTOR v2 = XMLoadFloat3(&vertices[i2].Position);
+
+			// We have to iterate over all the triangles in order to find the nearest intersection.
+			float t = 0.0f;
+
+			if (TriangleTests::Intersects(orig, direction, v0, v1, v2, t))
+			{
+				if (t < tMin)
+				{
+					tMin = t;
+					UINT pickedTriangle = i;
+
+					//mPickedRitem->Visible = true;
+					//mPickedRitem->IndexCount = 3;
+					//mPickedRitem->BaseVertexLocation = 0;
+
+					//// Picked render item needs same world matrix as object picked.
+					//mPickedRitem->World = ri->World;
+					//mPickedRitem->NumFramesDirty = gNumFrameResources;
+
+					//// Offset to the picked triangle in the mesh index buffer.
+					//mPickedRitem->StartIndexLocation = 3 * pickedTriangle;
+				}
+			}
+
+		}
+		
+		auto intersectionPoint = direction * tMin + orig;
+		XMStoreFloat3(&newDestination, intersectionPoint);
+	}
 	return intersecting;
 }
 
@@ -746,16 +799,20 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	SetCapture(hWnd);
 	float distance;
 	selectedEntities.clear();
-	for (int i = 0; i < entities.size(); ++i)
-	{
-		if (IsIntersecting(entities[i]->GetBoundingOrientedBox(), camera, x, y, distance))
-		{
-			selectedEntities.push_back(entities[i]);
-			printf("Intersecting %d\n", i);
-			break;
-		}
-	}
+	//for (int i = 0; i < entities.size(); ++i)
+	//{
+	//	if (IsIntersecting(entities[i]->GetBoundingOrientedBox(), camera, x, y, distance))
+	//	{
+	//		selectedEntities.push_back(entities[i]);
+	//		printf("Intersecting %d\n", i);
+	//		break;
+	//	}
+	//}
 
+	if (IsIntersecting(entities[3], camera, x, y, distance))
+	{
+		printf("Intersecting at %d %d %d\n", newDestination.x, newDestination.y, newDestination.z);
+	}
 
 }
 

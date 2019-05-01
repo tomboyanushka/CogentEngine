@@ -69,6 +69,8 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 	indexCount = uint32_t(indexVals.size());
 
 	CreateBasicGeometry(vertices.data(), vertexCount, indexVals.data(), indexCount, device, commandList);
+	this->vertices = vertices;
+	this->indices = indexVals;
 }
 
 Mesh::~Mesh()
@@ -107,6 +109,16 @@ D3D12_INDEX_BUFFER_VIEW &Mesh::GetIndexBufferView()
 BoundingOrientedBox & Mesh::GetBoundingBox()
 {
 	return boundingBox;
+}
+
+std::vector<Vertex> Mesh::GetVertices()
+{
+	return vertices;
+}
+
+std::vector<UINT> Mesh::GetIndices()
+{
+	return indices;
 }
 
 
@@ -233,6 +245,9 @@ void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t*
 	//// Create geometry buffers  ------------------------------------
 	CreateVertexBuffer(sizeof(Vertex), vertexCount, vertices, &vertexBuffer, &vbView, device, commandList);
 	CreateIndexBuffer(DXGI_FORMAT_R32_UINT, indexCount, indices, &indexBuffer, &ibView, device, commandList);
+
+
+
 	XMFLOAT3 vMinf3(FLT_MAX, FLT_MAX, FLT_MAX);
 	XMFLOAT3 vMaxf3(FLT_MIN, FLT_MIN, FLT_MIN);
 

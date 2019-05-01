@@ -20,7 +20,8 @@ public:
 	D3D12_VERTEX_BUFFER_VIEW &GetVertexBufferView();
 	D3D12_INDEX_BUFFER_VIEW &GetIndexBufferView();
 	BoundingOrientedBox& GetBoundingBox();
-	
+	std::vector<Vertex> GetVertices();
+	std::vector<UINT> GetIndices();
 
 
 	HRESULT CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12Resource** uploadHeap);
@@ -39,8 +40,11 @@ private:
 	uint32_t indexCount;
 	uint32_t vertexCount;
 
+	std::vector<Vertex> vertices;           // Verts we're assembling
+	std::vector<UINT> indices;           // Indices of these verts
+
 	BoundingOrientedBox boundingBox;
-	
+
 
 };
 
