@@ -8,8 +8,7 @@ public:
 	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp);
 	~Entity();
 
-	XMFLOAT3 position;
-	//VertShaderExternalData* data;
+	XMFLOAT3 GetPosition(); 
 
 	void SetPosition(XMFLOAT3 position);
 	void SetScale(XMFLOAT3 scale);
@@ -31,7 +30,7 @@ public:
 
 private:
 	XMFLOAT4X4 worldMatrix;
-
+	XMFLOAT3 position;
 	XMFLOAT3 rotation;
 	XMFLOAT3 scale;
 	Mesh* mesh;

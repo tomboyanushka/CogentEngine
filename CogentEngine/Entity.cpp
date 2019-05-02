@@ -16,6 +16,11 @@ Entity::~Entity()
 {
 }
 
+XMFLOAT3 Entity::GetPosition()
+{
+	return position;
+}
+
 void Entity::SetPosition(XMFLOAT3 setPos)
 {
 	position = setPos;

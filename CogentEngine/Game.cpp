@@ -79,7 +79,7 @@ void Game::Init()
 	entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
 	currentIndex = 0;
 	CreateNavmesh();
-	path = FindPath({ 0,0 }, { 16 , 16 });
+	//path = FindPath({ 0,0 }, { 16 , 16 });
 
 	// Wait here until GPU is actually done
 	WaitForGPU();
@@ -456,18 +456,18 @@ void Game::Update(float deltaTime, float totalTime)
 	camera->Update(deltaTime);
 
 	//entities[0]->SetPosition(XMFLOAT3(4, -4, 4));
-	XMVECTOR currentPos = XMLoadFloat3(&entities[0]->position);
-	XMVECTOR targetPos;
 
-
+	auto pos = entities[0]->GetPosition();
 	if (currentIndex < path.size())
 	{
 		XMFLOAT3 newPosition = XMFLOAT3(path[path.size() - currentIndex - 1].x, -4.0f, path[path.size() - currentIndex - 1].y);
-		targetPos = XMLoadFloat3(&newPosition);
-		XMStoreFloat3(&entities[0]->position, MoveTowards(currentPos, targetPos, deltaTime));
+		auto targetPos = XMLoadFloat3(&newPosition);
+		
+		XMStoreFloat3(&pos, MoveTowards(XMLoadFloat3(&pos), targetPos, 5 * deltaTime));
+		entities[0]->SetPosition(pos);
 	}
-
-	entities[0]->position.y = -4;
+	
+	pos.y = -4;
 
 
 	entities[1]->SetPosition(job2.pos);
@@ -646,7 +646,7 @@ void Game::DrawMesh(Mesh* mesh)
 void Game::CreateNavmesh()
 {
 	generator.setWorldSize({ 20, 20 });
-	generator.setHeuristic(AStar::Heuristic::euclidean);
+	generator.setHeuristic(AStar::Heuristic::manhattan);
 	generator.setDiagonalMovement(true);
 	AddCollider(generator, { 14, 13 });
 	AddCollider(generator, { 6, 6 });
@@ -839,11 +839,14 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	//	}
 	//}
 
+
 	if (IsIntersecting(entities[3], camera, x, y, distance))
 	{
-		printf("Intersecting at %f %f %f\n", newDestination.x, newDestination.y, newDestination.z);
+		currentIndex = 0;
+		path = FindPath({ (int)entities[0]->GetPosition().x, (int)entities[0]->GetPosition().z }, { (int)newDestination.x, (int)newDestination.z });
+		//printf("Intersecting at %f %f %f\n", newDestination.x, newDestination.y, newDestination.z);
 	}
-
+	
 }
 
 // --------------------------------------------------------
