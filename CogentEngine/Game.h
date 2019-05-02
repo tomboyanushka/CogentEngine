@@ -107,6 +107,8 @@ private:
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;
+	int selectedEntityIndex = -1;
+	bool isSelected = false;
 
 	XMFLOAT3 newDestination;
 

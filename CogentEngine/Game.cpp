@@ -201,8 +201,8 @@ void Game::CreateMatrices()
 	//    camera and the direction vector along which to look (as well as "up")
 	// - Another option is the LOOK AT function, to look towards a specific
 	//    point in 3D space
-	XMVECTOR pos = XMVectorSet(0, 0, -5, 0);
-	XMVECTOR dir = XMVectorSet(0, 0, 1, 0);
+	XMVECTOR pos = XMVectorSet(5, 5, -5, 0);
+	XMVECTOR dir = XMVectorSet(0, -5, 1, 0);
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMMATRIX V = XMMatrixLookToLH(
 		pos,     // The position of the "camera"
@@ -220,8 +220,9 @@ void Game::CreateMatrices()
 		100.0f);					// Far clip plane distance
 	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); // Transpose for HLSL!
 
-	camera = new Camera(0, 0, -5);
+	camera = new Camera(8, 7, -6);
 	camera->UpdateProjectionMatrix((float)width / height);
+	camera->Rotate(0.5f, 0);
 }
 
 
@@ -444,9 +445,7 @@ void Game::OnResize()
 	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); // Transpose for HLSL!
 }
 
-// --------------------------------------------------------
-// Update your game here - user input, move objects, AI, etc.
-// --------------------------------------------------------
+
 void Game::Update(float deltaTime, float totalTime)
 {
 	// Quit if the escape key is pressed
@@ -454,27 +453,27 @@ void Game::Update(float deltaTime, float totalTime)
 		Quit();
 
 	camera->Update(deltaTime);
-
-	//entities[0]->SetPosition(XMFLOAT3(4, -4, 4));
-
-	auto pos = entities[0]->GetPosition();
-	if (currentIndex < path.size())
+	if (selectedEntityIndex != -1)
 	{
-		XMFLOAT3 newPosition = XMFLOAT3((float)path[path.size() - currentIndex - 1].x, -4.0f, (float)path[path.size() - currentIndex - 1].y);
-		auto targetPos = XMLoadFloat3(&newPosition);
-		
-		XMStoreFloat3(&pos, MoveTowards(XMLoadFloat3(&pos), targetPos, 5 * deltaTime));
-		entities[0]->SetPosition(pos);
+		auto pos = entities[selectedEntityIndex]->GetPosition();
+		if (currentIndex < path.size())
+		{
+			XMFLOAT3 newPosition = XMFLOAT3((float)path[path.size() - currentIndex - 1].x, -4.0f, (float)path[path.size() - currentIndex - 1].y);
+			auto targetPos = XMLoadFloat3(&newPosition);
+
+			XMStoreFloat3(&pos, MoveTowards(XMLoadFloat3(&pos), targetPos, 5 * deltaTime));
+			entities[selectedEntityIndex]->SetPosition(pos);
+		}
+
+		pos.y = -4;
 	}
-	
-	pos.y = -4;
+
 
 
 	entities[1]->SetPosition(job2.pos);
 	auto bounds = entities[1]->GetBoundingOrientedBox();
-	entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
+	//entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
 
-	/*entities[3]->Rotate(0.1, 0, 0);*/
 	entities[3]->SetMesh(cube);
 	entities[3]->SetScale(XMFLOAT3(20, 0.5f, 20));
 	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
@@ -828,25 +827,44 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	// releasing the capture once a mouse button is released
 	SetCapture(hWnd);
 	float distance;
-	selectedEntities.clear();
-	//for (int i = 0; i < entities.size(); ++i)
+	/*selectedEntities.clear();*/
+
+	//if (IsIntersecting(entities[0], camera, x, y, distance) && !isSelected)
 	//{
-	//	if (IsIntersecting(entities[i]->GetBoundingOrientedBox(), camera, x, y, distance))
-	//	{
-	//		selectedEntities.push_back(entities[i]);
-	//		printf("Intersecting %d\n", i);
-	//		break;
-	//	}
+
+	//	selectedEntityIndex = 0;
+	//	printf("Selected Entity %d\n", selectedEntityIndex);
+	//	isSelected = true;
 	//}
-
-
-	if (IsIntersecting(entities[3], camera, x, y, distance))
+	if (IsIntersecting(entities[3], camera, x, y, distance) && isSelected)
 	{
 		currentIndex = 0;
-		path = FindPath({ (int)entities[0]->GetPosition().x, (int)entities[0]->GetPosition().z }, { (int)newDestination.x, (int)newDestination.z });
+		path = FindPath({ (int)entities[selectedEntityIndex]->GetPosition().x, (int)entities[selectedEntityIndex]->GetPosition().z }, { (int)newDestination.x, (int)newDestination.z });
 		//printf("Intersecting at %f %f %f\n", newDestination.x, newDestination.y, newDestination.z);
+		isSelected = false;
 	}
-	
+
+
+	for (int i = 0; i < entities.size(); ++i)
+	{
+		if (IsIntersecting(entities[i], camera, x, y, distance) && i != 3)
+		{
+			selectedEntityIndex = i;
+			isSelected = true;
+			printf("Intersecting %d\n", i);
+			printf("Selected Entity %d\n", selectedEntityIndex);
+			break;
+		}
+		else if(i != 3)
+		{
+			//selectedEntityIndex = -1;
+			printf("Unselect Entity \n");
+			isSelected = false;
+		}
+	}
+
+
+
 }
 
 // --------------------------------------------------------
