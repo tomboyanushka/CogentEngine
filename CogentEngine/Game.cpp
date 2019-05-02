@@ -460,7 +460,7 @@ void Game::Update(float deltaTime, float totalTime)
 	auto pos = entities[0]->GetPosition();
 	if (currentIndex < path.size())
 	{
-		XMFLOAT3 newPosition = XMFLOAT3(path[path.size() - currentIndex - 1].x, -4.0f, path[path.size() - currentIndex - 1].y);
+		XMFLOAT3 newPosition = XMFLOAT3((float)path[path.size() - currentIndex - 1].x, -4.0f, (float)path[path.size() - currentIndex - 1].y);
 		auto targetPos = XMLoadFloat3(&newPosition);
 		
 		XMStoreFloat3(&pos, MoveTowards(XMLoadFloat3(&pos), targetPos, 5 * deltaTime));
