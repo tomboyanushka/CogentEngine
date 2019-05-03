@@ -763,6 +763,12 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 	generator.addCollision({ coordinates.x ,coordinates.y });
 	generator.addCollision({ coordinates.x + 1 , coordinates.y });
 	generator.addCollision({ coordinates.x - 1,coordinates.y });
+
+	generator.addCollision({ coordinates.x + 1,coordinates.y + 1 });
+	generator.addCollision({ coordinates.x - 1, coordinates.y - 1 });
+	generator.addCollision({ coordinates.x - 1,coordinates.y + 1 });
+	generator.addCollision({ coordinates.x + 1,coordinates.y - 1 });
+
 }
 
 bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouseY, float& distance)
