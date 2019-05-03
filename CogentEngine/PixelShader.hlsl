@@ -15,6 +15,9 @@ struct VertexToPixel
 	float3 worldPos			: POSITION;
 };
 
+Texture2D Albedo : register(t0);
+SamplerState basicSampler : register(s0);
+
 //float calculateSpecular(float3 normal, float3 worldPos, float3 dirToLight, float3 camPos)
 //{
 //	float3 dirToCamera = normalize(camPos - worldPos);
@@ -28,6 +31,7 @@ struct VertexToPixel
 
 float4 main(VertexToPixel input) : SV_TARGET
 {
+	float3 albedo = Albedo.Sample(basicSampler, input.uv).rgb;
 	float3 color = float3(1,1,1);
 	// Renormalize any interpolated normals
 	input.normal = normalize(input.normal);
@@ -48,5 +52,5 @@ float4 main(VertexToPixel input) : SV_TARGET
 	else
 		color = 0.1 * color;
 
-	return float4(color,1);
+	return float4(color * albedo,1);
 }

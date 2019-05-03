@@ -113,6 +113,16 @@ D3D12_GPU_DESCRIPTOR_HANDLE Entity::GetHandle()
 	return handle;
 }
 
+D3D12_GPU_DESCRIPTOR_HANDLE Entity::GetSRVHandle()
+{
+	return srvHandle;
+}
+
+void Entity::SetSRVHandle(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle)
+{
+	this->srvHandle = srvHandle;
+}
+
 BoundingOrientedBox & Entity::GetBoundingOrientedBox()
 {
 	BoundingOrientedBox box = mesh->GetBoundingBox();

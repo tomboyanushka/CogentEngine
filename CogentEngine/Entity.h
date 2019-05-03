@@ -25,6 +25,8 @@ public:
 	void UpdateWorldMatrix();
 	char* GetAddress();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVHandle();
+	void SetSRVHandle(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle);
 	BoundingOrientedBox& GetBoundingOrientedBox();
 	
 
@@ -35,7 +37,8 @@ private:
 	XMFLOAT3 scale;
 	Mesh* mesh;
 	char* gpuAddress;
-	D3D12_GPU_DESCRIPTOR_HANDLE handle; // = {};
+	D3D12_GPU_DESCRIPTOR_HANDLE handle;
+	D3D12_GPU_DESCRIPTOR_HANDLE srvHandle;
 	UINT64 handlePtr;
 	BoundingOrientedBox boundingOrientedBox;
 

@@ -1,6 +1,8 @@
 #include "Game.h"
 #include "Vertex.h"
 #include "ConstantBuffer.h"
+#include "WICTextureLoader.h"
+#include "ResourceUploadBatch.h"
 
 
 // Needed for a helper function to read compiled shader files from the hard drive
@@ -14,8 +16,8 @@ Game::Game(HINSTANCE hInstance)
 	: DXCore(
 		hInstance,		   // The application's handle
 		"DirectX Game",    // Text for the window's title bar
-		1280,			   // Width of the window's client area
-		720,			   // Height of the window's client area
+		1920,			   // Width of the window's client area
+		1080,			   // Height of the window's client area
 		true)			   // Show extra stats (fps) in title bar?
 {
 	// Initialize fields
@@ -48,6 +50,10 @@ Game::~Game()
 		delete e;
 	}
 
+	testTexture->Release();
+	woodTexture->Release();
+	chessTexture->Release();
+
 	vsConstBufferDescriptorHeap->Release();
 	vsConstBufferUploadHeap->Release();
 
@@ -63,10 +69,24 @@ Game::~Game()
 void Game::Init()
 {
 	//ambient diffuse direction intensity
-	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+0.7f, +0.2f, +0.2f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(5) };
+	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
 	// Reset the command list to start
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
+
+	ResourceUploadBatch resourceUpload(device);
+
+	resourceUpload.Begin();
+
+	CreateWICTextureFromFile(device, resourceUpload, L"../../Assets/Brick.jpg", &testTexture, true);
+	CreateWICTextureFromFile(device, resourceUpload, L"../../Assets/Wood.jpg", &woodTexture, true);
+	CreateWICTextureFromFile(device, resourceUpload, L"../../Assets/Chess.png", &chessTexture, true);
+
+	// Upload the resources to the GPU.
+	auto uploadResourcesFinished = resourceUpload.End(commandQueue);
+
+	// Wait for the upload thread to terminate
+	uploadResourcesFinished.wait();
 
 	// Helper methods for loading shaders, creating some basic
 	// geometry to draw and some simple camera matrices.
@@ -76,10 +96,12 @@ void Game::Init()
 	CreateBasicGeometry();
 	CreateRootSigAndPipelineState();
 
+
+
 	//AI Initialization
 	entities[0]->SetMesh(pawn);
 	entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
-	entities[0]->SetScale(XMFLOAT3(0.2f, 0.2f, 0.2f));
+	entities[0]->SetScale(XMFLOAT3(0.4f, 0.4f, 0.4f));
 	//entities[0]->SetRotation(XMFLOAT3(-XM_PIDIV2, 0, 0));
 	currentIndex = 0;
 	CreateNavmesh();
@@ -109,9 +131,10 @@ void Game::LoadShaders()
 	D3D12_DESCRIPTOR_HEAP_DESC cbDesc = {};
 	cbDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbDesc.NodeMask = 0;
-	cbDesc.NumDescriptors = numEntities + 1;
+	cbDesc.NumDescriptors = numEntities + 1 + textureCount;
 	cbDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	device->CreateDescriptorHeap(&cbDesc, IID_PPV_ARGS(&vsConstBufferDescriptorHeap));
+
 
 	D3D12_HEAP_PROPERTIES heapProps = {};
 	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -172,6 +195,17 @@ void Game::LoadShaders()
 	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (numEntities * bufferSize);
 	device->CreateConstantBufferView(&cbvDesc, handle);
 
+	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 1) * incrementSize);
+	testHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 1) * incrementSize);
+	device->CreateShaderResourceView(testTexture, nullptr, handle);
+
+	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 2) * incrementSize);
+	woodHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 2) * incrementSize);
+	device->CreateShaderResourceView(woodTexture, nullptr, handle);
+
+	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 3) * incrementSize);
+	chessHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 3) * incrementSize);
+	device->CreateShaderResourceView(chessTexture, nullptr, handle);
 
 }
 
@@ -254,14 +288,20 @@ void Game::CreateBasicGeometry()
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
 	handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
 
+	D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = {};
+	srvHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 1) * incrementSize);
+
 
 	char* address = reinterpret_cast<char*>(gpuAddress);
 	for (int i = 0; i < numEntities; ++i)
 	{
 		entities.push_back(new Entity(sphere, (address + (i * bufferSize)), handle));
 		handle.ptr += incrementSize;
+		entities[i]->SetSRVHandle(srvHandle);
 	}
 
+	entities[3]->SetSRVHandle(chessHandle);
+	entities[0]->SetSRVHandle(woodHandle);
 	CloseExecuteAndResetCommandList();
 }
 
@@ -303,6 +343,14 @@ void Game::CreateRootSigAndPipelineState()
 		cbvTable2.RegisterSpace = 0;
 		cbvTable2.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+		D3D12_DESCRIPTOR_RANGE srvTable = {};
+		srvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		srvTable.NumDescriptors = 1;
+		srvTable.BaseShaderRegister = 0;
+		srvTable.RegisterSpace = 0;
+		srvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+
 		// Create the root parameter
 		D3D12_ROOT_PARAMETER rootParam = {};
 		rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -310,21 +358,34 @@ void Game::CreateRootSigAndPipelineState()
 		rootParam.DescriptorTable.NumDescriptorRanges = 1;
 		rootParam.DescriptorTable.pDescriptorRanges = &cbvTable;
 
+		//to pass the pixel constant buffer
 		D3D12_ROOT_PARAMETER rootParam2 = {};
 		rootParam2.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		rootParam2.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		rootParam2.DescriptorTable.NumDescriptorRanges = 1;
 		rootParam2.DescriptorTable.pDescriptorRanges = &cbvTable2;
 
-		D3D12_ROOT_PARAMETER params[] = { rootParam, rootParam2 };
+		//to pass the pixel constant buffer
+		D3D12_ROOT_PARAMETER rootParam3 = {};
+		rootParam3.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;  
+		rootParam3.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+		rootParam3.DescriptorTable.NumDescriptorRanges = 1;
+		rootParam3.DescriptorTable.pDescriptorRanges = &srvTable;
 
+
+		/*rootParam3.DescriptorTable.NumDescriptorRanges = 1;
+		rootParam3.DescriptorTable.pDescriptorRanges = &cbvTable2;*/
+
+		D3D12_ROOT_PARAMETER params[] = { rootParam, rootParam2, rootParam3 };
+		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[1];
+		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC);
 		// Describe and serialize the root signature
 		D3D12_ROOT_SIGNATURE_DESC rootSig = {};
 		rootSig.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		rootSig.NumParameters = 2;
+		rootSig.NumParameters = 3;
 		rootSig.pParameters = params;
-		rootSig.NumStaticSamplers = 0;
-		rootSig.pStaticSamplers = 0;
+		rootSig.NumStaticSamplers = 1;
+		rootSig.pStaticSamplers = StaticSamplers;
 
 		ID3DBlob* serializedRootSig = 0;
 		ID3DBlob* errors = 0;
@@ -425,6 +486,7 @@ void Game::DrawEntity(Entity * entity)
 
 	memcpy(entity->GetAddress(), &vertexData, sizeof(VertShaderExternalData));
 	commandList->SetGraphicsRootDescriptorTable(0, entity->GetHandle());
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetSRVHandle());
 
 	DrawMesh(entity->GetMesh());
 
@@ -488,9 +550,11 @@ void Game::Update(float deltaTime, float totalTime)
 
 	entities[4]->SetMesh(cube);
 	entities[4]->SetPosition(XMFLOAT3(14, -4, 13));
+	entities[4]->SetScale(XMFLOAT3(2, 2, 2));
 
 	entities[5]->SetMesh(cube);
 	entities[5]->SetPosition(XMFLOAT3(6, -4, 6));
+	entities[5]->SetScale(XMFLOAT3(2, 2, 2));
 
 	entities[6]->SetScale(XMFLOAT3(0.3f, 0.3f, 0.3f));
 	entities[6]->SetPosition(XMFLOAT3(16, -4, 16));
@@ -586,9 +650,10 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->RSSetScissorRects(1, &scissorRect);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+
 		// Set constant buffer
 		commandList->SetDescriptorHeaps(1, &vsConstBufferDescriptorHeap);
-
+		
 		//for pixel shader
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
@@ -698,8 +763,8 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouseY, float& distance)
 {
 	newDestination = XMFLOAT3(0, 0, 0);
-	uint16_t screenWidth = 1280;
-	uint16_t screenHeight = 720;
+	uint16_t screenWidth = 1920;
+	uint16_t screenHeight = 1080;
 	auto viewMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetViewMatrixTransposed()));
 	auto projMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetProjectionMatrixTransposed()));
 

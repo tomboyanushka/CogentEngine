@@ -1,5 +1,9 @@
 #pragma once
 
+#define ScreenWidth = 1920
+#define ScreenHegight = 1080
+#define TerrainIndex = 3
+
 #include "DXCore.h"
 #include <DirectXMath.h>
 
@@ -7,6 +11,7 @@
 #include "IJob.h"
 #include "Job.h"
 
+#include "d3dx12.h"
 #include "ConstantBuffer.h"
 #include "Camera.h"
 #include "Light.h"
@@ -27,6 +32,7 @@ public:
 	//ints
 	int numEntities = 7;
 	int currentIndex;
+	int textureCount = 3;
 
 
 	AStar::CoordinateList path;
@@ -105,6 +111,15 @@ private:
 	Mesh* quad;
 	Mesh* cube;
 	Mesh* pawn;
+
+	ID3D12Resource* testTexture;
+	ID3D12Resource* groundTexture;
+	ID3D12Resource* woodTexture;
+	ID3D12Resource* chessTexture;
+
+	D3D12_GPU_DESCRIPTOR_HANDLE testHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE woodHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE chessHandle;
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;
