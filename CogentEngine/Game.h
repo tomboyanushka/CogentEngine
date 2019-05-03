@@ -104,6 +104,7 @@ private:
 	Mesh* sphere;
 	Mesh* quad;
 	Mesh* cube;
+	Mesh* pawn;
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;

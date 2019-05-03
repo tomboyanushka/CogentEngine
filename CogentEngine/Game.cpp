@@ -40,6 +40,7 @@ Game::~Game()
 	delete sphere;
 	delete quad;
 	delete cube;
+	delete pawn;
 	delete camera;
 
 	for (auto e : entities)
@@ -76,7 +77,10 @@ void Game::Init()
 	CreateRootSigAndPipelineState();
 
 	//AI Initialization
+	entities[0]->SetMesh(pawn);
 	entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
+	entities[0]->SetScale(XMFLOAT3(0.2f, 0.2f, 0.2f));
+	//entities[0]->SetRotation(XMFLOAT3(-XM_PIDIV2, 0, 0));
 	currentIndex = 0;
 	CreateNavmesh();
 	//path = FindPath({ 0,0 }, { 16 , 16 });
@@ -234,6 +238,7 @@ void Game::CreateBasicGeometry()
 	sphere = new Mesh("../../Assets/Models/sphere.obj", device, commandList);
 	quad = new Mesh("../../Assets/Models/quad.obj", device, commandList);
 	cube = new Mesh("../../Assets/Models/cube.obj", device, commandList);
+	pawn = new Mesh("../../Assets/Models/Pawn.obj", device, commandList);
 
 
 	//entities.push_back(new Entity(mesh1));
@@ -451,6 +456,8 @@ void Game::Update(float deltaTime, float totalTime)
 	// Quit if the escape key is pressed
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
+
+	
 
 	camera->Update(deltaTime);
 	if (selectedEntityIndex != -1)
