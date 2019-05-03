@@ -1,6 +1,7 @@
 #pragma once
 #include <DirectXMath.h>
 #include "Mesh.h"
+#include "Material.h"
 using namespace DirectX;
 class Entity
 {
@@ -24,6 +25,8 @@ public:
 	XMFLOAT4X4 GetWorldMatrix();
 	void UpdateWorldMatrix();
 	char* GetAddress();
+
+	Material* GetMaterial();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVHandle();
 	void SetSRVHandle(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle);
@@ -36,11 +39,13 @@ private:
 	XMFLOAT3 rotation;
 	XMFLOAT3 scale;
 	Mesh* mesh;
+	Material* material;
 	char* gpuAddress;
 	D3D12_GPU_DESCRIPTOR_HANDLE handle;
 	D3D12_GPU_DESCRIPTOR_HANDLE srvHandle;
 	UINT64 handlePtr;
 	BoundingOrientedBox boundingOrientedBox;
+	BoundingOrientedBox box;
 
 };
 

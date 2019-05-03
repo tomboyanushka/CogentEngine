@@ -108,6 +108,11 @@ char * Entity::GetAddress()
 	return gpuAddress;
 }
 
+Material * Entity::GetMaterial()
+{
+	return material;
+}
+
 D3D12_GPU_DESCRIPTOR_HANDLE Entity::GetHandle()
 {
 	return handle;
@@ -125,7 +130,7 @@ void Entity::SetSRVHandle(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle)
 
 BoundingOrientedBox & Entity::GetBoundingOrientedBox()
 {
-	BoundingOrientedBox box = mesh->GetBoundingBox();
+	box = mesh->GetBoundingBox();
 	box.Center = position;
 	box.Extents.x *= scale.x;
 	box.Extents.y *= scale.y;
