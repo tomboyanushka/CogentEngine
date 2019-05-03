@@ -570,6 +570,11 @@ void Game::Update(float deltaTime, float totalTime)
 		auto f2 = pool.Enqueue(&job2);
 	}
 
+	if (pathFinderJob.IsCompleted())
+	{
+		path = pathFinderJob.path;
+	}
+
 	//for the callback functions
 	pool.ExecuteCallbacks();
 
@@ -911,7 +916,11 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	if (IsIntersecting(entities[3], camera, x, y, distance) && isSelected)
 	{
 		currentIndex = 0;
-		path = FindPath({ (int)entities[selectedEntityIndex]->GetPosition().x, (int)entities[selectedEntityIndex]->GetPosition().z }, { (int)newDestination.x, (int)newDestination.z });
+		pathFinderJob.currentPos = entities[selectedEntityIndex]->GetPosition();
+		pathFinderJob.targetPos = newDestination;
+		pathFinderJob.generator = &generator;
+		auto f2 = pool.Enqueue(&pathFinderJob);
+		//path = FindPath({ (int)entities[selectedEntityIndex]->GetPosition().x, (int)entities[selectedEntityIndex]->GetPosition().z }, { (int)newDestination.x, (int)newDestination.z });
 		//printf("Intersecting at %f %f %f\n", newDestination.x, newDestination.y, newDestination.z);
 		isSelected = false;
 	}

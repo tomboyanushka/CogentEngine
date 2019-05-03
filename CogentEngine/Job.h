@@ -3,6 +3,7 @@
 #include "IJob.h"
 #include "DXCore.h"
 #include <DirectXMath.h>
+#include "AStar.h"
 
 
 class MyJob : public IJob
@@ -33,6 +34,11 @@ public:
 class PathFinder : public IJob
 {
 public:
+
+	DirectX::XMFLOAT3 currentPos;
+	DirectX::XMFLOAT3 targetPos;
+	AStar::CoordinateList path;
+	AStar::Generator* generator;
 
 	// Inherited via IJob
 	virtual void Execute() override;

@@ -25,7 +25,7 @@ void UpdatePosJob::Callback()
 
 void PathFinder::Execute()
 {
-
+	path = generator->findPath({(int) currentPos.x, (int)currentPos.z }, { (int)targetPos.x, (int)targetPos.z });
 }
 
 void PathFinder::Callback()
