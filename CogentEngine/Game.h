@@ -1,7 +1,7 @@
 #pragma once
 
-#define ScreenWidth = 1920
-#define ScreenHegight = 1080
+#define ScreenWidth = 1280
+#define ScreenHegight = 720
 #define TerrainIndex = 3
 
 #include "DXCore.h"
