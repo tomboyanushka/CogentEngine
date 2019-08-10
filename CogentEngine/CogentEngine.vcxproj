@@ -149,6 +149,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ConcurrentQueue.h" />
     <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DXCore.h" />
     <ClInclude Include="DXUtility.h" />

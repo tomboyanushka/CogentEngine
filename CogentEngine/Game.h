@@ -7,6 +7,7 @@
 #include "DXCore.h"
 #include <DirectXMath.h>
 #include "DXUtility.h"
+#include "Constants.h"
 
 #include "ThreadPool.h"
 #include "IJob.h"
@@ -55,28 +56,18 @@ public:
 	void OnMouseUp(WPARAM buttonState, int x, int y);
 	void OnMouseMove(WPARAM buttonState, int x, int y);
 	void OnMouseWheel(float wheelDelta, int x, int y);
-private:
 
+private:
 	void LoadShaders();
 	void CreateMatrices();
 	void CreateBasicGeometry();
 	void CreateRootSigAndPipelineState();
 
-	//// ********** NO SIMPLE SHADER CHANGE **********
-	//ID3D11Buffer* vsConstantBuffer;
-	//ID3D11VertexShader* vs;
-	//ID3D11PixelShader* ps;
-	//ID3D11InputLayout* inputLayout;
-	//// ********** NO SIMPLE SHADER CHANGE **********
-
-	//// Buffers to hold actual geometry data
-	//ID3D11Buffer* vertexBuffer;
-	//ID3D11Buffer* indexBuffer;
-
 	ID3D12RootSignature* rootSignature;
 	ID3D12PipelineState* pipeState;
 	ID3D12PipelineState* pipeState2;
 
+	GPUConstantBuffer gpuConstantBuffer;
 	DescriptorHeap gpuHeap;
 
 	ID3DBlob* vertexShaderByteCode;

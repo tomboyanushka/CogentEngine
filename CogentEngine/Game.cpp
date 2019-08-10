@@ -63,6 +63,7 @@ Game::~Game()
 
 void Game::Init()
 {
+	gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize);
 	gpuHeap.Create(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 	//ambient diffuse direction intensity
 	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
@@ -220,7 +221,6 @@ void Game::CreateBasicGeometry()
 
 	void* gpuAddress;
 	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
-
 
 	char* address = reinterpret_cast<char*>(gpuAddress);
 	for (int i = 0; i < numEntities; ++i)
