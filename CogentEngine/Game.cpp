@@ -26,7 +26,6 @@ Game::Game(HINSTANCE hInstance)
 	camera = 0;
 
 #if defined(DEBUG) || defined(_DEBUG)
-	// Do we want a console window?  Probably only in debug mode
 	CreateConsoleWindow(500, 120, 32, 120);
 	printf("Console window created successfully.  Feel free to printf() here.");
 #endif
@@ -54,7 +53,6 @@ Game::~Game()
 	woodTexture->Release();
 	chessTexture->Release();
 
-	vsConstBufferDescriptorHeap->Release();
 	vsConstBufferUploadHeap->Release();
 
 	rootSignature->Release();
@@ -62,41 +60,32 @@ Game::~Game()
 	pipeState2->Release();
 }
 
-// --------------------------------------------------------
-// Called once per program, after DirectX and the window
-// are initialized but before the game loop.
-// --------------------------------------------------------
+
 void Game::Init()
 {
+	gpuHeap.Create(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 	//ambient diffuse direction intensity
 	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
 	// Reset the command list to start
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
 
-	ResourceUploadBatch resourceUpload(device);
+	ResourceUploadBatch resourceUpload(device.Get());
 
 	resourceUpload.Begin();
 
-	CreateWICTextureFromFile(device, resourceUpload, L"../../Assets/Brick.jpg", &testTexture, true);
-	CreateWICTextureFromFile(device, resourceUpload, L"../../Assets/Wood.jpg", &woodTexture, true);
-	CreateWICTextureFromFile(device, resourceUpload, L"../../Assets/Chess.png", &chessTexture, true);
+	CreateWICTextureFromFile(device.Get(), resourceUpload, L"../../Assets/Brick.jpg", &testTexture, true);
+	CreateWICTextureFromFile(device.Get(), resourceUpload, L"../../Assets/Wood.jpg", &woodTexture, true);
+	CreateWICTextureFromFile(device.Get(), resourceUpload, L"../../Assets/Chess.png", &chessTexture, true);
 
-	// Upload the resources to the GPU.
 	auto uploadResourcesFinished = resourceUpload.End(commandQueue);
 
-	// Wait for the upload thread to terminate
 	uploadResourcesFinished.wait();
 
-	// Helper methods for loading shaders, creating some basic
-	// geometry to draw and some simple camera matrices.
-	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 	CreateMatrices();
 	CreateBasicGeometry();
 	CreateRootSigAndPipelineState();
-
-
 
 	//AI Initialization
 	entities[0]->SetMesh(pawn);
@@ -111,30 +100,14 @@ void Game::Init()
 	WaitForGPU();
 }
 
-// --------------------------------------------------------
-// Loads shaders from compiled shader object (.cso) files,
-// creates an input layout (verifying against the vertex shader)
-// and creates a constant buffer to hold external data
-// --------------------------------------------------------
+
 void Game::LoadShaders()
 {
-	// Read our compiled vertex shader code into a blob
-	// - Essentially just "open the file and plop its contents here"
 	D3DReadFileToBlob(L"VertexShader.cso", &vertexShaderByteCode);
 	D3DReadFileToBlob(L"PixelShader.cso", &pixelShaderByteCode);
 
 	D3DReadFileToBlob(L"OutlineVS.cso", &outlineVS);
 	D3DReadFileToBlob(L"OutlinePS.cso", &outlinePS);
-
-	// Create a descriptor heap to store constant buffer descriptors.  
-	// One big heap is good enough to hold all cbv/srv/uav descriptors.
-	D3D12_DESCRIPTOR_HEAP_DESC cbDesc = {};
-	cbDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbDesc.NodeMask = 0;
-	cbDesc.NumDescriptors = numEntities + 1 + textureCount;
-	cbDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	device->CreateDescriptorHeap(&cbDesc, IID_PPV_ARGS(&vsConstBufferDescriptorHeap));
-
 
 	D3D12_HEAP_PROPERTIES heapProps = {};
 	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -164,9 +137,6 @@ void Game::LoadShaders()
 	resDesc.SampleDesc.Quality = 0;
 	resDesc.Width = numEntities * bufferSize + pixelBufferSize;
 
-	auto incrementSize = device->GetDescriptorHandleIncrementSize(cbDesc.Type);
-
-	// Create a constant buffer resource heap
 	device->CreateCommittedResource(
 		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
@@ -175,88 +145,59 @@ void Game::LoadShaders()
 		0,
 		IID_PPV_ARGS(&vsConstBufferUploadHeap));
 
-	// Need to get a view to the constant buffer
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress();
 	cbvDesc.SizeInBytes = bufferSize; // Must be 256-byte aligned!
-	device->CreateConstantBufferView(&cbvDesc, vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	device->CreateConstantBufferView(&cbvDesc, gpuHeap.hCPUHeapStart);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE handle = {};
 
 	for (int i = 1; i < numEntities; ++i)
 	{
-		handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(i * incrementSize);
 		cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (i * bufferSize);
-		device->CreateConstantBufferView(&cbvDesc, handle);
+		device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(i));
 	}
 
-	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>(numEntities * incrementSize);
 	cbvDesc.SizeInBytes = pixelBufferSize;
 	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (numEntities * bufferSize);
-	device->CreateConstantBufferView(&cbvDesc, handle);
+	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(numEntities));
 
-	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 1) * incrementSize);
-	testHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 1) * incrementSize);
-	device->CreateShaderResourceView(testTexture, nullptr, handle);
+	device->CreateShaderResourceView(testTexture, nullptr, gpuHeap.handleCPU(numEntities + 1));
 
-	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 2) * incrementSize);
-	woodHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 2) * incrementSize);
-	device->CreateShaderResourceView(woodTexture, nullptr, handle);
+	device->CreateShaderResourceView(woodTexture, nullptr, gpuHeap.handleCPU(numEntities + 2));
 
-	handle.ptr = vsConstBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 3) * incrementSize);
-	chessHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 3) * incrementSize);
-	device->CreateShaderResourceView(chessTexture, nullptr, handle);
+	device->CreateShaderResourceView(chessTexture, nullptr, gpuHeap.handleCPU(numEntities + 3));
 
 }
 
-
-
-// --------------------------------------------------------
-// Initializes the matrices necessary to represent our geometry's 
-// transformations and our 3D camera
-// --------------------------------------------------------
 void Game::CreateMatrices()
 {
-	// Set up world matrix
-	// - In an actual game, each object will need one of these and they should
-	//    update when/if the object moves (every frame)
 	// - You'll notice a "transpose" happening below, which is redundant for
 	//    an identity matrix.  This is just to show that HLSL expects a different
 	//    matrix (column major vs row major) than the DirectX Math library
 	XMMATRIX W = XMMatrixIdentity();
-	XMStoreFloat4x4(&worldMatrix1, XMMatrixTranspose(W)); // Transpose for HLSL!
+	XMStoreFloat4x4(&worldMatrix1, XMMatrixTranspose(W)); 
 
 	XMMATRIX W2 = XMMatrixTranslation(-1, 0, 0);
 	XMMATRIX W3 = XMMatrixTranslation(1, 0, 0);
 	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
 	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
 
-
-	// Create the View matrix
-	// - In an actual game, recreate this matrix every time the camera 
-	//    moves (potentially every frame)
-	// - We're using the LOOK TO function, which takes the position of the
-	//    camera and the direction vector along which to look (as well as "up")
-	// - Another option is the LOOK AT function, to look towards a specific
-	//    point in 3D space
 	XMVECTOR pos = XMVectorSet(5, 5, -5, 0);
 	XMVECTOR dir = XMVectorSet(0, -5, 1, 0);
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMMATRIX V = XMMatrixLookToLH(
-		pos,     // The position of the "camera"
-		dir,     // Direction the camera is looking
-		up);     // "Up" direction in 3D space (prevents roll)
-	XMStoreFloat4x4(&viewMatrix, XMMatrixTranspose(V)); // Transpose for HLSL!
+		pos,     
+		dir,     
+		up);     
+	XMStoreFloat4x4(&viewMatrix, XMMatrixTranspose(V)); 
 
-	// Create the Projection matrix
-	// - This should match the window's aspect ratio, and also update anytime
-	//    the window resizes (which is already happening in OnResize() below)
 	XMMATRIX P = XMMatrixPerspectiveFovLH(
 		0.25f * 3.1415926535f,		// Field of View Angle
 		(float)width / height,		// Aspect ratio
 		0.1f,						// Near clip plane distance
 		100.0f);					// Far clip plane distance
-	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); // Transpose for HLSL!
+	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); 
 
 	camera = new Camera(8, 7, -6);
 	camera->UpdateProjectionMatrix((float)width / height);
@@ -264,15 +205,12 @@ void Game::CreateMatrices()
 }
 
 
-// --------------------------------------------------------
-// Creates the geometry we're going to draw - a single triangle for now
-// --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	sphere = new Mesh("../../Assets/Models/sphere.obj", device, commandList);
-	quad = new Mesh("../../Assets/Models/quad.obj", device, commandList);
-	cube = new Mesh("../../Assets/Models/cube.obj", device, commandList);
-	pawn = new Mesh("../../Assets/Models/Pawn.obj", device, commandList);
+	sphere = new Mesh("../../Assets/Models/sphere.obj", device.Get(), commandList);
+	quad = new Mesh("../../Assets/Models/quad.obj", device.Get(), commandList);
+	cube = new Mesh("../../Assets/Models/cube.obj", device.Get(), commandList);
+	pawn = new Mesh("../../Assets/Models/Pawn.obj", device.Get(), commandList);
 
 
 	//entities.push_back(new Entity(mesh1));
@@ -284,38 +222,21 @@ void Game::CreateBasicGeometry()
 	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
 
 
-	auto incrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
-	handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
-
-	D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = {};
-	srvHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + static_cast<UINT64>((numEntities + 1) * incrementSize);
-
-
 	char* address = reinterpret_cast<char*>(gpuAddress);
 	for (int i = 0; i < numEntities; ++i)
 	{
-		entities.push_back(new Entity(sphere, (address + (i * bufferSize)), handle));
-		handle.ptr += incrementSize;
-		entities[i]->SetSRVHandle(srvHandle);
+		entities.push_back(new Entity(sphere, (address + (i * bufferSize)), gpuHeap.handleGPU(i)));
+		entities[i]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 1));
 	}
 
-	entities[3]->SetSRVHandle(chessHandle);
-	entities[0]->SetSRVHandle(woodHandle);
+	entities[3]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 3));
+	entities[0]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 2));
 	CloseExecuteAndResetCommandList();
 }
 
 void Game::CreateRootSigAndPipelineState()
 {
-
-	// Create an input layout that describes the vertex format
-	// used by the vertex shader we're using
-	//  - This is used by the pipeline to know how to interpret the raw data
-	//     sitting inside a vertex buffer
-	//  - Doing this NOW because it requires a vertex shader's byte code to verify against!
-	//  - Luckily, we already have that loaded (the blob above)
 	const unsigned int inputElementCount = 4;
-
 
 	D3D12_INPUT_ELEMENT_DESC inputElements[inputElementCount] =
 	{
@@ -494,22 +415,16 @@ void Game::DrawEntity(Entity * entity)
 }
 
 
-// --------------------------------------------------------
-// Handle resizing DirectX "stuff" to match the new window size.
-// For instance, updating our projection matrix's aspect ratio.
-// --------------------------------------------------------
 void Game::OnResize()
 {
-	// Handle base-level DX resize stuff
 	DXCore::OnResize();
 
-	// Update our projection matrix since the window size changed
 	XMMATRIX P = XMMatrixPerspectiveFovLH(
-		0.25f * 3.1415926535f,	// Field of View Angle
-		(float)width / height,	// Aspect ratio
-		0.1f,				  	// Near clip plane distance
-		100.0f);			  	// Far clip plane distance
-	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); // Transpose for HLSL!
+		0.25f * 3.1415926535f,	
+		(float)width / height,	
+		0.1f,				  	
+		100.0f);			  	
+	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); 
 }
 
 
@@ -642,13 +557,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Root sig (must happen before root descriptor table)
 		commandList->SetGraphicsRootSignature(rootSignature);
 
-		auto incrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		//D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
-		//handle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
-
-		D3D12_GPU_DESCRIPTOR_HANDLE pixelHandle = {};
-		pixelHandle.ptr = vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + (numEntities * incrementSize);
-
 		// Set up other commands for rendering
 		commandList->OMSetRenderTargets(1, &rtvHandles[currentSwapBuffer], true, &dsvHandle);
 		commandList->RSSetViewports(1, &viewport);
@@ -657,17 +565,17 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 		// Set constant buffer
-		commandList->SetDescriptorHeaps(1, &vsConstBufferDescriptorHeap);
+		commandList->SetDescriptorHeaps(1, gpuHeap.pDescriptorHeap.GetAddressOf());
 		
 		//for pixel shader
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
-			pixelHandle);
+			gpuHeap.handleGPU(numEntities));
 
 		//set const buffer for current mesh
 		commandList->SetGraphicsRootDescriptorTable(
 			0,
-			vsConstBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+			gpuHeap.hGPUHeapStart);
 
 		// Draw outline for mesh 
 		for (auto e : entities)

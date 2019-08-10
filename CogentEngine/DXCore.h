@@ -4,7 +4,8 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <string>
-
+#include "d3dx12.h"
+#include <wrl.h>
 // We can include the correct library files here
 // instead of in Visual Studio settings if we want
 #pragma comment(lib, "d3d12.lib")
@@ -70,7 +71,7 @@ protected:
 	D3D_FEATURE_LEVEL		dxFeatureLevel;
 	IDXGIFactory*			dxgiFactory;
 	IDXGISwapChain*			swapChain;
-	ID3D12Device*			device;
+	Microsoft::WRL::ComPtr<ID3D12Device>	device;
 
 	bool					vsync = false;
 

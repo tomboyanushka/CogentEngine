@@ -75,7 +75,7 @@ DXCore::~DXCore()
 
 	dxgiFactory->Release();
 	swapChain->Release();
-	device->Release();
+	
 
 	fence->Release();
 }
@@ -316,16 +316,7 @@ HRESULT DXCore::InitDirectX()
 		dsvHandle);
 
 	// Transition the depth buffer
-	D3D12_RESOURCE_BARRIER rb = {};
-	rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	rb.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	rb.Transition.pResource = depthStencilBuffer;
-	rb.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-	rb.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-	rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-	commandList->ResourceBarrier(1, &rb);
-
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(depthStencilBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
 
 	// Lastly, set up a viewport so we render into
 	// to correct portion of the window

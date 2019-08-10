@@ -6,6 +6,7 @@
 
 #include "DXCore.h"
 #include <DirectXMath.h>
+#include "DXUtility.h"
 
 #include "ThreadPool.h"
 #include "IJob.h"
@@ -29,16 +30,12 @@ public:
 	Game(HINSTANCE hInstance);
 	~Game();
 
-	//ints
 	int numEntities = 7;
 	int currentIndex;
 	int textureCount = 3;
 
-
 	AStar::CoordinateList path;
 
-	// Overridden setup and game loop methods, which
-	// will be called automatically
 	void Init();
 	void OnResize();
 	void Update(float deltaTime, float totalTime);
@@ -54,14 +51,12 @@ public:
 	///Ray picking
 	bool IsIntersecting(Entity* entity, Camera* camera, int mouseX, int mouseY, float& distance);
 
-	// Overridden mouse input helper methods
 	void OnMouseDown(WPARAM buttonState, int x, int y);
 	void OnMouseUp(WPARAM buttonState, int x, int y);
 	void OnMouseMove(WPARAM buttonState, int x, int y);
 	void OnMouseWheel(float wheelDelta, int x, int y);
 private:
 
-	// Initialization helper methods - feel free to customize, combine, etc.
 	void LoadShaders();
 	void CreateMatrices();
 	void CreateBasicGeometry();
@@ -82,6 +77,8 @@ private:
 	ID3D12PipelineState* pipeState;
 	ID3D12PipelineState* pipeState2;
 
+	DescriptorHeap gpuHeap;
+
 	ID3DBlob* vertexShaderByteCode;
 	ID3DBlob* pixelShaderByteCode;
 
@@ -98,9 +95,7 @@ private:
 	ID3D12Resource* vsConstBufferUploadHeap;
 
 	PixelShaderExternalData pixelData;
-	//PixelShaderExternalData* pixelShaderData;
 
-	// The matrices to go from model space to screen space
 	DirectX::XMFLOAT4X4 worldMatrix1;
 	DirectX::XMFLOAT4X4 worldMatrix2;
 	DirectX::XMFLOAT4X4 worldMatrix3;
