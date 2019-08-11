@@ -65,9 +65,12 @@ void Game::Init()
 	unsigned int bufferSize = sizeof(VertShaderExternalData);
 	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
 	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
+	unsigned int pixelBufferSize = sizeof(PixelShaderExternalData);
+	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
+	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
 
 	gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
-	pixelConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
+	pixelConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, pixelBufferSize);
 
 	gpuHeap.Create(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 	//ambient diffuse direction intensity
@@ -133,7 +136,7 @@ void Game::LoadShaders()
 		device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(i));
 	}
 
-	cbvDesc.BufferLocation = pixelConstantBuffer.GetAddressWithIndex();
+	cbvDesc.BufferLocation = pixelConstantBuffer.GetAddress();
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(numEntities));
 
 	device->CreateShaderResourceView(testTexture, nullptr, gpuHeap.handleCPU(numEntities + 1));
@@ -188,7 +191,7 @@ void Game::CreateBasicGeometry()
 
 	for (int i = 0; i < numEntities; ++i)
 	{
-		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i)));
+		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i), i));
 		entities[i]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 1));
 	}
 
@@ -368,7 +371,7 @@ void Game::DrawEntity(Entity * entity)
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.dirLight = light;
 
-	memcpy(entity->GetAddress(), &vertexData, sizeof(VertShaderExternalData));
+	gpuConstantBuffer.CopyDataWithIndex(&vertexData, sizeof(VertShaderExternalData), entity->GetConstantBufferIndex());
 	commandList->SetGraphicsRootDescriptorTable(0, entity->GetHandle());
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetSRVHandle());
 
@@ -453,10 +456,6 @@ void Game::Update(float deltaTime, float totalTime)
 
 	//for the callback functions
 	pool.ExecuteCallbacks();
-
-	//unsigned int bufferSize = sizeof(VertShaderExternalData);
-	//bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
-	//bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
 
 	pixelConstantBuffer.CopyData(&pixelData, sizeof(PixelShaderExternalData));
 	//vsConstBufferUploadHeap->Unmap(0, 0);

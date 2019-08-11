@@ -6,7 +6,7 @@ using namespace DirectX;
 class Entity
 {
 public:
-	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp);
+	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex);
 	~Entity();
 
 	XMFLOAT3 GetPosition(); 
@@ -18,20 +18,18 @@ public:
 	void Move(float x, float y, float z);
 	void Rotate(float x, float y, float z);
 
-	
-
 	Mesh* GetMesh();
 	void SetMesh(Mesh* mesh);
 	XMFLOAT4X4 GetWorldMatrix();
 	void UpdateWorldMatrix();
 	char* GetAddress();
+	uint32_t GetConstantBufferIndex();
 
 	Material* GetMaterial();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVHandle();
 	void SetSRVHandle(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle);
 	BoundingOrientedBox& GetBoundingOrientedBox();
-	
 
 private:
 	XMFLOAT4X4 worldMatrix;
@@ -39,6 +37,7 @@ private:
 	XMFLOAT3 rotation;
 	XMFLOAT3 scale;
 	Mesh* mesh;
+	uint32_t constantBufferIndex;
 	Material* material;
 	char* gpuAddress;
 	D3D12_GPU_DESCRIPTOR_HANDLE handle;

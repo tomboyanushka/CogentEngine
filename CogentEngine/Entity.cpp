@@ -2,9 +2,10 @@
 
 
 
-Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp)
+Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex)
 {
 	this->mesh = mesh;
+	this->constantBufferIndex = constantBufferIndex;
 	this->SetPosition(XMFLOAT3(0.0, 0.0, 0.0));
 	this->SetScale(XMFLOAT3(1.0, 1.0, 1.0));
 	this->gpuAddress = address;
@@ -106,6 +107,11 @@ void Entity::UpdateWorldMatrix()
 char * Entity::GetAddress()
 {
 	return gpuAddress;
+}
+
+uint32_t Entity::GetConstantBufferIndex()
+{
+	return constantBufferIndex;
 }
 
 Material * Entity::GetMaterial()
