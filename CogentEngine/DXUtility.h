@@ -16,11 +16,11 @@ std::wstring ToWString(const std::string& str);
 class GPUConstantBuffer
 {
 public:
-	void Create(ID3D12Device* device,uint32_t bufferSize)
+	void Create(ID3D12Device* device, uint32_t bufferSize, uint32_t singleBufferSize)
 	{
 		auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 		auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-
+		this->singleBufferSize = singleBufferSize;
 		device->CreateCommittedResource(
 			&heapProps,
 			D3D12_HEAP_FLAG_NONE,
@@ -39,9 +39,19 @@ public:
 		memcpy(address + offset, data, size);
 	}
 
+	void CopyDataWithIndex(void* data, uint32_t size, size_t offset = 0)
+	{
+		memcpy(address + (offset * singleBufferSize), data, size);
+	}
+
 	D3D12_GPU_VIRTUAL_ADDRESS GetAddress(uint64_t offset = 0)
 	{
 		return resource->GetGPUVirtualAddress() + offset;
+	}
+
+	D3D12_GPU_VIRTUAL_ADDRESS GetAddressWithIndex(uint64_t offset = 0)
+	{
+		return resource->GetGPUVirtualAddress() + (offset * singleBufferSize);
 	}
 
 	char* GetMappedAddress(uint64_t offset = 0)
@@ -49,10 +59,16 @@ public:
 		return address + offset;
 	}
 
+	char* GetMappedAddressWithIndex(uint64_t offset = 0)
+	{
+		return address + (offset * singleBufferSize);
+	}
+
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 	char* address;
+	uint32_t singleBufferSize;
 	
 };
 

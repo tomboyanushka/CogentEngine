@@ -68,6 +68,7 @@ private:
 	ID3D12PipelineState* pipeState2;
 
 	GPUConstantBuffer gpuConstantBuffer;
+	GPUConstantBuffer pixelConstantBuffer;
 	DescriptorHeap gpuHeap;
 
 	ID3DBlob* vertexShaderByteCode;

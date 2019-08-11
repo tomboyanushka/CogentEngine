@@ -61,7 +61,12 @@ Game::~Game()
 
 void Game::Init()
 {
-	gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize);
+	// Buffers must be multiples of 256 bytes!
+	unsigned int bufferSize = sizeof(VertShaderExternalData);
+	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
+	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
+
+	gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
 	gpuHeap.Create(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 	//ambient diffuse direction intensity
 	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
@@ -125,12 +130,12 @@ void Game::LoadShaders()
 
 	for (int i = 1; i < numEntities; ++i)
 	{
-		cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress(i * bufferSize);
+		cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(i);
 		device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(i));
 	}
 
 	cbvDesc.SizeInBytes = pixelBufferSize;
-	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress(numEntities * bufferSize);
+	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(numEntities);
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(numEntities));
 
 	device->CreateShaderResourceView(testTexture, nullptr, gpuHeap.handleCPU(numEntities + 1));
