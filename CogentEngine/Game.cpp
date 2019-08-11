@@ -53,8 +53,6 @@ Game::~Game()
 	woodTexture->Release();
 	chessTexture->Release();
 
-	vsConstBufferUploadHeap->Release();
-
 	rootSignature->Release();
 	pipeState->Release();
 	pipeState2->Release();
@@ -110,13 +108,6 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"OutlineVS.cso", &outlineVS);
 	D3DReadFileToBlob(L"OutlinePS.cso", &outlinePS);
 
-	D3D12_HEAP_PROPERTIES heapProps = {};
-	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProps.CreationNodeMask = 1;
-	heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	heapProps.Type = D3D12_HEAP_TYPE_UPLOAD; // Upload heap since we'll be copying often!
-	heapProps.VisibleNodeMask = 1;
-
 	// Buffers must be multiples of 256 bytes!
 	unsigned int bufferSize = sizeof(VertShaderExternalData);
 	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
@@ -125,29 +116,8 @@ void Game::LoadShaders()
 	pixelBufferSize = (pixelBufferSize + 255); // Add 255 so we can drop last few bits
 	pixelBufferSize = pixelBufferSize & ~255;  // Flip 255 and then use it to mask 
 
-	D3D12_RESOURCE_DESC resDesc = {};
-	resDesc.Alignment = 0;
-	resDesc.DepthOrArraySize = 1;
-	resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	resDesc.Format = DXGI_FORMAT_UNKNOWN;
-	resDesc.Height = 1;
-	resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	resDesc.MipLevels = 1;
-	resDesc.SampleDesc.Count = 1;
-	resDesc.SampleDesc.Quality = 0;
-	resDesc.Width = numEntities * bufferSize + pixelBufferSize;
-
-	device->CreateCommittedResource(
-		&heapProps,
-		D3D12_HEAP_FLAG_NONE,
-		&resDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		0,
-		IID_PPV_ARGS(&vsConstBufferUploadHeap));
-
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress();
+	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress();
 	cbvDesc.SizeInBytes = bufferSize; // Must be 256-byte aligned!
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.hCPUHeapStart);
 
@@ -155,12 +125,12 @@ void Game::LoadShaders()
 
 	for (int i = 1; i < numEntities; ++i)
 	{
-		cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (i * bufferSize);
+		cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress(i * bufferSize);
 		device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(i));
 	}
 
 	cbvDesc.SizeInBytes = pixelBufferSize;
-	cbvDesc.BufferLocation = vsConstBufferUploadHeap->GetGPUVirtualAddress() + (numEntities * bufferSize);
+	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress(numEntities * bufferSize);
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(numEntities));
 
 	device->CreateShaderResourceView(testTexture, nullptr, gpuHeap.handleCPU(numEntities + 1));
@@ -219,13 +189,10 @@ void Game::CreateBasicGeometry()
 	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
 	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
 
-	void* gpuAddress;
-	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
 
-	char* address = reinterpret_cast<char*>(gpuAddress);
 	for (int i = 0; i < numEntities; ++i)
 	{
-		entities.push_back(new Entity(sphere, (address + (i * bufferSize)), gpuHeap.handleGPU(i)));
+		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddress(i * bufferSize)), gpuHeap.handleGPU(i)));
 		entities[i]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 1));
 	}
 
@@ -503,11 +470,7 @@ void Game::Update(float deltaTime, float totalTime)
 	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
 	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
 
-	void* gpuAddress;
-	vsConstBufferUploadHeap->Map(0, 0, &gpuAddress);
-
-	char* address = reinterpret_cast<char*>(gpuAddress);
-	memcpy(address + (numEntities * bufferSize), &pixelData, sizeof(PixelShaderExternalData));
+	gpuConstantBuffer.CopyData(&pixelData, sizeof(PixelShaderExternalData), (numEntities * bufferSize));
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 

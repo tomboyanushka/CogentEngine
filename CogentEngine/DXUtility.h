@@ -39,6 +39,17 @@ public:
 		memcpy(address + offset, data, size);
 	}
 
+	D3D12_GPU_VIRTUAL_ADDRESS GetAddress(uint64_t offset = 0)
+	{
+		return resource->GetGPUVirtualAddress() + offset;
+	}
+
+	char* GetMappedAddress(uint64_t offset = 0)
+	{
+		return address + offset;
+	}
+
+
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 	char* address;
