@@ -15,32 +15,36 @@ struct VertexToPixel
 	float3 worldPos			: POSITION;
 };
 
-Texture2D Albedo : register(t0);
-SamplerState basicSampler : register(s0);
+Texture2D diffuseTexture		: register(t0);
+Texture2D normalTexture			: register(t1);
+SamplerState basicSampler	: register(s0);
 
-//float calculateSpecular(float3 normal, float3 worldPos, float3 dirToLight, float3 camPos)
-//{
-//	float3 dirToCamera = normalize(camPos - worldPos);
-//	float3 halfwayVector = normalize(dirToLight + dirToCamera);
-//	//float3 refl = reflect(-dirToLight, normal);
-//	float shininess = 64;
-//	//float spec = pow(saturate(dot(dirToCamera, refl)), shininess);
-//	return shininess == 0 ? 0.0f : pow(max(dot(halfwayVector, normal), 0), shininess);
-//	//return spec;
-//}
+float3 calculateNormalFromMap(float2 uv, float3 normal, float3 tangent)
+{
+	float3 normalFromTexture = normalTexture.Sample(basicSampler, uv).xyz;
+	float3 unpackedNormal = normalFromTexture * 2.0f - 1.0f;
+	float3 N = normal;
+	float3 T = normalize(tangent - N * dot(tangent, N));
+	float3 B = cross(N, T);
+	float3x3 TBN = float3x3(T, B, N);
+	return normalize(mul(unpackedNormal, TBN));
+}
 
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	float3 albedo = Albedo.Sample(basicSampler, input.uv).rgb;
+	float3 albedo = diffuseTexture.Sample(basicSampler, input.uv).rgb;
 	float3 color = float3(1,1,1);
-	// Renormalize any interpolated normals
+
 	input.normal = normalize(input.normal);
+	input.tangent = normalize(input.tangent);
+	input.normal = calculateNormalFromMap(input.uv, input.normal, input.tangent);
+
 	float3 dirToLight = normalize(-dirLight.Direction);
 	float NdotL = dot(input.normal, dirToLight);
 	NdotL = saturate(NdotL);
 	float intensity = NdotL;
 	//float spec = calculateSpecular(input.normal, input.worldPos, dirToLight, cameraPosition) * roughness;
-	float3 totalLight = dirLight.DiffuseColor * NdotL + dirLight.AmbientColor;
+	float3 totalLight = dirLight.DiffuseColor.rgb * NdotL + dirLight.AmbientColor.rgb;
 	color = color * totalLight;
 	// Discretize the intensity, based on a few cutoff points
 	if (intensity > 0.95)

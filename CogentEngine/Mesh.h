@@ -5,6 +5,7 @@
 #include "Vertex.h"
 #include <vector>
 #include <DirectXCollision.h>
+#include "DirectXMesh.h"
 
 using namespace DirectX;
 class Mesh

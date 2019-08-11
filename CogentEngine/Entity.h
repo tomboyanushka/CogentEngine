@@ -6,7 +6,7 @@ using namespace DirectX;
 class Entity
 {
 public:
-	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex);
+	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex, Material* material);
 	~Entity();
 
 	XMFLOAT3 GetPosition(); 

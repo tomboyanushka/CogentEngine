@@ -21,6 +21,9 @@
 #include "Mesh.h"
 #include "Entity.h"
 
+#include "Texture.h"
+#include "Material.h"
+
 #include "AStar.h"
 
 class Game
@@ -99,10 +102,16 @@ private:
 	Mesh* cube;
 	Mesh* pawn;
 
-	ID3D12Resource* testTexture;
-	ID3D12Resource* groundTexture;
-	ID3D12Resource* woodTexture;
-	ID3D12Resource* chessTexture;
+	Texture brickTexture;
+	Texture woodTexture;
+	Texture chessTexture;
+
+	Material floorMaterial;
+
+	//ID3D12Resource* testTexture;
+	//ID3D12Resource* groundTexture;
+	//ID3D12Resource* woodTexture;
+	//ID3D12Resource* chessTexture;
 
 	D3D12_GPU_DESCRIPTOR_HANDLE testHandle;
 	D3D12_GPU_DESCRIPTOR_HANDLE woodHandle;

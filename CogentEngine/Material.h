@@ -1,18 +1,24 @@
 #pragma once
 #include "d3dx12.h"
-
+#include "Texture.h"
 
 class Material
 {
-protected:
 
-	D3D12_GPU_DESCRIPTOR_HANDLE albedoHandle;
 
 public:
-	Material(D3D12_GPU_DESCRIPTOR_HANDLE handle);
-	~Material();
+	uint32_t Create(ID3D12Device* device, 
+		const wchar_t* diffuseTextureFileName, 
+		const wchar_t* normalTextureFileName, 
+		ID3D12CommandQueue* commandQueue, 
+		uint32_t index, 
+		const DescriptorHeap& heap);
 
-	void SetSRVHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle);
-	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVHandle();
+	D3D12_GPU_DESCRIPTOR_HANDLE GetFirstGPUHandle();
+
+private:
+	Texture diffuseTexture;
+	Texture normalTexture;
+
 };
 

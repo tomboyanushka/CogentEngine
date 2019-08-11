@@ -2,9 +2,10 @@
 
 
 
-Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex)
+Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex, Material* material)
 {
 	this->mesh = mesh;
+	this->material = material;
 	this->constantBufferIndex = constantBufferIndex;
 	this->SetPosition(XMFLOAT3(0.0, 0.0, 0.0));
 	this->SetScale(XMFLOAT3(1.0, 1.0, 1.0));

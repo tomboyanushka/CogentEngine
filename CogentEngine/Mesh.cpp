@@ -9,6 +9,7 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 	// Variables used while reading the file
 	std::vector<XMFLOAT3> positions;     // Positions from the file
 	std::vector<XMFLOAT3> normals;       // Normals from the file
+	std::vector<XMFLOAT3> tangents;
 	std::vector<XMFLOAT2> uvs;           // UVs from the file
 	std::vector<Vertex> verts;           // Verts we're assembling
 	std::vector<UINT> indices;           // Indices of these verts
@@ -18,6 +19,7 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 
 	std::vector<Vertex> vertices;           // Verts we're assembling
 	std::vector<UINT> indexVals;           // Indices of these verts
+	int numFaces = 0;
 	std::string warnings;
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -31,6 +33,7 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 		size_t index_offset = 0;
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
 			int fv = shapes[s].mesh.num_face_vertices[f];
+			numFaces += fv;
 
 			// Loop over vertices in the face.
 			for (size_t v = 0; v < fv; v++) {
@@ -48,7 +51,9 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 				vertex.Position = XMFLOAT3(vx, vy, vz);
 				positions.push_back(vertex.Position);
 				vertex.Normal = XMFLOAT3(nx, ny, nz);
+				normals.push_back(vertex.Normal);
 				vertex.UV = XMFLOAT2(tx, ty);
+				uvs.push_back(vertex.UV);
 				vertices.push_back(vertex);
 
 				indexVals.push_back((UINT)index_offset + (UINT)v);
@@ -64,6 +69,14 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 			
 		}
 	}
+	/*tangents.resize(positions.size());
+	DirectX::ComputeTangentFrame(indexVals.data(), numFaces, positions.data(), normals.data(), uvs.data(), positions.size(), tangents.data(), nullptr);
+
+	for (int i = 0; i < vertices.size(); ++i)
+	{
+		vertices[i].Tangent = tangents[i];
+	}
+*/
 
 	vertexCount = uint32_t(vertices.size());
 	indexCount = uint32_t(indexVals.size());
@@ -71,6 +84,69 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 	CreateBasicGeometry(vertices.data(), vertexCount, indexVals.data(), indexCount, device, commandList);
 	this->vertices = vertices;
 	this->indices = indexVals;
+}
+
+void CalculateTangents(Vertex* vertices, UINT vertexCount, UINT* indices, UINT indexCount)
+{
+	XMFLOAT3* tan1 = new XMFLOAT3[vertexCount * 2];
+	XMFLOAT3* tan2 = tan1 + vertexCount;
+	ZeroMemory(tan1, vertexCount * sizeof(XMFLOAT3) * 2);
+	int triangleCount = indexCount / 3;
+	for (UINT i = 0; i < indexCount; i += 3)
+	{
+		int i1 = indices[i];
+		int i2 = indices[i + 2];
+		int i3 = indices[i + 1];
+		auto v1 = vertices[i1].Position;
+		auto v2 = vertices[i2].Position;
+		auto v3 = vertices[i3].Position;
+
+		auto w1 = vertices[i1].UV;
+		auto w2 = vertices[i2].UV;
+		auto w3 = vertices[i3].UV;
+
+		float x1 = v2.x - v1.x;
+		float x2 = v3.x - v1.x;
+		float y1 = v2.y - v1.y;
+		float y2 = v3.y - v1.y;
+		float z1 = v2.z - v1.z;
+		float z2 = v3.z - v1.z;
+
+		float s1 = w2.x - w1.x;
+		float s2 = w3.x - w1.x;
+		float t1 = w2.y - w1.y;
+		float t2 = w3.y - w1.y;
+		float r = 1.0F / (s1 * t2 - s2 * t1);
+
+		XMFLOAT3 sdir((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r,
+			(t2 * z1 - t1 * z2) * r);
+
+		XMFLOAT3 tdir((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r,
+			(s1 * z2 - s2 * z1) * r);
+
+		XMStoreFloat3(&tan1[i1], XMLoadFloat3(&tan1[i1]) + XMLoadFloat3(&sdir));
+		XMStoreFloat3(&tan1[i2], XMLoadFloat3(&tan1[i2]) + XMLoadFloat3(&sdir));
+		XMStoreFloat3(&tan1[i3], XMLoadFloat3(&tan1[i3]) + XMLoadFloat3(&sdir));
+
+		XMStoreFloat3(&tan2[i1], XMLoadFloat3(&tan2[i1]) + XMLoadFloat3(&tdir));
+		XMStoreFloat3(&tan2[i2], XMLoadFloat3(&tan2[i2]) + XMLoadFloat3(&tdir));
+		XMStoreFloat3(&tan2[i3], XMLoadFloat3(&tan2[i3]) + XMLoadFloat3(&tdir));
+	}
+
+	for (UINT a = 0; a < vertexCount; a++)
+	{
+		auto n = vertices[a].Normal;
+		auto t = tan1[a];
+
+		// Gram-Schmidt orthogonalize
+		auto dot = XMVector3Dot(XMLoadFloat3(&n), XMLoadFloat3(&t));
+		XMStoreFloat3(&vertices[a].Tangent, XMVector3Normalize(XMLoadFloat3(&t) - XMLoadFloat3(&n) * dot));
+
+		// Calculate handedness
+		/*tangent[a].w = (Dot(Cross(n, t), tan2[a]) < 0.0F) ? -1.0F : 1.0F;*/
+	}
+
+	delete[] tan1;
 }
 
 Mesh::~Mesh()
@@ -241,6 +317,7 @@ HRESULT Mesh::CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void
 
 void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount, ID3D12Device * device, ID3D12GraphicsCommandList* commandList)
 {
+	CalculateTangents(vertices, vertexCount, indices, indexCount);
 
 	//// Create geometry buffers  ------------------------------------
 	CreateVertexBuffer(sizeof(Vertex), vertexCount, vertices, &vertexBuffer, &vbView, device, commandList);

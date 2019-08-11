@@ -49,9 +49,9 @@ Game::~Game()
 		delete e;
 	}
 
-	testTexture->Release();
-	woodTexture->Release();
-	chessTexture->Release();
+	//testTexture->Release();
+	//woodTexture->Release();
+	//chessTexture->Release();
 
 	rootSignature->Release();
 	pipeState->Release();
@@ -79,7 +79,7 @@ void Game::Init()
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
 
-	ResourceUploadBatch resourceUpload(device.Get());
+	/*ResourceUploadBatch resourceUpload(device.Get());
 
 	resourceUpload.Begin();
 
@@ -89,7 +89,8 @@ void Game::Init()
 
 	auto uploadResourcesFinished = resourceUpload.End(commandQueue);
 
-	uploadResourcesFinished.wait();
+	uploadResourcesFinished.wait();*/
+
 
 	LoadShaders();
 	CreateMatrices();
@@ -139,19 +140,22 @@ void Game::LoadShaders()
 	cbvDesc.BufferLocation = pixelConstantBuffer.GetAddress();
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(numEntities));
 
-	device->CreateShaderResourceView(testTexture, nullptr, gpuHeap.handleCPU(numEntities + 1));
+	brickTexture.Create(device.Get(), L"../../Assets/Brick.jpg", commandQueue, (numEntities + 1), gpuHeap);
+	woodTexture.Create(device.Get(), L"../../Assets/Wood.jpg", commandQueue, (numEntities + 2), gpuHeap);
+	chessTexture.Create(device.Get(), L"../../Assets/Chess.png", commandQueue, (numEntities + 3), gpuHeap);
 
-	device->CreateShaderResourceView(woodTexture, nullptr, gpuHeap.handleCPU(numEntities + 2));
+	floorMaterial.Create(device.Get(),
+		L"../../Assets/floor/diffuse.png",
+		L"../../Assets/floor/normal.png",
+		commandQueue,
+		numEntities + 4,
+		gpuHeap);
 
-	device->CreateShaderResourceView(chessTexture, nullptr, gpuHeap.handleCPU(numEntities + 3));
 
 }
 
 void Game::CreateMatrices()
 {
-	// - You'll notice a "transpose" happening below, which is redundant for
-	//    an identity matrix.  This is just to show that HLSL expects a different
-	//    matrix (column major vs row major) than the DirectX Math library
 	XMMATRIX W = XMMatrixIdentity();
 	XMStoreFloat4x4(&worldMatrix1, XMMatrixTranspose(W)); 
 
@@ -191,12 +195,12 @@ void Game::CreateBasicGeometry()
 
 	for (int i = 0; i < numEntities; ++i)
 	{
-		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i), i));
-		entities[i]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 1));
+		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i), i, &floorMaterial));
+		entities[i]->SetSRVHandle(brickTexture.GetGPUHandle());
 	}
 
-	entities[3]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 3));
-	entities[0]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 2));
+	entities[3]->SetSRVHandle(chessTexture.GetGPUHandle());
+	entities[0]->SetSRVHandle(woodTexture.GetGPUHandle());
 	CloseExecuteAndResetCommandList();
 }
 
@@ -232,7 +236,7 @@ void Game::CreateRootSigAndPipelineState()
 
 		D3D12_DESCRIPTOR_RANGE srvTable = {};
 		srvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-		srvTable.NumDescriptors = 1;
+		srvTable.NumDescriptors = 2;
 		srvTable.BaseShaderRegister = 0;
 		srvTable.RegisterSpace = 0;
 		srvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
@@ -373,7 +377,7 @@ void Game::DrawEntity(Entity * entity)
 
 	gpuConstantBuffer.CopyDataWithIndex(&vertexData, sizeof(VertShaderExternalData), entity->GetConstantBufferIndex());
 	commandList->SetGraphicsRootDescriptorTable(0, entity->GetHandle());
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetSRVHandle());
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
 
 	DrawMesh(entity->GetMesh());
 }
