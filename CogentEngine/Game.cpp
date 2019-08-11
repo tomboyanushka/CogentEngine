@@ -67,6 +67,8 @@ void Game::Init()
 	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
 
 	gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
+	pixelConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
+
 	gpuHeap.Create(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 	//ambient diffuse direction intensity
 	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
@@ -117,9 +119,6 @@ void Game::LoadShaders()
 	unsigned int bufferSize = sizeof(VertShaderExternalData);
 	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
 	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
-	unsigned int pixelBufferSize = sizeof(PixelShaderExternalData);
-	pixelBufferSize = (pixelBufferSize + 255); // Add 255 so we can drop last few bits
-	pixelBufferSize = pixelBufferSize & ~255;  // Flip 255 and then use it to mask 
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress();
@@ -134,8 +133,7 @@ void Game::LoadShaders()
 		device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(i));
 	}
 
-	cbvDesc.SizeInBytes = pixelBufferSize;
-	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(numEntities);
+	cbvDesc.BufferLocation = pixelConstantBuffer.GetAddressWithIndex();
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(numEntities));
 
 	device->CreateShaderResourceView(testTexture, nullptr, gpuHeap.handleCPU(numEntities + 1));
@@ -188,16 +186,9 @@ void Game::CreateBasicGeometry()
 	cube = new Mesh("../../Assets/Models/cube.obj", device.Get(), commandList);
 	pawn = new Mesh("../../Assets/Models/Pawn.obj", device.Get(), commandList);
 
-
-	//entities.push_back(new Entity(mesh1));
-	unsigned int bufferSize = sizeof(VertShaderExternalData);
-	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
-	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
-
-
 	for (int i = 0; i < numEntities; ++i)
 	{
-		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddress(i * bufferSize)), gpuHeap.handleGPU(i)));
+		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i)));
 		entities[i]->SetSRVHandle(gpuHeap.handleGPU(numEntities + 1));
 	}
 
@@ -382,8 +373,6 @@ void Game::DrawEntity(Entity * entity)
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetSRVHandle());
 
 	DrawMesh(entity->GetMesh());
-
-
 }
 
 
@@ -465,17 +454,11 @@ void Game::Update(float deltaTime, float totalTime)
 	//for the callback functions
 	pool.ExecuteCallbacks();
 
+	//unsigned int bufferSize = sizeof(VertShaderExternalData);
+	//bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
+	//bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
 
-	// Copy data to the constant buffer
-	// Note: Apparently upload heaps (like constant buffers) do NOT need to be
-	// unmapped to be used by the GPU.  Keeping it mapped can speed things up.
-	// See examples here: https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/nf-d3d12-id3d12resource-map
-
-	unsigned int bufferSize = sizeof(VertShaderExternalData);
-	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
-	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
-
-	gpuConstantBuffer.CopyData(&pixelData, sizeof(PixelShaderExternalData), (numEntities * bufferSize));
+	pixelConstantBuffer.CopyData(&pixelData, sizeof(PixelShaderExternalData));
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
