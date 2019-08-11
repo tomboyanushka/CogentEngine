@@ -20,12 +20,16 @@ public:
 
 	Mesh* GetMesh();
 	void SetMesh(Mesh* mesh);
+
+	Material* GetMaterial();
+	void SetMaterial(Material* material);
+
 	XMFLOAT4X4 GetWorldMatrix();
 	void UpdateWorldMatrix();
 	char* GetAddress();
 	uint32_t GetConstantBufferIndex();
 
-	Material* GetMaterial();
+
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVHandle();
 	void SetSRVHandle(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle);

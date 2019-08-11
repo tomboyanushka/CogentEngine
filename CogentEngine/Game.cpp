@@ -39,19 +39,12 @@ Game::~Game()
 	WaitForGPU();
 
 	delete sphere;
-	delete quad;
-	delete cube;
-	delete pawn;
 	delete camera;
 
 	for (auto e : entities)
 	{
 		delete e;
 	}
-
-	//testTexture->Release();
-	//woodTexture->Release();
-	//chessTexture->Release();
 
 	rootSignature->Release();
 	pipeState->Release();
@@ -79,28 +72,14 @@ void Game::Init()
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
 
-	/*ResourceUploadBatch resourceUpload(device.Get());
-
-	resourceUpload.Begin();
-
-	CreateWICTextureFromFile(device.Get(), resourceUpload, L"../../Assets/Brick.jpg", &testTexture, true);
-	CreateWICTextureFromFile(device.Get(), resourceUpload, L"../../Assets/Wood.jpg", &woodTexture, true);
-	CreateWICTextureFromFile(device.Get(), resourceUpload, L"../../Assets/Chess.png", &chessTexture, true);
-
-	auto uploadResourcesFinished = resourceUpload.End(commandQueue);
-
-	uploadResourcesFinished.wait();*/
-
-
 	LoadShaders();
 	CreateMatrices();
 	CreateBasicGeometry();
 	CreateRootSigAndPipelineState();
 
 	//AI Initialization
-	entities[0]->SetMesh(pawn);
-	entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
-	entities[0]->SetScale(XMFLOAT3(0.4f, 0.4f, 0.4f));
+	//entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
+	//entities[0]->SetScale(XMFLOAT3(1, 1, 1));
 	//entities[0]->SetRotation(XMFLOAT3(-XM_PIDIV2, 0, 0));
 	currentIndex = 0;
 	CreateNavmesh();
@@ -140,18 +119,7 @@ void Game::LoadShaders()
 	cbvDesc.BufferLocation = pixelConstantBuffer.GetAddress();
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(numEntities));
 
-	brickTexture.Create(device.Get(), L"../../Assets/Brick.jpg", commandQueue, (numEntities + 1), gpuHeap);
-	woodTexture.Create(device.Get(), L"../../Assets/Wood.jpg", commandQueue, (numEntities + 2), gpuHeap);
-	chessTexture.Create(device.Get(), L"../../Assets/Chess.png", commandQueue, (numEntities + 3), gpuHeap);
-
-	floorMaterial.Create(device.Get(),
-		L"../../Assets/floor/diffuse.png",
-		L"../../Assets/floor/normal.png",
-		commandQueue,
-		numEntities + 4,
-		gpuHeap);
-
-
+	CreateMaterials();
 }
 
 void Game::CreateMatrices()
@@ -180,7 +148,7 @@ void Game::CreateMatrices()
 		100.0f);					// Far clip plane distance
 	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); 
 
-	camera = new Camera(8, 7, -6);
+	camera = new Camera(-1.5, 3.5, -7);
 	camera->UpdateProjectionMatrix((float)width / height);
 	camera->Rotate(0.5f, 0);
 }
@@ -189,18 +157,12 @@ void Game::CreateMatrices()
 void Game::CreateBasicGeometry()
 {
 	sphere = new Mesh("../../Assets/Models/sphere.obj", device.Get(), commandList);
-	quad = new Mesh("../../Assets/Models/quad.obj", device.Get(), commandList);
-	cube = new Mesh("../../Assets/Models/cube.obj", device.Get(), commandList);
-	pawn = new Mesh("../../Assets/Models/Pawn.obj", device.Get(), commandList);
 
 	for (int i = 0; i < numEntities; ++i)
 	{
 		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i), i, &floorMaterial));
-		entities[i]->SetSRVHandle(brickTexture.GetGPUHandle());
 	}
 
-	entities[3]->SetSRVHandle(chessTexture.GetGPUHandle());
-	entities[0]->SetSRVHandle(woodTexture.GetGPUHandle());
 	CloseExecuteAndResetCommandList();
 }
 
@@ -422,25 +384,16 @@ void Game::Update(float deltaTime, float totalTime)
 
 
 
-	entities[1]->SetPosition(job2.pos);
-	auto bounds = entities[1]->GetBoundingOrientedBox();
-	//entities[2]->SetPosition(XMFLOAT3(sin(totalTime) + 6, 0, 0));
+	entities[0]->SetPosition(job2.pos);
+	auto bounds = entities[0]->GetBoundingOrientedBox();
 
-	entities[3]->SetMesh(cube);
-	entities[3]->SetScale(XMFLOAT3(20, 0.5f, 20));
-	entities[3]->SetPosition(XMFLOAT3(10, -5, 10));
+	entities[1]->SetPosition(XMFLOAT3(0, 0, 0));
+	entities[1]->SetMaterial(&scratchedMaterial);
 
+	entities[2]->SetPosition(XMFLOAT3(2, 0, 0));
+	entities[2]->SetMaterial(&waterMaterial);
 
-	entities[4]->SetMesh(cube);
-	entities[4]->SetPosition(XMFLOAT3(14, -4, 13));
-	entities[4]->SetScale(XMFLOAT3(2, 2, 2));
-
-	entities[5]->SetMesh(cube);
-	entities[5]->SetPosition(XMFLOAT3(6, -4, 6));
-	entities[5]->SetScale(XMFLOAT3(2, 2, 2));
-
-	entities[6]->SetScale(XMFLOAT3(0.3f, 0.3f, 0.3f));
-	entities[6]->SetPosition(XMFLOAT3(16, -4, 16));
+	entities[3]->SetPosition(XMFLOAT3(-2, 0, 0));
 
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
@@ -581,6 +534,30 @@ void Game::DrawMesh(Mesh* mesh)
 	commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
 }
 
+void Game::CreateMaterials()
+{
+	floorMaterial.Create(device.Get(),
+		L"../../Assets/Textures/floor/diffuse.png",
+		L"../../Assets/Textures/floor/normal.png",
+		commandQueue,
+		numEntities + 1,
+		gpuHeap);
+
+	scratchedMaterial.Create(device.Get(),
+		L"../../Assets/Textures/scratched/diffuse.png",
+		L"../../Assets/Textures/scratched/normal.png",
+		commandQueue,
+		numEntities + 3,
+		gpuHeap);
+
+	waterMaterial.Create(device.Get(),
+		L"../../Assets/Textures/water/diffuse.png",
+		L"../../Assets/Textures/water/normal.png",
+		commandQueue,
+		numEntities + 5,
+		gpuHeap);
+}
+
 void Game::CreateNavmesh()
 {
 	generator.setWorldSize({ 20, 20 });
@@ -636,8 +613,8 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouseY, float& distance)
 {
 	newDestination = XMFLOAT3(0, 0, 0);
-	uint16_t screenWidth = 1920;
-	uint16_t screenHeight = 1080;
+	uint16_t screenWidth = 1280;
+	uint16_t screenHeight = 720;
 	auto viewMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetViewMatrixTransposed()));
 	auto projMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetProjectionMatrixTransposed()));
 

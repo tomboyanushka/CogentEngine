@@ -34,7 +34,7 @@ public:
 	Game(HINSTANCE hInstance);
 	~Game();
 
-	int numEntities = 7;
+	int numEntities = 4;
 	int currentIndex;
 	int textureCount = 3;
 
@@ -45,6 +45,7 @@ public:
 	void Update(float deltaTime, float totalTime);
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
+	void CreateMaterials();
 
 	///AI functions
 	void CreateNavmesh();
@@ -107,6 +108,8 @@ private:
 	Texture chessTexture;
 
 	Material floorMaterial;
+	Material waterMaterial;
+	Material scratchedMaterial;
 
 	//ID3D12Resource* testTexture;
 	//ID3D12Resource* groundTexture;

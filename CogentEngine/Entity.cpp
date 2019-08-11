@@ -120,6 +120,11 @@ Material * Entity::GetMaterial()
 	return material;
 }
 
+void Entity::SetMaterial(Material* material)
+{
+	this->material = material;
+}
+
 D3D12_GPU_DESCRIPTOR_HANDLE Entity::GetHandle()
 {
 	return handle;
