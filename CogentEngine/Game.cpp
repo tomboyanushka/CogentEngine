@@ -4,23 +4,19 @@
 #include "WICTextureLoader.h"
 #include "ResourceUploadBatch.h"
 
-
-// Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
 #include <d3dcompiler.h>
 
-// For the DirectX Math library
 using namespace DirectX;
 
 Game::Game(HINSTANCE hInstance)
 	: DXCore(
-		hInstance,		   // The application's handle
-		"DirectX Game",    // Text for the window's title bar
-		1280,			   // Width of the window's client area
-		720,			   // Height of the window's client area
-		true)			   // Show extra stats (fps) in title bar?
+		hInstance,		   
+		"DirectX Game",    
+		1280,			   
+		720,			   
+		true)			   
 {
-	// Initialize fields
 	vertexBuffer = 0;
 	indexBuffer = 0;
 	camera = 0;
@@ -56,11 +52,11 @@ void Game::Init()
 {
 	// Buffers must be multiples of 256 bytes!
 	unsigned int bufferSize = sizeof(VertShaderExternalData);
-	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
-	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
+	bufferSize = (bufferSize + 255); 
+	bufferSize = bufferSize & ~255; 
 	unsigned int pixelBufferSize = sizeof(PixelShaderExternalData);
-	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
-	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
+	bufferSize = (bufferSize + 255); 
+	bufferSize = bufferSize & ~255;  
 
 	gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
 	pixelConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, pixelBufferSize);
@@ -75,6 +71,7 @@ void Game::Init()
 	LoadShaders();
 	CreateMatrices();
 	CreateBasicGeometry();
+	CreateMaterials();
 	CreateRootSigAndPipelineState();
 
 	//AI Initialization
@@ -98,28 +95,29 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"OutlineVS.cso", &outlineVS);
 	D3DReadFileToBlob(L"OutlinePS.cso", &outlinePS);
 
-	// Buffers must be multiples of 256 bytes!
 	unsigned int bufferSize = sizeof(VertShaderExternalData);
-	bufferSize = (bufferSize + 255); // Add 255 so we can drop last few bits
-	bufferSize = bufferSize & ~255;  // Flip 255 and then use it to mask 
+	bufferSize = (bufferSize + 255); 
+	bufferSize = bufferSize & ~255;  
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress();
-	cbvDesc.SizeInBytes = bufferSize; // Must be 256-byte aligned!
-	device->CreateConstantBufferView(&cbvDesc, gpuHeap.hCPUHeapStart);
+	cbvDesc.SizeInBytes = bufferSize; 
+	device->CreateConstantBufferView(&cbvDesc, gpuHeap.hCPUHeapStart); //hCPUHeapStart = handleCPU(0)
+	heapCounter++;
 
 	D3D12_CPU_DESCRIPTOR_HANDLE handle = {};
 
 	for (int i = 1; i < numEntities; ++i)
 	{
 		cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(i);
-		device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(i));
+		device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
+		heapCounter++;
 	}
 
 	cbvDesc.BufferLocation = pixelConstantBuffer.GetAddress();
-	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(numEntities));
+	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
+	heapCounter++;
 
-	CreateMaterials();
 }
 
 void Game::CreateMatrices()
@@ -181,7 +179,6 @@ void Game::CreateRootSigAndPipelineState()
 
 	// Root Sig
 	{
-		// Create a table of CBV's (constant buffer views)
 		D3D12_DESCRIPTOR_RANGE cbvTable = {};
 		cbvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 		cbvTable.NumDescriptors = 1;
@@ -225,14 +222,9 @@ void Game::CreateRootSigAndPipelineState()
 		rootParam3.DescriptorTable.NumDescriptorRanges = 1;
 		rootParam3.DescriptorTable.pDescriptorRanges = &srvTable;
 
-
-		/*rootParam3.DescriptorTable.NumDescriptorRanges = 1;
-		rootParam3.DescriptorTable.pDescriptorRanges = &cbvTable2;*/
-
 		D3D12_ROOT_PARAMETER params[] = { rootParam, rootParam2, rootParam3 };
 		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[1];
 		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC);
-		// Describe and serialize the root signature
 		D3D12_ROOT_SIGNATURE_DESC rootSig = {};
 		rootSig.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 		rootSig.NumParameters = 3;
@@ -272,11 +264,6 @@ void Game::CreateRootSigAndPipelineState()
 		psoDesc.InputLayout.NumElements = inputElementCount;
 		psoDesc.InputLayout.pInputElementDescs = inputElements;
 		psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		// Overall primitive topology type (triangle, line, etc.) is set here 
-		// IASetPrimTop() is still used to set list/strip/adj options
-		// See: https://docs.microsoft.com/en-us/windows/desktop/direct3d12/managing-graphics-pipeline-state-in-direct3d-12
-
-		// Root sig
 		psoDesc.pRootSignature = rootSignature;
 
 		// -- Shaders (VS/PS) --- 
@@ -418,17 +405,13 @@ void Game::Update(float deltaTime, float totalTime)
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
-// --------------------------------------------------------
-// Clear the screen, redraw everything, present to the user
-// --------------------------------------------------------
+
 void Game::Draw(float deltaTime, float totalTime)
 {
-	// Grab the current back buffer for this frame
+
 	ID3D12Resource* backBuffer = backBuffers[currentSwapBuffer];
 
-	// Clearing the render target
 	{
-		// Transition the back buffer from present to render target
 		D3D12_RESOURCE_BARRIER rb = {};
 		rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		rb.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -536,25 +519,25 @@ void Game::DrawMesh(Mesh* mesh)
 
 void Game::CreateMaterials()
 {
-	floorMaterial.Create(device.Get(),
+	heapCounter = floorMaterial.Create(device.Get(),
 		L"../../Assets/Textures/floor/diffuse.png",
 		L"../../Assets/Textures/floor/normal.png",
 		commandQueue,
-		numEntities + 1,
+		heapCounter,
 		gpuHeap);
 
-	scratchedMaterial.Create(device.Get(),
+	heapCounter = scratchedMaterial.Create(device.Get(),
 		L"../../Assets/Textures/scratched/diffuse.png",
 		L"../../Assets/Textures/scratched/normal.png",
 		commandQueue,
-		numEntities + 3,
+		heapCounter,
 		gpuHeap);
 
-	waterMaterial.Create(device.Get(),
+	heapCounter = waterMaterial.Create(device.Get(),
 		L"../../Assets/Textures/water/diffuse.png",
 		L"../../Assets/Textures/water/normal.png",
 		commandQueue,
-		numEntities + 5,
+		heapCounter,
 		gpuHeap);
 }
 

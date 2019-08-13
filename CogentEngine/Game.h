@@ -62,6 +62,7 @@ public:
 	void OnMouseWheel(float wheelDelta, int x, int y);
 
 private:
+	int heapCounter = 0;
 	void LoadShaders();
 	void CreateMatrices();
 	void CreateBasicGeometry();
