@@ -71,6 +71,7 @@ private:
 	ID3D12RootSignature* rootSignature;
 	ID3D12PipelineState* pipeState;
 	ID3D12PipelineState* pipeState2;
+	ID3D12PipelineState* skyPipeState;
 
 	GPUConstantBuffer gpuConstantBuffer;
 	GPUConstantBuffer pixelConstantBuffer;
@@ -81,6 +82,9 @@ private:
 
 	ID3DBlob* outlineVS;
 	ID3DBlob* outlinePS;
+
+	ID3DBlob* skyVS;
+	ID3DBlob* skyPS;
 
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	ID3D12Resource* vertexBuffer;
@@ -100,6 +104,7 @@ private:
 	DirectX::XMFLOAT4X4 projectionMatrix;
 
 	Mesh* sphere;
+	Mesh* skyCube;
 	Mesh* quad;
 	Mesh* cube;
 	Mesh* pawn;

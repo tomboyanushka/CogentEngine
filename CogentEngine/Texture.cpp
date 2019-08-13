@@ -4,18 +4,29 @@
 #include "DirectXHelpers.h"
 using namespace DirectX;
 
-void Texture::Create(ID3D12Device* device, const wchar_t* fileName, ID3D12CommandQueue* commandQueue, uint32_t index, const DescriptorHeap& heap)
+void Texture::Create(ID3D12Device* device, const wchar_t* fileName, ID3D12CommandQueue* commandQueue, uint32_t index, const DescriptorHeap& heap, TextureType type)
 {
 	this->cpuHandle = heap.handleCPU(index);
 	this->gpuHandle = heap.handleGPU(index);
-
+	bool isCubeMap = false;
 	ResourceUploadBatch resourceUpload(device);
 	resourceUpload.Begin();
-	CreateWICTextureFromFile(device, resourceUpload, fileName , resource.GetAddressOf(), true);
+	switch (type)
+	{
+	case WIC:
+		CreateWICTextureFromFile(device, resourceUpload, fileName, resource.GetAddressOf(), true);
+		break;
+
+	case DDS:
+		CreateDDSTextureFromFile(device, resourceUpload, fileName, resource.GetAddressOf(), true, 0, nullptr, &isCubeMap);
+		break;
+
+	}
+	
 	auto uploadResourcesFinished = resourceUpload.End(commandQueue);
 	uploadResourcesFinished.wait();
 
-	CreateShaderResourceView(device, resource.Get(), cpuHandle, false);
+	CreateShaderResourceView(device, resource.Get(), cpuHandle, isCubeMap);
 }
 
 ID3D12Resource* Texture::GetResource()

@@ -35,6 +35,7 @@ Game::~Game()
 	WaitForGPU();
 
 	delete sphere;
+	delete skyCube;
 	delete camera;
 
 	for (auto e : entities)
@@ -94,6 +95,9 @@ void Game::LoadShaders()
 
 	D3DReadFileToBlob(L"OutlineVS.cso", &outlineVS);
 	D3DReadFileToBlob(L"OutlinePS.cso", &outlinePS);
+
+	D3DReadFileToBlob(L"SkyVS.cso", &skyVS);
+	D3DReadFileToBlob(L"SkyPS.cso", &skyPS);
 
 	unsigned int bufferSize = sizeof(VertShaderExternalData);
 	bufferSize = (bufferSize + 255); 
@@ -155,6 +159,7 @@ void Game::CreateMatrices()
 void Game::CreateBasicGeometry()
 {
 	sphere = new Mesh("../../Assets/Models/sphere.obj", device.Get(), commandList);
+	skyCube = new Mesh("../../Assets/Models/cube.obj", device.Get(), commandList);
 
 	for (int i = 0; i < numEntities; ++i)
 	{
@@ -310,6 +315,26 @@ void Game::CreateRootSigAndPipelineState()
 		//psoDesc.DepthStencilState.DepthEnable = false;
 
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipeState2));
+
+		// -- SKY (VS/PS) --- 
+		psoDesc.VS.pShaderBytecode = skyVS->GetBufferPointer();
+		psoDesc.VS.BytecodeLength = skyVS->GetBufferSize();
+		psoDesc.PS.pShaderBytecode = skyPS->GetBufferPointer();
+		psoDesc.PS.BytecodeLength = skyPS->GetBufferSize();
+
+		D3D12_RASTERIZER_DESC rs = {};
+		rs.CullMode = D3D12_CULL_MODE_FRONT;
+		rs.FillMode = D3D12_FILL_MODE_SOLID;
+		psoDesc.RasterizerState = rs;
+		
+		D3D12_DEPTH_STENCIL_DESC ds = {};
+		ds.DepthEnable = true;
+		ds.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		ds.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		psoDesc.DepthStencilState = ds;
+
+		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&skyPipeState));
+		
 	}
 
 }
