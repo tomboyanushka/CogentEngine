@@ -46,6 +46,7 @@ public:
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
 	void CreateMaterials();
+	void DrawSky();
 
 	///AI functions
 	void CreateNavmesh();
@@ -71,7 +72,7 @@ private:
 	ID3D12RootSignature* rootSignature;
 	ID3D12PipelineState* pipeState;
 	ID3D12PipelineState* pipeState2;
-	ID3D12PipelineState* skyPipeState;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	GPUConstantBuffer gpuConstantBuffer;
 	GPUConstantBuffer pixelConstantBuffer;
@@ -103,6 +104,9 @@ private:
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projectionMatrix;
 
+	uint32_t skyIndex;
+	uint32_t skyHeapIndex;
+
 	Mesh* sphere;
 	Mesh* skyCube;
 	Mesh* quad;
@@ -112,15 +116,11 @@ private:
 	Texture brickTexture;
 	Texture woodTexture;
 	Texture chessTexture;
+	Texture skyTexture;
 
 	Material floorMaterial;
 	Material waterMaterial;
 	Material scratchedMaterial;
-
-	//ID3D12Resource* testTexture;
-	//ID3D12Resource* groundTexture;
-	//ID3D12Resource* woodTexture;
-	//ID3D12Resource* chessTexture;
 
 	D3D12_GPU_DESCRIPTOR_HANDLE testHandle;
 	D3D12_GPU_DESCRIPTOR_HANDLE woodHandle;

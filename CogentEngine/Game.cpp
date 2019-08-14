@@ -122,6 +122,13 @@ void Game::LoadShaders()
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
 	heapCounter++;
 
+	//sky
+	skyIndex = numEntities;
+	skyHeapIndex = heapCounter;
+	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(skyIndex);
+	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(skyHeapIndex));
+	heapCounter++;
+
 }
 
 void Game::CreateMatrices()
@@ -505,6 +512,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			DrawEntity(e);
 		}
 
+		DrawSky();
 
 	}
 
@@ -564,6 +572,31 @@ void Game::CreateMaterials()
 		commandQueue,
 		heapCounter,
 		gpuHeap);
+
+	skyTexture.Create(device.Get(),
+		L"../../Assets/Textures/SunnyCubeMap.dds",
+		commandQueue,
+		heapCounter,
+		gpuHeap,
+		DDS);
+	heapCounter++;
+
+}
+
+void Game::DrawSky()
+{
+	SkyboxExternalData skyboxExternalData = {};
+	skyboxExternalData.view = camera->GetViewMatrixTransposed();
+	skyboxExternalData.proj = camera->GetProjectionMatrixTransposed();
+
+	gpuConstantBuffer.CopyDataWithIndex(&skyboxExternalData, sizeof(SkyboxExternalData), skyIndex);
+
+	commandList->SetPipelineState(skyPipeState.Get());
+
+	commandList->SetGraphicsRootDescriptorTable(0, gpuHeap.handleGPU(skyHeapIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, skyTexture.GetGPUHandle());
+
+	DrawMesh(skyCube);
 }
 
 void Game::CreateNavmesh()

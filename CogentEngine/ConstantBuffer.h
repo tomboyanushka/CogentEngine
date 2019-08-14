@@ -9,6 +9,11 @@ struct VertShaderExternalData
 	XMFLOAT4X4 view;
 	XMFLOAT4X4 proj;
 };
+struct SkyboxExternalData
+{
+	XMFLOAT4X4 view;
+	XMFLOAT4X4 proj;
+};
 
 struct PixelShaderExternalData
 {
