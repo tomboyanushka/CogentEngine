@@ -3,7 +3,7 @@
 #include "Light.h"
 using namespace DirectX;
 
-struct VertShaderExternalData
+struct VertexShaderExternalData
 {
 	XMFLOAT4X4 world;
 	XMFLOAT4X4 view;
