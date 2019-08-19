@@ -2,7 +2,7 @@
 
 
 
-Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex, Material* material)
+Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv)
 {
 	this->mesh = mesh;
 	this->material = material;
@@ -12,6 +12,7 @@ Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint3
 	this->gpuAddress = address;
 	this->handle = hp;
 	this->boundingOrientedBox = mesh->GetBoundingBox();
+	this->cbv = cbv;
 }
 
 Entity::~Entity()
@@ -113,6 +114,11 @@ char * Entity::GetAddress()
 uint32_t Entity::GetConstantBufferIndex()
 {
 	return constantBufferIndex;
+}
+
+ConstantBufferView Entity::GetConstantBufferView()
+{
+	return cbv;
 }
 
 Material * Entity::GetMaterial()

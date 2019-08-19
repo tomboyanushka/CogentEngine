@@ -2,11 +2,12 @@
 #include <DirectXMath.h>
 #include "Mesh.h"
 #include "Material.h"
+#include "ConstantBufferView.h"
 using namespace DirectX;
 class Entity
 {
 public:
-	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex, Material* material);
+	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv);
 	~Entity();
 
 	XMFLOAT3 GetPosition(); 
@@ -28,6 +29,7 @@ public:
 	void UpdateWorldMatrix();
 	char* GetAddress();
 	uint32_t GetConstantBufferIndex();
+	ConstantBufferView GetConstantBufferView();
 
 
 	D3D12_GPU_DESCRIPTOR_HANDLE GetHandle();
@@ -49,6 +51,7 @@ private:
 	UINT64 handlePtr;
 	BoundingOrientedBox boundingOrientedBox;
 	BoundingOrientedBox box;
+	ConstantBufferView cbv;
 
 };
 

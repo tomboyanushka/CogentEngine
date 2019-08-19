@@ -17,8 +17,8 @@ Game::Game(HINSTANCE hInstance)
 		720,			   
 		true)			   
 {
-	vertexBuffer = 0;
-	indexBuffer = 0;
+	/*vertexBuffer = 0;
+	indexBuffer = 0;*/
 	camera = 0;
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -52,17 +52,18 @@ Game::~Game()
 void Game::Init()
 {
 	// Buffers must be multiples of 256 bytes!
-	unsigned int bufferSize = sizeof(VertShaderExternalData);
-	bufferSize = (bufferSize + 255); 
-	bufferSize = bufferSize & ~255; 
-	unsigned int pixelBufferSize = sizeof(PixelShaderExternalData);
-	bufferSize = (bufferSize + 255); 
-	bufferSize = bufferSize & ~255;  
+	//unsigned int bufferSize = sizeof(VertexShaderExternalData);
+	//bufferSize = (bufferSize + 255); 
+	//bufferSize = bufferSize & ~255; 
+	//unsigned int pixelBufferSize = sizeof(PixelShaderExternalData);
+	//bufferSize = (bufferSize + 255); 
+	//bufferSize = bufferSize & ~255;  
 
-	gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
-	pixelConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, pixelBufferSize);
+	frameManager.Initialize(device.Get());
+	//gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
+	//pixelConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, pixelBufferSize);
 
-	gpuHeap.Create(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+	//gpuHeap.Create(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 	//ambient diffuse direction intensity
 	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
 	// Reset the command list to start
@@ -71,8 +72,8 @@ void Game::Init()
 
 	LoadShaders();
 	CreateMatrices();
-	CreateBasicGeometry();
 	CreateMaterials();
+	CreateBasicGeometry();
 	CreateRootSigAndPipelineState();
 
 	//AI Initialization
@@ -99,63 +100,68 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"SkyVS.cso", &skyVS);
 	D3DReadFileToBlob(L"SkyPS.cso", &skyPS);
 
-	unsigned int bufferSize = sizeof(VertShaderExternalData);
+	unsigned int bufferSize = sizeof(VertexShaderExternalData);
 	bufferSize = (bufferSize + 255); 
 	bufferSize = bufferSize & ~255;  
 
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress();
-	cbvDesc.SizeInBytes = bufferSize; 
-	device->CreateConstantBufferView(&cbvDesc, gpuHeap.hCPUHeapStart); //hCPUHeapStart = handleCPU(0)
-	heapCounter++;
+	////D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+	////cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress();
+	////cbvDesc.SizeInBytes = bufferSize; 
+	////device->CreateConstantBufferView(&cbvDesc, gpuHeap.hCPUHeapStart); //hCPUHeapStart = handleCPU(0)
+	////heapCounter++;
+	//frameManager.CreateConstantBufferView(sizeof(VertexShaderExternalData));
 
-	D3D12_CPU_DESCRIPTOR_HANDLE handle = {};
+	//D3D12_CPU_DESCRIPTOR_HANDLE handle = {};
 
-	for (int i = 1; i < numEntities; ++i)
-	{
-		cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(i);
-		device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
-		heapCounter++;
-	}
+	//for (int i = 1; i < numEntities; ++i)
+	//{
+	//	/*cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(i);
+	//	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
+	//	heapCounter++;*/
+	//	frameManager.CreateConstantBufferView(sizeof(VertexShaderExternalData));
+	//}
 
-	cbvDesc.BufferLocation = pixelConstantBuffer.GetAddress();
-	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
-	heapCounter++;
+	//cbvDesc.BufferLocation = pixelConstantBuffer.GetAddress();
+	//device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
+	//heapCounter++;
+	pixelCBV = frameManager.CreateConstantBufferView(sizeof(PixelShaderExternalData));
 
 	//sky
-	skyIndex = numEntities;
-	skyHeapIndex = heapCounter;
-	cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(skyIndex);
-	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(skyHeapIndex));
-	heapCounter++;
+	//skyIndex = numEntities;
+	//skyHeapIndex = heapCounter;
+	//cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(skyIndex);
+	//device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(skyHeapIndex));
+	//heapCounter++;
+	skyCBV = frameManager.CreateConstantBufferView(sizeof(SkyboxExternalData));
+
 
 }
 
 void Game::CreateMatrices()
 {
-	XMMATRIX W = XMMatrixIdentity();
-	XMStoreFloat4x4(&worldMatrix1, XMMatrixTranspose(W)); 
+	//XMMATRIX W = XMMatrixIdentity();
+	//XMStoreFloat4x4(&worldMatrix1, XMMatrixTranspose(W)); 
 
-	XMMATRIX W2 = XMMatrixTranslation(-1, 0, 0);
-	XMMATRIX W3 = XMMatrixTranslation(1, 0, 0);
-	XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
-	XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
+	//XMMATRIX W2 = XMMatrixTranslation(-1, 0, 0);
+	//XMMATRIX W3 = XMMatrixTranslation(1, 0, 0);
+	//XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
+	//XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
 
-	XMVECTOR pos = XMVectorSet(5, 5, -5, 0);
-	XMVECTOR dir = XMVectorSet(0, -5, 1, 0);
-	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
-	XMMATRIX V = XMMatrixLookToLH(
-		pos,     
-		dir,     
-		up);     
-	XMStoreFloat4x4(&viewMatrix, XMMatrixTranspose(V)); 
+	//XMVECTOR pos = XMVectorSet(5, 5, -5, 0);
+	//XMVECTOR dir = XMVectorSet(0, -5, 1, 0);
+	//XMVECTOR up = XMVectorSet(0, 1, 0, 0);
+	//XMMATRIX V = XMMatrixLookToLH(
+	//	pos,     
+	//	dir,     
+	//	up);     
+	//XMStoreFloat4x4(&viewMatrix, XMMatrixTranspose(V)); 
 
-	XMMATRIX P = XMMatrixPerspectiveFovLH(
-		0.25f * 3.1415926535f,		// Field of View Angle
-		(float)width / height,		// Aspect ratio
-		0.1f,						// Near clip plane distance
-		100.0f);					// Far clip plane distance
-	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); 
+	//XMMATRIX P = XMMatrixPerspectiveFovLH(
+	//	0.25f * 3.1415926535f,		// Field of View Angle
+	//	(float)width / height,		// Aspect ratio
+	//	0.1f,						// Near clip plane distance
+	//	100.0f);					// Far clip plane distance
+	//XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); 
 
 	camera = new Camera(-1.5, 3.5, -7);
 	camera->UpdateProjectionMatrix((float)width / height);
@@ -170,7 +176,8 @@ void Game::CreateBasicGeometry()
 
 	for (int i = 0; i < numEntities; ++i)
 	{
-		entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i), i, &floorMaterial));
+		//entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i), i, &floorMaterial));
+		entities.push_back(frameManager.CreateEntity(sphere, &floorMaterial));
 	}
 
 	CloseExecuteAndResetCommandList();
@@ -348,7 +355,7 @@ void Game::CreateRootSigAndPipelineState()
 
 void Game::DrawEntity(Entity * entity)
 {
-	VertShaderExternalData vertexData = {};
+	VertexShaderExternalData vertexData = {};
 	vertexData.world = entity->GetWorldMatrix();
 	vertexData.view = camera->GetViewMatrixTransposed();
 	vertexData.proj = camera->GetProjectionMatrixTransposed();
@@ -356,8 +363,9 @@ void Game::DrawEntity(Entity * entity)
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.dirLight = light;
 
-	gpuConstantBuffer.CopyDataWithIndex(&vertexData, sizeof(VertShaderExternalData), entity->GetConstantBufferIndex());
-	commandList->SetGraphicsRootDescriptorTable(0, entity->GetHandle());
+	//gpuConstantBuffer.CopyDataWithIndex(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferIndex());
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
 
 	DrawMesh(entity->GetMesh());
@@ -368,12 +376,12 @@ void Game::OnResize()
 {
 	DXCore::OnResize();
 
-	XMMATRIX P = XMMatrixPerspectiveFovLH(
+	/*XMMATRIX P = XMMatrixPerspectiveFovLH(
 		0.25f * 3.1415926535f,	
 		(float)width / height,	
 		0.1f,				  	
 		100.0f);			  	
-	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); 
+	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); */
 }
 
 
@@ -433,7 +441,8 @@ void Game::Update(float deltaTime, float totalTime)
 	//for the callback functions
 	pool.ExecuteCallbacks();
 
-	pixelConstantBuffer.CopyData(&pixelData, sizeof(PixelShaderExternalData));
+	//pixelConstantBuffer.CopyData(&pixelData, sizeof(PixelShaderExternalData));
+	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
@@ -487,17 +496,17 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 		// Set constant buffer
-		commandList->SetDescriptorHeaps(1, gpuHeap.pDescriptorHeap.GetAddressOf());
+		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap().pDescriptorHeap.GetAddressOf());
 		
 		//for pixel shader
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
-			gpuHeap.handleGPU(numEntities));
+			frameManager.GetGPUHandle(pixelCBV.heapIndex));
 
-		//set const buffer for current mesh
-		commandList->SetGraphicsRootDescriptorTable(
-			0,
-			gpuHeap.hGPUHeapStart);
+		////set const buffer for current mesh
+		//commandList->SetGraphicsRootDescriptorTable(
+		//	0,
+		//	gpuHeap.hGPUHeapStart);
 
 		// Draw outline for mesh 
 		for (auto e : entities)
@@ -552,34 +561,53 @@ void Game::DrawMesh(Mesh* mesh)
 
 void Game::CreateMaterials()
 {
-	heapCounter = floorMaterial.Create(device.Get(),
+	//heapCounter = floorMaterial.Create(device.Get(),
+	//	L"../../Assets/Textures/floor/diffuse.png",
+	//	L"../../Assets/Textures/floor/normal.png",
+	//	commandQueue,
+	//	heapCounter,
+	//	gpuHeap);
+	floorMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/floor/diffuse.png",
 		L"../../Assets/Textures/floor/normal.png",
-		commandQueue,
-		heapCounter,
-		gpuHeap);
+		commandQueue);
 
-	heapCounter = scratchedMaterial.Create(device.Get(),
+	//heapCounter = scratchedMaterial.Create(device.Get(),
+	//	L"../../Assets/Textures/scratched/diffuse.png",
+	//	L"../../Assets/Textures/scratched/normal.png",
+	//	commandQueue,
+	//	heapCounter,
+	//	gpuHeap);
+	scratchedMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/scratched/diffuse.png",
 		L"../../Assets/Textures/scratched/normal.png",
-		commandQueue,
-		heapCounter,
-		gpuHeap);
+		commandQueue);
+	//
+	//heapCounter = waterMaterial.Create(device.Get(),
+	//	L"../../Assets/Textures/water/diffuse.png",
+	//	L"../../Assets/Textures/water/normal.png",
+	//	commandQueue,
+	//	heapCounter,
+	//	gpuHeap);
 
-	heapCounter = waterMaterial.Create(device.Get(),
+	waterMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/water/diffuse.png",
 		L"../../Assets/Textures/water/normal.png",
-		commandQueue,
-		heapCounter,
-		gpuHeap);
+		commandQueue);
 
-	skyTexture.Create(device.Get(),
+	//skyTexture.Create(device.Get(),
+	//	L"../../Assets/Textures/SunnyCubeMap.dds",
+	//	commandQueue,
+	//	heapCounter,
+	//	gpuHeap,
+	//	DDS);
+
+	skyTexture = frameManager.CreateTexture(
 		L"../../Assets/Textures/SunnyCubeMap.dds",
 		commandQueue,
-		heapCounter,
-		gpuHeap,
 		DDS);
-	heapCounter++;
+
+	//heapCounter++;
 
 }
 
@@ -589,11 +617,12 @@ void Game::DrawSky()
 	skyboxExternalData.view = camera->GetViewMatrixTransposed();
 	skyboxExternalData.proj = camera->GetProjectionMatrixTransposed();
 
-	gpuConstantBuffer.CopyDataWithIndex(&skyboxExternalData, sizeof(SkyboxExternalData), skyIndex);
+	/*gpuConstantBuffer.CopyDataWithIndex(&skyboxExternalData, sizeof(SkyboxExternalData), skyIndex);*/
+	frameManager.CopyData(&skyboxExternalData, sizeof(SkyboxExternalData), skyCBV);
 
 	commandList->SetPipelineState(skyPipeState.Get());
 
-	commandList->SetGraphicsRootDescriptorTable(0, gpuHeap.handleGPU(skyHeapIndex));
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(skyCBV.heapIndex));
 	commandList->SetGraphicsRootDescriptorTable(2, skyTexture.GetGPUHandle());
 
 	DrawMesh(skyCube);
