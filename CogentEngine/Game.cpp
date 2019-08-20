@@ -51,19 +51,8 @@ Game::~Game()
 
 void Game::Init()
 {
-	// Buffers must be multiples of 256 bytes!
-	//unsigned int bufferSize = sizeof(VertexShaderExternalData);
-	//bufferSize = (bufferSize + 255); 
-	//bufferSize = bufferSize & ~255; 
-	//unsigned int pixelBufferSize = sizeof(PixelShaderExternalData);
-	//bufferSize = (bufferSize + 255); 
-	//bufferSize = bufferSize & ~255;  
-
 	frameManager.Initialize(device.Get());
-	//gpuConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, bufferSize);
-	//pixelConstantBuffer.Create(device.Get(), C_MaxConstBufferSize, pixelBufferSize);
 
-	//gpuHeap.Create(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 	//ambient diffuse direction intensity
 	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
 	// Reset the command list to start
@@ -104,34 +93,8 @@ void Game::LoadShaders()
 	bufferSize = (bufferSize + 255); 
 	bufferSize = bufferSize & ~255;  
 
-	////D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-	////cbvDesc.BufferLocation = gpuConstantBuffer.GetAddress();
-	////cbvDesc.SizeInBytes = bufferSize; 
-	////device->CreateConstantBufferView(&cbvDesc, gpuHeap.hCPUHeapStart); //hCPUHeapStart = handleCPU(0)
-	////heapCounter++;
-	//frameManager.CreateConstantBufferView(sizeof(VertexShaderExternalData));
-
-	//D3D12_CPU_DESCRIPTOR_HANDLE handle = {};
-
-	//for (int i = 1; i < numEntities; ++i)
-	//{
-	//	/*cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(i);
-	//	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
-	//	heapCounter++;*/
-	//	frameManager.CreateConstantBufferView(sizeof(VertexShaderExternalData));
-	//}
-
-	//cbvDesc.BufferLocation = pixelConstantBuffer.GetAddress();
-	//device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(heapCounter));
-	//heapCounter++;
 	pixelCBV = frameManager.CreateConstantBufferView(sizeof(PixelShaderExternalData));
 
-	//sky
-	//skyIndex = numEntities;
-	//skyHeapIndex = heapCounter;
-	//cbvDesc.BufferLocation = gpuConstantBuffer.GetAddressWithIndex(skyIndex);
-	//device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(skyHeapIndex));
-	//heapCounter++;
 	skyCBV = frameManager.CreateConstantBufferView(sizeof(SkyboxExternalData));
 
 
@@ -139,30 +102,6 @@ void Game::LoadShaders()
 
 void Game::CreateMatrices()
 {
-	//XMMATRIX W = XMMatrixIdentity();
-	//XMStoreFloat4x4(&worldMatrix1, XMMatrixTranspose(W)); 
-
-	//XMMATRIX W2 = XMMatrixTranslation(-1, 0, 0);
-	//XMMATRIX W3 = XMMatrixTranslation(1, 0, 0);
-	//XMStoreFloat4x4(&worldMatrix2, XMMatrixTranspose(W2));
-	//XMStoreFloat4x4(&worldMatrix3, XMMatrixTranspose(W3));
-
-	//XMVECTOR pos = XMVectorSet(5, 5, -5, 0);
-	//XMVECTOR dir = XMVectorSet(0, -5, 1, 0);
-	//XMVECTOR up = XMVectorSet(0, 1, 0, 0);
-	//XMMATRIX V = XMMatrixLookToLH(
-	//	pos,     
-	//	dir,     
-	//	up);     
-	//XMStoreFloat4x4(&viewMatrix, XMMatrixTranspose(V)); 
-
-	//XMMATRIX P = XMMatrixPerspectiveFovLH(
-	//	0.25f * 3.1415926535f,		// Field of View Angle
-	//	(float)width / height,		// Aspect ratio
-	//	0.1f,						// Near clip plane distance
-	//	100.0f);					// Far clip plane distance
-	//XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); 
-
 	camera = new Camera(-1.5, 3.5, -7);
 	camera->UpdateProjectionMatrix((float)width / height);
 	camera->Rotate(0.5f, 0);
@@ -363,7 +302,6 @@ void Game::DrawEntity(Entity * entity)
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.dirLight = light;
 
-	//gpuConstantBuffer.CopyDataWithIndex(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferIndex());
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
@@ -441,7 +379,6 @@ void Game::Update(float deltaTime, float totalTime)
 	//for the callback functions
 	pool.ExecuteCallbacks();
 
-	//pixelConstantBuffer.CopyData(&pixelData, sizeof(PixelShaderExternalData));
 	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
@@ -503,11 +440,6 @@ void Game::Draw(float deltaTime, float totalTime)
 			1,
 			frameManager.GetGPUHandle(pixelCBV.heapIndex));
 
-		////set const buffer for current mesh
-		//commandList->SetGraphicsRootDescriptorTable(
-		//	0,
-		//	gpuHeap.hGPUHeapStart);
-
 		// Draw outline for mesh 
 		for (auto e : entities)
 		{
@@ -561,54 +493,25 @@ void Game::DrawMesh(Mesh* mesh)
 
 void Game::CreateMaterials()
 {
-	//heapCounter = floorMaterial.Create(device.Get(),
-	//	L"../../Assets/Textures/floor/diffuse.png",
-	//	L"../../Assets/Textures/floor/normal.png",
-	//	commandQueue,
-	//	heapCounter,
-	//	gpuHeap);
 	floorMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/floor/diffuse.png",
 		L"../../Assets/Textures/floor/normal.png",
 		commandQueue);
 
-	//heapCounter = scratchedMaterial.Create(device.Get(),
-	//	L"../../Assets/Textures/scratched/diffuse.png",
-	//	L"../../Assets/Textures/scratched/normal.png",
-	//	commandQueue,
-	//	heapCounter,
-	//	gpuHeap);
 	scratchedMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/scratched/diffuse.png",
 		L"../../Assets/Textures/scratched/normal.png",
 		commandQueue);
-	//
-	//heapCounter = waterMaterial.Create(device.Get(),
-	//	L"../../Assets/Textures/water/diffuse.png",
-	//	L"../../Assets/Textures/water/normal.png",
-	//	commandQueue,
-	//	heapCounter,
-	//	gpuHeap);
 
 	waterMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/water/diffuse.png",
 		L"../../Assets/Textures/water/normal.png",
 		commandQueue);
 
-	//skyTexture.Create(device.Get(),
-	//	L"../../Assets/Textures/SunnyCubeMap.dds",
-	//	commandQueue,
-	//	heapCounter,
-	//	gpuHeap,
-	//	DDS);
-
 	skyTexture = frameManager.CreateTexture(
 		L"../../Assets/Textures/SunnyCubeMap.dds",
 		commandQueue,
 		DDS);
-
-	//heapCounter++;
-
 }
 
 void Game::DrawSky()
@@ -808,26 +711,12 @@ bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouse
 // --------------------------------------------------------
 void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 {
-	// Add any custom code here...
-
-	// Save the previous mouse position, so we have it for the future
 	prevMousePos.x = x;
 	prevMousePos.y = y;
 
-	// Caputure the mouse so we keep getting mouse move
-	// events even if the mouse leaves the window.  we'll be
-	// releasing the capture once a mouse button is released
 	SetCapture(hWnd);
 	float distance;
-	/*selectedEntities.clear();*/
 
-	//if (IsIntersecting(entities[0], camera, x, y, distance) && !isSelected)
-	//{
-
-	//	selectedEntityIndex = 0;
-	//	printf("Selected Entity %d\n", selectedEntityIndex);
-	//	isSelected = true;
-	//}
 	if (IsIntersecting(entities[3], camera, x, y, distance) && isSelected)
 	{
 		currentIndex = 0;
@@ -835,8 +724,6 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 		pathFinderJob.targetPos = newDestination;
 		pathFinderJob.generator = &generator;
 		auto f2 = pool.Enqueue(&pathFinderJob);
-		//path = FindPath({ (int)entities[selectedEntityIndex]->GetPosition().x, (int)entities[selectedEntityIndex]->GetPosition().z }, { (int)newDestination.x, (int)newDestination.z });
-		//printf("Intersecting at %f %f %f\n", newDestination.x, newDestination.y, newDestination.z);
 		isSelected = false;
 	}
 
@@ -863,23 +750,12 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 
 }
 
-// --------------------------------------------------------
-// Helper method for mouse release
-// --------------------------------------------------------
+
 void Game::OnMouseUp(WPARAM buttonState, int x, int y)
 {
-	// Add any custom code here...
-
-	// We don't care about the tracking the cursor outside
-	// the window anymore (we're not dragging if the mouse is up)
 	ReleaseCapture();
 }
 
-// --------------------------------------------------------
-// Helper method for mouse movement.  We only get this message
-// if the mouse is currently over the window, or if we're 
-// currently capturing the mouse.
-// --------------------------------------------------------
 void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 {
 	// Add any custom code here...
@@ -895,11 +771,6 @@ void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 	prevMousePos.y = y;
 }
 
-// --------------------------------------------------------
-// Helper method for mouse wheel scrolling.  
-// WheelDelta may be positive or negative, depending 
-// on the direction of the scroll
-// --------------------------------------------------------
 void Game::OnMouseWheel(float wheelDelta, int x, int y)
 {
 	// Add any custom code here...
