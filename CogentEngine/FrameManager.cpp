@@ -30,16 +30,20 @@ ConstantBufferView FrameManager::CreateConstantBufferView(uint32_t bufferSize)
 Material FrameManager::CreateMaterial(
 	const wchar_t* diffuseTextureFileName,
 	const wchar_t* normalTextureFileName,
+	const wchar_t* metalTextureFileName,
+	const wchar_t* roughTextureFileName,
 	ID3D12CommandQueue* commandQueue)
 {
 	Material material;
-	material.Create(device,
+	frameHeapCounter = material.Create(device,
 		diffuseTextureFileName,
 		normalTextureFileName,
+		metalTextureFileName,
+		roughTextureFileName,
 		commandQueue,
 		frameHeapCounter,
 		gpuHeap);
-	frameHeapCounter += 2;
+	//frameHeapCounter += 4;
 	return material;
 }
 

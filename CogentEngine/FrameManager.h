@@ -16,6 +16,8 @@ public:
 	Material CreateMaterial(
 		const wchar_t* diffuseTextureFileName,
 		const wchar_t* normalTextureFileName,
+		const wchar_t* metalTextureFileName,
+		const wchar_t* roughTextureFileName,
 		ID3D12CommandQueue* commandQueue);
 
 	Texture CreateTexture(

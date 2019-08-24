@@ -46,6 +46,7 @@ Game::~Game()
 	rootSignature->Release();
 	pipeState->Release();
 	pipeState2->Release();
+	pbrPipeState->Release();
 }
 
 
@@ -88,6 +89,8 @@ void Game::LoadShaders()
 
 	D3DReadFileToBlob(L"SkyVS.cso", &skyVS);
 	D3DReadFileToBlob(L"SkyPS.cso", &skyPS);
+
+	D3DReadFileToBlob(L"PBRPixelShader.cso", &pbrPS);
 
 	unsigned int bufferSize = sizeof(VertexShaderExternalData);
 	bufferSize = (bufferSize + 255); 
@@ -257,6 +260,10 @@ void Game::CreateRootSigAndPipelineState()
 		// Create the pipe state object
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipeState));
 
+		//PBR pipe state
+		psoDesc.PS.pShaderBytecode = pbrPS->GetBufferPointer();
+		psoDesc.PS.BytecodeLength = pbrPS->GetBufferSize();
+		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pbrPipeState));
 
 		// -- Outline (VS/PS) --- 
 		psoDesc.VS.pShaderBytecode = outlineVS->GetBufferPointer();
@@ -447,7 +454,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		}
 
 		//Draw cel shaded mesh
-		commandList->SetPipelineState(pipeState);
+		commandList->SetPipelineState(pbrPipeState);
 		for (auto e : entities)
 		{
 			DrawEntity(e);
@@ -496,16 +503,22 @@ void Game::CreateMaterials()
 	floorMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/floor/diffuse.png",
 		L"../../Assets/Textures/floor/normal.png",
+		L"../../Assets/Textures/floor/metal.png",
+		L"../../Assets/Textures/floor/roughness.png",
 		commandQueue);
 
 	scratchedMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/scratched/diffuse.png",
 		L"../../Assets/Textures/scratched/normal.png",
+		L"../../Assets/Textures/scratched/metal.png",
+		L"../../Assets/Textures/scratched/roughness.png",
 		commandQueue);
 
 	waterMaterial = frameManager.CreateMaterial(
 		L"../../Assets/Textures/water/diffuse.png",
 		L"../../Assets/Textures/water/normal.png",
+		L"../../Assets/Textures/water/metal.png",
+		L"../../Assets/Textures/water/roughness.png",
 		commandQueue);
 
 	skyTexture = frameManager.CreateTexture(

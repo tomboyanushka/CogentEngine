@@ -64,7 +64,7 @@ public:
 	void OnMouseWheel(float wheelDelta, int x, int y);
 
 private:
-	//int heapCounter = 0;
+
 	void LoadShaders();
 	void CreateMatrices();
 	void CreateBasicGeometry();
@@ -73,11 +73,9 @@ private:
 	ID3D12RootSignature* rootSignature;
 	ID3D12PipelineState* pipeState;
 	ID3D12PipelineState* pipeState2;
+	ID3D12PipelineState* pbrPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
-	//GPUConstantBuffer gpuConstantBuffer;
-	//GPUConstantBuffer pixelConstantBuffer;
-	//DescriptorHeap gpuHeap;
 	FrameManager frameManager;
 	ConstantBufferView pixelCBV;
 	ConstantBufferView skyCBV;
@@ -91,25 +89,9 @@ private:
 	ID3DBlob* skyVS;
 	ID3DBlob* skyPS;
 
-	/*D3D12_VERTEX_BUFFER_VIEW vbView;
-	ID3D12Resource* vertexBuffer;
-
-	D3D12_INDEX_BUFFER_VIEW ibView;
-	ID3D12Resource* indexBuffer;
-
-	ID3D12DescriptorHeap* vsConstBufferDescriptorHeap;
-	ID3D12Resource* vsConstBufferUploadHeap;*/
+	ID3DBlob* pbrPS;
 
 	PixelShaderExternalData pixelData;
-
-	/*DirectX::XMFLOAT4X4 worldMatrix1;
-	DirectX::XMFLOAT4X4 worldMatrix2;
-	DirectX::XMFLOAT4X4 worldMatrix3;
-	DirectX::XMFLOAT4X4 viewMatrix;
-	DirectX::XMFLOAT4X4 projectionMatrix;*/
-
-	//uint32_t skyIndex;
-	//uint32_t skyHeapIndex;
 
 	Mesh* sphere;
 	Mesh* skyCube;
@@ -117,18 +99,11 @@ private:
 	Mesh* cube;
 	Mesh* pawn;
 
-	//Texture brickTexture;
-	//Texture woodTexture;
-	//Texture chessTexture;
 	Texture skyTexture;
 
 	Material floorMaterial;
 	Material waterMaterial;
 	Material scratchedMaterial;
-
-	//D3D12_GPU_DESCRIPTOR_HANDLE testHandle;
-	//D3D12_GPU_DESCRIPTOR_HANDLE woodHandle;
-	//D3D12_GPU_DESCRIPTOR_HANDLE chessHandle;
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;
