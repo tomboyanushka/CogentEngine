@@ -22,37 +22,43 @@
     <Filter Include="Source Files\Core">
       <UniqueIdentifier>{9c673b92-444d-44a7-b51b-4bfcfa519b58}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Core\JobSytsem">
+    <Filter Include="Header Files\JobSystem">
+      <UniqueIdentifier>{7c96d3b6-e609-46fd-98ad-a66ae630ed00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\JobSytsem">
       <UniqueIdentifier>{3852b58c-89ed-4499-8139-cf4fb0e784a9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Core\JobSystem">
-      <UniqueIdentifier>{7c96d3b6-e609-46fd-98ad-a66ae630ed00}</UniqueIdentifier>
+    <Filter Include="Header Files\Model">
+      <UniqueIdentifier>{1f804218-805d-40c2-b9fe-a602dd47567f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utility">
+      <UniqueIdentifier>{9ee79d4a-96c1-4817-b29c-baa63a0f596d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game">
+      <UniqueIdentifier>{9159ef8a-ccfa-45a6-94df-04c2efaf79de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Model">
+      <UniqueIdentifier>{443650f2-d895-403e-bdde-211cae4e04c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game">
+      <UniqueIdentifier>{11c001d4-b1e7-4c06-b9a8-2f2f7af8a527}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utility">
+      <UniqueIdentifier>{69c18629-9b05-4d19-98ee-2770fc65e1b1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Vertex.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ConstantBuffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="IJob.h">
-      <Filter>Header Files\Core\JobSystem</Filter>
+      <Filter>Header Files\JobSystem</Filter>
     </ClInclude>
     <ClInclude Include="Job.h">
-      <Filter>Header Files\Core\JobSystem</Filter>
+      <Filter>Header Files\JobSystem</Filter>
     </ClInclude>
     <ClInclude Include="ThreadPool.h">
-      <Filter>Header Files\Core\JobSystem</Filter>
+      <Filter>Header Files\JobSystem</Filter>
     </ClInclude>
     <ClInclude Include="ConcurrentQueue.h">
-      <Filter>Header Files\Core\JobSystem</Filter>
+      <Filter>Header Files\JobSystem</Filter>
     </ClInclude>
     <ClInclude Include="DXCore.h">
       <Filter>Header Files\Core</Filter>
@@ -63,55 +69,61 @@
     <ClInclude Include="Light.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Entity.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AStar.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="d3dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DXUtility.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="FrameManager.h">
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="Constants.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FrameManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="ConstantBufferView.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBuffer.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Header Files\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Header Files\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="DXUtility.h">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Header Files\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="AStar.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>Header Files\Game</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Game.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="IJob.cpp">
-      <Filter>Source Files\Core\JobSytsem</Filter>
+      <Filter>Source Files\JobSytsem</Filter>
     </ClCompile>
     <ClCompile Include="Job.cpp">
-      <Filter>Source Files\Core\JobSytsem</Filter>
+      <Filter>Source Files\JobSytsem</Filter>
     </ClCompile>
     <ClCompile Include="ThreadPool.cpp">
-      <Filter>Source Files\Core\JobSytsem</Filter>
+      <Filter>Source Files\JobSytsem</Filter>
     </ClCompile>
     <ClCompile Include="ConcurrentQueue.cpp">
-      <Filter>Source Files\Core\JobSytsem</Filter>
+      <Filter>Source Files\JobSytsem</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files\Core</Filter>
@@ -119,23 +131,29 @@
     <ClCompile Include="DXCore.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Entity.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="AStar.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Game</Filter>
     </ClCompile>
     <ClCompile Include="DXUtility.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Entity.cpp">
+      <Filter>Source Files\Game</Filter>
     </ClCompile>
     <ClCompile Include="FrameManager.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Game.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Source Files\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Source Files\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source Files\Model</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
