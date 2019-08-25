@@ -198,7 +198,7 @@ float3 PointLightPBR(PointLight light, float3 normal, float3 worldPos, float3 ca
 	float3 balancedDiff = DiffuseEnergyConserve(diff, spec, metalness);
 
 	// Combine
-	return (balancedDiff * surfaceColor + spec) * atten * light.Intensity * light.Color;
+	return (balancedDiff * surfaceColor + spec) * atten * light.Intensity * light.Color.rgb;
 }
 
 float3 SpotLightPBR(SpotLight light, float3 normal, float3 worldPos, float3 camPos,
@@ -227,7 +227,7 @@ float3 SpotLightPBR(SpotLight light, float3 normal, float3 worldPos, float3 camP
 	float3 balancedDiff = DiffuseEnergyConserve(diff, spec, metalness);
 
 	// Combine
-	float3 final = (balancedDiff * surfaceColor + spec) * atten * light.Intensity * light.Color;
+	float3 final = (balancedDiff * surfaceColor + spec) * atten * light.Intensity * light.Color.rgb;
 	final = final * penumbra;
 	// Combine with the point light calculation
 	// Note: This could be optimized a bit

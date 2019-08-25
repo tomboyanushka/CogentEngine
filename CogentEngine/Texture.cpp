@@ -18,7 +18,7 @@ void Texture::Create(ID3D12Device* device, const wchar_t* fileName, ID3D12Comman
 		break;
 
 	case DDS:
-		CreateDDSTextureFromFile(device, resourceUpload, fileName, resource.GetAddressOf(), true, 0, nullptr, &isCubeMap);
+		CreateDDSTextureFromFile(device, resourceUpload, fileName, resource.GetAddressOf(), false, 0, nullptr, &isCubeMap);
 		break;
 
 	}

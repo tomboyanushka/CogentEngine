@@ -11,8 +11,8 @@ uint32_t Material::Create(ID3D12Device* device,
 {
 	diffuseTexture.Create(device, diffuseTextureFileName, commandQueue, index, heap);
 	normalTexture.Create(device, normalTextureFileName, commandQueue, index + 1, heap);
-	metalTexture.Create(device, normalTextureFileName, commandQueue, index + 2, heap);
-	roughTexture.Create(device, normalTextureFileName, commandQueue, index + 3, heap);
+	metalTexture.Create(device, metalTextureFileName, commandQueue, index + 2, heap);
+	roughTexture.Create(device, roughTextureFileName, commandQueue, index + 3, heap);
 
 	return index + 4; //returning next index to be used for a new material
 }

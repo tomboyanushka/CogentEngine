@@ -140,55 +140,69 @@ void Game::CreateRootSigAndPipelineState()
 
 	// Root Sig
 	{
-		D3D12_DESCRIPTOR_RANGE cbvTable = {};
+		D3D12_DESCRIPTOR_RANGE cbvTable = {}; // Root Parameter Index = 0
 		cbvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 		cbvTable.NumDescriptors = 1;
 		cbvTable.BaseShaderRegister = 0;
 		cbvTable.RegisterSpace = 0;
 		cbvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-		D3D12_DESCRIPTOR_RANGE cbvTable2 = {};
+		D3D12_DESCRIPTOR_RANGE cbvTable2 = {}; // Root Parameter Index  = 1
 		cbvTable2.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 		cbvTable2.NumDescriptors = 1;
 		cbvTable2.BaseShaderRegister = 0;
 		cbvTable2.RegisterSpace = 0;
 		cbvTable2.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-		D3D12_DESCRIPTOR_RANGE srvTable = {};
+		//for materials
+		D3D12_DESCRIPTOR_RANGE srvTable = {}; // Root Parameter Index  = 2
 		srvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-		srvTable.NumDescriptors = 2;
+		srvTable.NumDescriptors = 4;
 		srvTable.BaseShaderRegister = 0;
 		srvTable.RegisterSpace = 0;
 		srvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+		//for ibl textures
+		D3D12_DESCRIPTOR_RANGE srvTable2 = {}; // Root Parameter Index  = 3
+		srvTable2.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		srvTable2.NumDescriptors = 3;
+		srvTable2.BaseShaderRegister = 4;
+		srvTable2.RegisterSpace = 0;
+		srvTable2.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 		// Create the root parameter
-		D3D12_ROOT_PARAMETER rootParam = {};
+		D3D12_ROOT_PARAMETER rootParam = {}; // Root Parameter Index = 0
 		rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 		rootParam.DescriptorTable.NumDescriptorRanges = 1;
 		rootParam.DescriptorTable.pDescriptorRanges = &cbvTable;
 
 		//to pass the pixel constant buffer
-		D3D12_ROOT_PARAMETER rootParam2 = {};
+		D3D12_ROOT_PARAMETER rootParam2 = {}; // Root Parameter Index = 1
 		rootParam2.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		rootParam2.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		rootParam2.DescriptorTable.NumDescriptorRanges = 1;
 		rootParam2.DescriptorTable.pDescriptorRanges = &cbvTable2;
 
-		//to pass the pixel constant buffer
-		D3D12_ROOT_PARAMETER rootParam3 = {};
+		//to pass the materials
+		D3D12_ROOT_PARAMETER rootParam3 = {}; // Root Parameter Index = 2
 		rootParam3.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;  
-		rootParam3.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+		rootParam3.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		rootParam3.DescriptorTable.NumDescriptorRanges = 1;
 		rootParam3.DescriptorTable.pDescriptorRanges = &srvTable;
 
-		D3D12_ROOT_PARAMETER params[] = { rootParam, rootParam2, rootParam3 };
+		D3D12_ROOT_PARAMETER rootParam4 = {}; // Root Parameter Index = 3
+		rootParam4.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParam4.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParam4.DescriptorTable.NumDescriptorRanges = 1;
+		rootParam4.DescriptorTable.pDescriptorRanges = &srvTable2;
+
+		D3D12_ROOT_PARAMETER params[] = { rootParam, rootParam2, rootParam3, rootParam4 };
 		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[1];
 		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC);
 		D3D12_ROOT_SIGNATURE_DESC rootSig = {};
 		rootSig.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		rootSig.NumParameters = 3;
+		rootSig.NumParameters = 4;
 		rootSig.pParameters = params;
 		rootSig.NumStaticSamplers = 1;
 		rootSig.pStaticSamplers = StaticSamplers;
@@ -447,11 +461,16 @@ void Game::Draw(float deltaTime, float totalTime)
 			1,
 			frameManager.GetGPUHandle(pixelCBV.heapIndex));
 
-		// Draw outline for mesh 
-		for (auto e : entities)
-		{
-			DrawEntity(e);
-		}
+		//for ibl
+		commandList->SetGraphicsRootDescriptorTable(
+			3,
+			skyIrradiance.GetGPUHandle()
+		);
+		//// Draw outline for mesh 
+		//for (auto e : entities)
+		//{
+		//	DrawEntity(e);
+		//}
 
 		//Draw cel shaded mesh
 		commandList->SetPipelineState(pbrPipeState);
@@ -522,9 +541,25 @@ void Game::CreateMaterials()
 		commandQueue);
 
 	skyTexture = frameManager.CreateTexture(
-		L"../../Assets/Textures/SunnyCubeMap.dds",
+		L"../../Assets/Textures/skybox/envEnvHDR.dds",
 		commandQueue,
 		DDS);
+
+	skyIrradiance = frameManager.CreateTexture(
+		L"../../Assets/Textures/skybox/envDiffuseHDR.dds",
+		commandQueue,
+		DDS);
+
+	skyPrefilter = frameManager.CreateTexture(
+		L"../../Assets/Textures/skybox/envSpecularHDR.dds",
+		commandQueue,
+		DDS);
+
+	brdfLookUpTexture = frameManager.CreateTexture(
+		L"../../Assets/Textures/skybox/envBrdf.dds",
+		commandQueue,
+		DDS);
+
 }
 
 void Game::DrawSky()

@@ -100,6 +100,9 @@ private:
 	Mesh* pawn;
 
 	Texture skyTexture;
+	Texture skyIrradiance;
+	Texture skyPrefilter;
+	Texture brdfLookUpTexture;
 
 	Material floorMaterial;
 	Material waterMaterial;
