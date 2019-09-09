@@ -13,6 +13,8 @@ class Mesh
 public:
 
 	Mesh(const char* file, ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+	Mesh(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount,
+		ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 	~Mesh();
 
 	ID3D12Resource * GetVertexBuffer();
@@ -25,10 +27,23 @@ public:
 	std::vector<UINT> GetIndices();
 
 
-	HRESULT CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12Resource** uploadHeap);
-	HRESULT CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, D3D12_VERTEX_BUFFER_VIEW * vbView, ID3D12Device * device, ID3D12GraphicsCommandList* commandList);
-	HRESULT CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void * data, ID3D12Resource ** buffer, D3D12_INDEX_BUFFER_VIEW * ibView, ID3D12Device * device, ID3D12GraphicsCommandList* commandList);
-	void CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount, ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+	HRESULT CreateStaticBuffer(
+		unsigned int dataStride, 
+		unsigned int dataCount, 
+		void * data, 
+		ID3D12Resource ** buffer, 
+		ID3D12Device* device, 
+		ID3D12GraphicsCommandList* commandList, 
+		ID3D12Resource** uploadHeap);
+
+	HRESULT CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, 
+		D3D12_VERTEX_BUFFER_VIEW * vbView, ID3D12Device * device, ID3D12GraphicsCommandList* commandList);
+
+	HRESULT CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void * data, ID3D12Resource ** buffer, 
+		D3D12_INDEX_BUFFER_VIEW * ibView, ID3D12Device * device, ID3D12GraphicsCommandList* commandList);
+
+	void CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount, 
+		ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 
 private:
 	ID3D12Resource * vertexBuffer;

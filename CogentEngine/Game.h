@@ -20,6 +20,7 @@
 #include "Light.h"
 
 #include "Mesh.h"
+#include "ModelLoader.h"
 #include "Entity.h"
 
 #include "Texture.h"
@@ -85,7 +86,7 @@ private:
 
 	ID3DBlob* outlineVS;
 	ID3DBlob* outlinePS;
-
+	 
 	ID3DBlob* skyVS;
 	ID3DBlob* skyPS;
 
@@ -98,6 +99,8 @@ private:
 	Mesh* quad;
 	Mesh* cube;
 	Mesh* pawn;
+
+	ModelLoader mLoader;
 
 	Texture skyTexture;
 	Texture skyIrradiance;
