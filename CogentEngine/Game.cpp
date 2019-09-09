@@ -111,10 +111,10 @@ void Game::CreateMatrices()
 
 void Game::CreateBasicGeometry()
 {
-	sphere = new Mesh("../../Assets/Models/sphere.obj", device.Get(), commandList);
-	//sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
-	skyCube = new Mesh("../../Assets/Models/cube.obj", device.Get(), commandList);
-	//skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
+	//sphere = new Mesh("../../Assets/Models/sphere.obj", device.Get(), commandList);
+	sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
+	//skyCube = new Mesh("../../Assets/Models/cube.obj", device.Get(), commandList);
+	skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
 
 	for (int i = 0; i < numEntities; ++i)
 	{
@@ -479,7 +479,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			DrawEntity(e);
 		}
 
-		//DrawSky();
+		DrawSky();
 
 	}
 
