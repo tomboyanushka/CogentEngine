@@ -86,6 +86,13 @@ Mesh::Mesh(const char * objFile, ID3D12Device * device, ID3D12GraphicsCommandLis
 	this->indices = indexVals;
 }
 
+Mesh::Mesh(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount, ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+{
+	CreateBasicGeometry(vertices, vertexCount, indices, indexCount, device, commandList);
+	this->vertexCount = vertexCount;
+	this->indexCount = indexCount;
+}
+
 void CalculateTangents(Vertex* vertices, UINT vertexCount, UINT* indices, UINT indexCount)
 {
 	XMFLOAT3* tan1 = new XMFLOAT3[vertexCount * 2];
@@ -323,8 +330,6 @@ void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t*
 	CreateVertexBuffer(sizeof(Vertex), vertexCount, vertices, &vertexBuffer, &vbView, device, commandList);
 	CreateIndexBuffer(DXGI_FORMAT_R32_UINT, indexCount, indices, &indexBuffer, &ibView, device, commandList);
 
-
-
 	XMFLOAT3 vMinf3(FLT_MAX, FLT_MAX, FLT_MAX);
 	XMFLOAT3 vMaxf3(FLT_MIN, FLT_MIN, FLT_MIN);
 
@@ -339,6 +344,4 @@ void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t*
 	
 	XMStoreFloat3(&boundingBox.Center, 0.5f * (vMin + vMax));
 	XMStoreFloat3(&boundingBox.Extents, 0.5f * (vMax - vMin));
-	
-
 }

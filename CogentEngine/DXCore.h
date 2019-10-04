@@ -64,7 +64,7 @@ protected:
 	unsigned int height;
 
 	// How many swap chain buffers
-	static const unsigned int numBackBuffers = 2;
+	static const unsigned int numBackBuffers = 3;
 	unsigned int currentSwapBuffer = 0;
 
 	// DirectX related objects and variables
@@ -73,7 +73,7 @@ protected:
 	IDXGISwapChain*			swapChain;
 	Microsoft::WRL::ComPtr<ID3D12Device>	device;
 
-	bool					vsync = false;
+	bool					vsync = true;
 
 	D3D12_VIEWPORT			viewport;
 	D3D12_RECT				scissorRect;
