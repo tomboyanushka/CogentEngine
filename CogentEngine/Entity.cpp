@@ -41,8 +41,8 @@ void Entity::SetScale(XMFLOAT3 setScale)
 void Entity::SetRotation(XMFLOAT3 setRot)
 {
 	rotation.x = setRot.x * XM_PI / 180;
-	rotation.y = setRot.y * XM_PIDIV2;
-	rotation.z = setRot.z * XM_PIDIV2;
+	rotation.y = setRot.y * XM_PI / 180;
+	rotation.z = setRot.z * XM_PI / 180;
 }
 
 void Entity::Move(float x, float y, float z)
