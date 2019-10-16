@@ -43,7 +43,6 @@ Material FrameManager::CreateMaterial(
 		commandQueue,
 		frameHeapCounter,
 		gpuHeap);
-	//frameHeapCounter += 4;
 	return material;
 }
 

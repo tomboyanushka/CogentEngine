@@ -17,9 +17,7 @@ struct VertexToPixel
 
 Texture2D diffuseTexture		: register(t0);
 Texture2D normalTexture			: register(t1);
-Texture2D roughnessTexture	: register(t2);
-Texture2D metalTexture		: register(t3);
-SamplerState basicSampler	: register(s0);
+SamplerState basicSampler		: register(s0);
 
 float3 calculateNormalFromMap(float2 uv, float3 normal, float3 tangent)
 {

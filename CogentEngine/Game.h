@@ -1,3 +1,12 @@
+/*
+	Naming Convention:
+	sm_exampleStaticMesh
+	dm_exampleDynamicMesh //with animations / input for movement
+	e_exampleEntity
+	t_texture
+	m_material
+
+*/
 #pragma once
 
 #define ScreenWidth = 1280
@@ -48,6 +57,7 @@ public:
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
 	void CreateMaterials();
+	void CreateTextures();
 	void DrawSky();
 
 	///AI functions
@@ -72,8 +82,8 @@ private:
 	void CreateRootSigAndPipelineState();
 
 	ID3D12RootSignature* rootSignature;
-	ID3D12PipelineState* pipeState;
-	ID3D12PipelineState* pipeState2;
+	ID3D12PipelineState* toonShadingPipeState;
+	ID3D12PipelineState* outlinePipeState;
 	ID3D12PipelineState* pbrPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
@@ -94,22 +104,27 @@ private:
 
 	PixelShaderExternalData pixelData;
 
-	Mesh* sphere;
-	Mesh* skyCube;
-	Mesh* quad;
-	Mesh* cube;
-	Mesh* pawn;
+
+	Mesh* sm_sphere;
+	Mesh* sm_skyCube;
+	Mesh* sm_quad;
+	Mesh* sm_cube;
+	Mesh* dm_pawn;
+	Mesh* sm_plane;
 
 	ModelLoader mLoader;
 
-	Texture skyTexture;
+	Texture t_skyTexture;
 	Texture skyIrradiance;
 	Texture skyPrefilter;
 	Texture brdfLookUpTexture;
 
-	Material floorMaterial;
-	Material waterMaterial;
-	Material scratchedMaterial;
+	Material m_floor;
+	Material m_water;
+	Material m_scratchedPaint;
+	Material m_plane;
+
+	Entity* e_plane;
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;

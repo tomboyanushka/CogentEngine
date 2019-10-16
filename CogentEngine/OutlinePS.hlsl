@@ -10,7 +10,7 @@ struct VertexToPixel
 
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	float3 lineColor = float3(0, 0, 0);
+	float3 lineColor = float3(1, 1, 1);
 
 	return float4(lineColor,1);
 }

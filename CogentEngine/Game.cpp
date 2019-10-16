@@ -34,8 +34,10 @@ Game::~Game()
 	// Don't clean up until GPU is actually done
 	WaitForGPU();
 
-	delete sphere;
-	delete skyCube;
+	delete sm_sphere;
+	delete sm_skyCube;
+	delete sm_plane;
+	delete e_plane;
 	delete camera;
 
 	for (auto e : entities)
@@ -44,8 +46,8 @@ Game::~Game()
 	}
 
 	rootSignature->Release();
-	pipeState->Release();
-	pipeState2->Release();
+	toonShadingPipeState->Release();
+	outlinePipeState->Release();
 	pbrPipeState->Release();
 }
 
@@ -62,6 +64,7 @@ void Game::Init()
 
 	LoadShaders();
 	CreateMatrices();
+	CreateTextures();
 	CreateMaterials();
 	CreateBasicGeometry();
 	CreateRootSigAndPipelineState();
@@ -111,16 +114,17 @@ void Game::CreateMatrices()
 
 void Game::CreateBasicGeometry()
 {
-	//sphere = new Mesh("../../Assets/Models/sphere.obj", device.Get(), commandList);
-	sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
-	//skyCube = new Mesh("../../Assets/Models/cube.obj", device.Get(), commandList);
-	skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
+	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
+	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
+	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 
 	for (int i = 0; i < numEntities; ++i)
 	{
 		//entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i), i, &floorMaterial));
-		entities.push_back(frameManager.CreateEntity(sphere, &floorMaterial));
+		entities.push_back(frameManager.CreateEntity(sm_sphere, &m_floor));
 	}
+
+	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -272,7 +276,7 @@ void Game::CreateRootSigAndPipelineState()
 		psoDesc.SampleMask = 0xffffffff;
 
 		// Create the pipe state object
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipeState));
+		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&toonShadingPipeState));
 
 		//PBR pipe state
 		psoDesc.PS.pShaderBytecode = pbrPS->GetBufferPointer();
@@ -288,7 +292,7 @@ void Game::CreateRootSigAndPipelineState()
 		psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
 		//psoDesc.DepthStencilState.DepthEnable = false;
 
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipeState2));
+		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&outlinePipeState));
 
 		// -- SKY (VS/PS) --- 
 		psoDesc.VS.pShaderBytecode = skyVS->GetBufferPointer();
@@ -307,10 +311,8 @@ void Game::CreateRootSigAndPipelineState()
 		ds.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 		psoDesc.DepthStencilState = ds;
 
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&skyPipeState));
-		
+		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&skyPipeState));	
 	}
-
 }
 
 void Game::DrawEntity(Entity * entity)
@@ -368,18 +370,22 @@ void Game::Update(float deltaTime, float totalTime)
 		pos.y = -4;
 	}
 
-
+	//SRT
 
 	entities[0]->SetPosition(job2.pos);
 	auto bounds = entities[0]->GetBoundingOrientedBox();
 
 	entities[1]->SetPosition(XMFLOAT3(0, 0, 0));
-	entities[1]->SetMaterial(&scratchedMaterial);
+	entities[1]->SetMaterial(&m_scratchedPaint);
 
-	entities[2]->SetPosition(XMFLOAT3(2, 0, 0));
-	entities[2]->SetMaterial(&waterMaterial);
+	entities[2]->SetPosition(XMFLOAT3(1, 0, 0));
+	entities[2]->SetMaterial(&m_water);
 
-	entities[3]->SetPosition(XMFLOAT3(-2, 0, 0));
+	entities[3]->SetPosition(XMFLOAT3(-1, 0, 0));
+
+	e_plane->SetRotation(XMFLOAT3(-90, 0, 0));
+	e_plane->SetPosition(XMFLOAT3(2, -4, 0));
+	e_plane->SetMaterial(&m_plane);
 
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
@@ -441,7 +447,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	// Rendering here!
 	{
 		// Set overall pipeline state
-		commandList->SetPipelineState(pipeState2);
+		commandList->SetPipelineState(outlinePipeState);
 
 		// Root sig (must happen before root descriptor table)
 		commandList->SetGraphicsRootSignature(rootSignature);
@@ -466,18 +472,17 @@ void Game::Draw(float deltaTime, float totalTime)
 			3,
 			skyIrradiance.GetGPUHandle()
 		);
-		//// Draw outline for mesh 
-		//for (auto e : entities)
-		//{
-		//	DrawEntity(e);
-		//}
 
-		//Draw cel shaded mesh
 		commandList->SetPipelineState(pbrPipeState);
 		for (auto e : entities)
 		{
 			DrawEntity(e);
 		}
+		commandList->SetPipelineState(outlinePipeState);
+		DrawEntity(e_plane);
+		commandList->SetPipelineState(toonShadingPipeState);
+		DrawEntity(e_plane);
+
 
 		DrawSky();
 
@@ -519,28 +524,38 @@ void Game::DrawMesh(Mesh* mesh)
 
 void Game::CreateMaterials()
 {
-	floorMaterial = frameManager.CreateMaterial(
+	m_floor = frameManager.CreateMaterial(
 		L"../../Assets/Textures/floor/diffuse.png",
 		L"../../Assets/Textures/floor/normal.png",
 		L"../../Assets/Textures/floor/metal.png",
 		L"../../Assets/Textures/floor/roughness.png",
 		commandQueue);
 
-	scratchedMaterial = frameManager.CreateMaterial(
+	m_scratchedPaint = frameManager.CreateMaterial(
 		L"../../Assets/Textures/scratched/diffuse.png",
 		L"../../Assets/Textures/scratched/normal.png",
 		L"../../Assets/Textures/scratched/metal.png",
 		L"../../Assets/Textures/scratched/roughness.png",
 		commandQueue);
 
-	waterMaterial = frameManager.CreateMaterial(
+	m_water = frameManager.CreateMaterial(
 		L"../../Assets/Textures/water/diffuse.png",
 		L"../../Assets/Textures/water/normal.png",
 		L"../../Assets/Textures/water/metal.png",
 		L"../../Assets/Textures/water/roughness.png",
 		commandQueue);
 
-	skyTexture = frameManager.CreateTexture(
+	m_plane = frameManager.CreateMaterial(
+		L"../../Assets/Textures/plane/diffuse.png",
+		L"../../Assets/Textures/plane/normal.png",
+		L"../../Assets/Textures/default_metal.png",
+		L"../../Assets/Textures/default_roughness.png",
+		commandQueue);
+}
+
+void Game::CreateTextures()
+{
+	t_skyTexture = frameManager.CreateTexture(
 		L"../../Assets/Textures/skybox/envEnvHDR.dds",
 		commandQueue,
 		DDS);
@@ -559,7 +574,6 @@ void Game::CreateMaterials()
 		L"../../Assets/Textures/skybox/envBrdf.dds",
 		commandQueue,
 		DDS);
-
 }
 
 void Game::DrawSky()
@@ -574,9 +588,9 @@ void Game::DrawSky()
 	commandList->SetPipelineState(skyPipeState.Get());
 
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(skyCBV.heapIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, skyTexture.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle());
 
-	DrawMesh(skyCube);
+	DrawMesh(sm_skyCube);
 }
 
 void Game::CreateNavmesh()

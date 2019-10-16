@@ -32,7 +32,7 @@ VertexToPixel main(VertexShaderInput input)
 {
 	// Set up output struct
 	VertexToPixel output;
-	float lineThickness = 0.01f;
+	float lineThickness = 0.02f;
 	matrix worldViewProj = mul(mul(world, view), projection);
 	float4 original = mul(float4(input.position + input.normal * lineThickness , 1.0f), worldViewProj);
 	//float4 original = mul(input.position, worldViewProj);
