@@ -765,34 +765,34 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	SetCapture(hWnd);
 	float distance;
 
-	if (IsIntersecting(entities[3], camera, x, y, distance) && isSelected)
-	{
-		currentIndex = 0;
-		pathFinderJob.currentPos = entities[selectedEntityIndex]->GetPosition();
-		pathFinderJob.targetPos = newDestination;
-		pathFinderJob.generator = &generator;
-		auto f2 = pool.Enqueue(&pathFinderJob);
-		isSelected = false;
-	}
+	//if (IsIntersecting(entities[3], camera, x, y, distance) && isSelected)
+	//{
+	//	currentIndex = 0;
+	//	pathFinderJob.currentPos = entities[selectedEntityIndex]->GetPosition();
+	//	pathFinderJob.targetPos = newDestination;
+	//	pathFinderJob.generator = &generator;
+	//	auto f2 = pool.Enqueue(&pathFinderJob);
+	//	isSelected = false;
+	//}
 
 
-	for (int i = 0; i < entities.size(); ++i)
-	{
-		if (IsIntersecting(entities[i], camera, x, y, distance) && i != 3)
-		{
-			selectedEntityIndex = i;
-			isSelected = true;
-			printf("Intersecting %d\n", i);
-			printf("Selected Entity %d\n", selectedEntityIndex);
-			break;
-		}
-		else if(i != 3)
-		{
-			//selectedEntityIndex = -1;
-			printf("Unselect Entity \n");
-			isSelected = false;
-		}
-	}
+	//for (int i = 0; i < entities.size(); ++i)
+	//{
+	//	if (IsIntersecting(entities[i], camera, x, y, distance) && i != 3)
+	//	{
+	//		selectedEntityIndex = i;
+	//		isSelected = true;
+	//		printf("Intersecting %d\n", i);
+	//		printf("Selected Entity %d\n", selectedEntityIndex);
+	//		break;
+	//	}
+	//	else if(i != 3)
+	//	{
+	//		//selectedEntityIndex = -1;
+	//		printf("Unselect Entity \n");
+	//		isSelected = false;
+	//	}
+	//}
 
 
 
