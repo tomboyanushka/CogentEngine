@@ -32,13 +32,10 @@ VertexToPixel main(VertexShaderInput input)
 {
 	// Set up output struct
 	VertexToPixel output;
-	float lineThickness = 0.02f;
+	float lineThickness = 0.03f;
 	matrix worldViewProj = mul(mul(world, view), projection);
 	float4 original = mul(float4(input.position + input.normal * lineThickness , 1.0f), worldViewProj);
-	//float4 original = mul(input.position, worldViewProj);
-	
-	//output.normal = mul(input.normal, (float3x3)world);
-	//float4 normal = mul(input.normal, worldViewProj);
+
 	// Take the correct "original" location and translate the vertex a little
 	// bit in the direction of the normal to draw a slightly expanded object.
 	// Later, we will draw over most of this with the right color, except the expanded
