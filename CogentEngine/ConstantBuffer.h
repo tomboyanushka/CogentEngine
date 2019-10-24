@@ -20,3 +20,10 @@ struct PixelShaderExternalData
 	DirectionalLight dirLight;
 	XMFLOAT3 cameraPosition;
 };
+
+struct TransparencyExternalData
+{
+	DirectionalLight dirLight;
+	XMFLOAT3 cameraPosition;
+	float blendAmount;
+};

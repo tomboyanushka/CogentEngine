@@ -49,6 +49,7 @@ Game::~Game()
 	toonShadingPipeState->Release();
 	outlinePipeState->Release();
 	pbrPipeState->Release();
+	transparencyPipeState->Release();
 }
 
 
@@ -95,12 +96,14 @@ void Game::LoadShaders()
 
 	D3DReadFileToBlob(L"PBRPixelShader.cso", &pbrPS);
 
+	D3DReadFileToBlob(L"TransparencyPS.cso", &transparencyPS);
+
 	unsigned int bufferSize = sizeof(VertexShaderExternalData);
 	bufferSize = (bufferSize + 255); 
 	bufferSize = bufferSize & ~255;  
 
 	pixelCBV = frameManager.CreateConstantBufferView(sizeof(PixelShaderExternalData));
-
+	transparencyCBV = frameManager.CreateConstantBufferView(sizeof(TransparencyExternalData));
 	skyCBV = frameManager.CreateConstantBufferView(sizeof(SkyboxExternalData));
 }
 
@@ -241,19 +244,26 @@ void Game::CreateRootSigAndPipelineState()
 		// -- Misc ---
 		psoDesc.SampleMask = 0xffffffff;
 
-		// Create the pipe state object
+		// -- Toon shading pipe state --
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&toonShadingPipeState));
 
-		//PBR pipe state
+		// -- PBR pipe state --
 		psoDesc.PS.pShaderBytecode = pbrPS->GetBufferPointer();
 		psoDesc.PS.BytecodeLength = pbrPS->GetBufferSize();
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pbrPipeState));
+
+		// -- Transparency pipe state --
+		psoDesc.PS.pShaderBytecode = transparencyPS->GetBufferPointer();
+		psoDesc.PS.BytecodeLength = transparencyPS->GetBufferSize();
+		psoDesc.BlendState = CommonStates::AlphaBlend;
+		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&transparencyPipeState));
 
 		// -- Outline (VS/PS) --- 
 		psoDesc.VS.pShaderBytecode = outlineVS->GetBufferPointer();
 		psoDesc.VS.BytecodeLength = outlineVS->GetBufferSize();
 		psoDesc.PS.pShaderBytecode = outlinePS->GetBufferPointer();
 		psoDesc.PS.BytecodeLength = outlinePS->GetBufferSize();
+		psoDesc.BlendState = CommonStates::Opaque;
 
 		psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
 		//psoDesc.DepthStencilState.DepthEnable = false;
@@ -290,6 +300,24 @@ void Game::DrawEntity(Entity * entity)
 
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.dirLight = light;
+
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
+
+	DrawMesh(entity->GetMesh());
+}
+
+void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
+{
+	VertexShaderExternalData vertexData = {};
+	vertexData.world = entity->GetWorldMatrix();
+	vertexData.view = camera->GetViewMatrixTransposed();
+	vertexData.proj = camera->GetProjectionMatrixTransposed();
+
+	transparencyData.cameraPosition = camera->GetPosition();
+	transparencyData.dirLight = light;
+	transparencyData.blendAmount = blendAmount;
 
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
@@ -373,6 +401,7 @@ void Game::Update(float deltaTime, float totalTime)
 	pool.ExecuteCallbacks();
 
 	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
+	frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV);
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
@@ -424,7 +453,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->RSSetScissorRects(1, &scissorRect);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-
 		// Set constant buffer
 		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap().pDescriptorHeap.GetAddressOf());
 		
@@ -433,25 +461,27 @@ void Game::Draw(float deltaTime, float totalTime)
 			1,
 			frameManager.GetGPUHandle(pixelCBV.heapIndex));
 
+		//for transparency
+		commandList->SetGraphicsRootDescriptorTable(
+			1,
+			frameManager.GetGPUHandle(transparencyCBV.heapIndex));
+
 		//for ibl
 		commandList->SetGraphicsRootDescriptorTable(
 			3,
-			skyIrradiance.GetGPUHandle()
-		);
+			skyIrradiance.GetGPUHandle());
 
 		commandList->SetPipelineState(pbrPipeState);
 		for (auto e : entities)
 		{
 			DrawEntity(e);
 		}
-		commandList->SetPipelineState(outlinePipeState);
-		DrawEntity(e_plane);
-		commandList->SetPipelineState(toonShadingPipeState);
-		DrawEntity(e_plane);
-
 
 		DrawSky();
 
+		//transparent objects are drawn last
+		commandList->SetPipelineState(transparencyPipeState);
+		DrawTransparentEntity(e_plane, 0.2f);
 	}
 
 	// Present

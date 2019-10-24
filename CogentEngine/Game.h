@@ -18,6 +18,7 @@
 #include "DXUtility.h"
 #include "FrameManager.h"
 #include "Constants.h"
+#include <CommonStates.h>
 
 #include "ThreadPool.h"
 #include "IJob.h"
@@ -56,6 +57,8 @@ public:
 	void Update(float deltaTime, float totalTime);
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
+	void DrawEntity(Entity* entity);
+	void DrawTransparentEntity(Entity* entity, float blendAmount);
 	void CreateMaterials();
 	void CreateTextures();
 	void DrawSky();
@@ -85,10 +88,12 @@ private:
 	ID3D12PipelineState* toonShadingPipeState;
 	ID3D12PipelineState* outlinePipeState;
 	ID3D12PipelineState* pbrPipeState;
+	ID3D12PipelineState* transparencyPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	FrameManager frameManager;
 	ConstantBufferView pixelCBV;
+	ConstantBufferView transparencyCBV;
 	ConstantBufferView skyCBV;
 
 	ID3DBlob* vertexShaderByteCode;
@@ -102,8 +107,10 @@ private:
 
 	ID3DBlob* pbrPS;
 
-	PixelShaderExternalData pixelData;
+	ID3DBlob* transparencyPS;
 
+	PixelShaderExternalData pixelData;
+	TransparencyExternalData transparencyData;
 
 	Mesh* sm_sphere;
 	Mesh* sm_skyCube;
@@ -138,8 +145,6 @@ private:
 	Camera* camera;
 
 	AStar::Generator generator;
-
-	void DrawEntity(Entity* entity);
 
 	ThreadPool pool{ 4 };
 	MyJob job1;

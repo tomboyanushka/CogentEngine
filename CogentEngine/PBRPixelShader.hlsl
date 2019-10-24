@@ -5,7 +5,6 @@ cbuffer externalData : register(b0)
 	float3 cameraPosition;
 }
 
-
 struct VertexToPixel
 {
 	float4 position			: SV_POSITION;
@@ -90,10 +89,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//float3 pointPBR = PointLightPBR(light3, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
 	//float3 spotPBR = SpotLightPBR(light4, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
 
-	totalColor = dirPBR;// +pointPBR + spotPBR;
-	//totalColor = totalColor / (totalColor + float3(1.f, 1.f, 1.f));
-	//float packedValue = PackFloat(input.linearZ, 100.0f);
-	//return light2.DiffuseColor * dirNdotL2 + light.AmbientColor;
-	float3 gammaCorrected = lerp(totalColor, pow(totalColor, 1.0 / 2.2), 0.4f);
-	return float4(gammaCorrected, 1);
+	totalColor = dirPBR;
+
+	float gamma = 2.2f;
+	totalColor = pow(totalColor, 1.0 / gamma);
+	return float4(totalColor, 1);
 }
