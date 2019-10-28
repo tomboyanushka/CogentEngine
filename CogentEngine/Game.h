@@ -46,7 +46,7 @@ public:
 	Game(HINSTANCE hInstance);
 	~Game();
 
-	int numEntities = 4;
+	int numEntities = 7;
 	int currentIndex;
 	int textureCount = 3;
 
@@ -127,8 +127,10 @@ private:
 	Texture brdfLookUpTexture;
 
 	Material m_floor;
-	Material m_water;
+	Material m_cobbleStone;
 	Material m_scratchedPaint;
+	Material m_paint;
+	Material m_water;
 	Material m_plane;
 
 	Entity* e_plane;

@@ -111,7 +111,7 @@ void Game::CreateMatrices()
 {
 	camera = new Camera(-1.5, 3.5, -7);
 	camera->UpdateProjectionMatrix((float)width / height);
-	camera->Rotate(0.5f, 0);
+	camera->Rotate(0.2f, 0);
 }
 
 
@@ -123,7 +123,6 @@ void Game::CreateBasicGeometry()
 
 	for (int i = 0; i < numEntities; ++i)
 	{
-		//entities.push_back(new Entity(sphere, (gpuConstantBuffer.GetMappedAddressWithIndex(i)), gpuHeap.handleGPU(i), i, &floorMaterial));
 		entities.push_back(frameManager.CreateEntity(sm_sphere, &m_floor));
 	}
 
@@ -366,19 +365,32 @@ void Game::Update(float deltaTime, float totalTime)
 
 	//SRT
 
-	entities[0]->SetPosition(job2.pos);
-	auto bounds = entities[0]->GetBoundingOrientedBox();
+	/*entities[0]->SetPosition(job2.pos);
+	auto bounds = entities[0]->GetBoundingOrientedBox();*/
+	entities[0]->SetPosition(XMFLOAT3(1, 0, 2));
 
-	entities[1]->SetPosition(XMFLOAT3(0, 0, 0));
+	entities[1]->SetPosition(XMFLOAT3(2, 0, 2));
 	entities[1]->SetMaterial(&m_scratchedPaint);
 
-	entities[2]->SetPosition(XMFLOAT3(1, 0, 0));
+	entities[2]->SetPosition(XMFLOAT3(1, 0, 4));
 	entities[2]->SetMaterial(&m_water);
 
-	entities[3]->SetPosition(XMFLOAT3(-1, 0, 0));
+	entities[3]->SetPosition(XMFLOAT3(2, 0, 4));
+	entities[3]->SetMaterial(&m_water);
 
-	e_plane->SetRotation(XMFLOAT3(-90, 0, 0));
-	e_plane->SetPosition(XMFLOAT3(2, -4, 0));
+	entities[4]->SetPosition(XMFLOAT3(1, 0, 6));
+	entities[4]->SetMaterial(&m_cobbleStone);
+
+	entities[5]->SetPosition(XMFLOAT3(2, 0, 6));
+	entities[5]->SetMaterial(&m_paint);
+
+	entities[6]->SetMesh(sm_skyCube);
+	entities[6]->SetMaterial(&m_floor);
+	entities[6]->SetScale(XMFLOAT3(25, 0.2, 25));
+	entities[6]->SetPosition(XMFLOAT3(-2, -3, 10));
+
+	e_plane->SetRotation(XMFLOAT3(-90, -90, 0));
+	e_plane->SetPosition(XMFLOAT3(-2.8, 0, 4));
 	e_plane->SetMaterial(&m_plane);
 
 	if (job1.IsCompleted())
@@ -472,16 +484,21 @@ void Game::Draw(float deltaTime, float totalTime)
 			skyIrradiance.GetGPUHandle());
 
 		commandList->SetPipelineState(pbrPipeState);
-		for (auto e : entities)
-		{
-			DrawEntity(e);
-		}
+		DrawEntity(entities[0]);
+		DrawEntity(entities[1]);
+		DrawEntity(entities[6]);
+
+		commandList->SetPipelineState(toonShadingPipeState);
+		DrawEntity(entities[4]);
+		DrawEntity(entities[5]);
+		DrawEntity(e_plane);
 
 		DrawSky();
 
 		//transparent objects are drawn last
 		commandList->SetPipelineState(transparencyPipeState);
-		DrawTransparentEntity(e_plane, 0.2f);
+		DrawTransparentEntity(entities[2], 0.02);
+		DrawTransparentEntity(entities[3], 0.08);
 	}
 
 	// Present
@@ -534,10 +551,24 @@ void Game::CreateMaterials()
 		L"../../Assets/Textures/scratched/roughness.png",
 		commandQueue);
 
+	m_cobbleStone = frameManager.CreateMaterial(
+		L"../../Assets/Textures/cobbleStone/diffuse.png",
+		L"../../Assets/Textures/cobbleStone/normal.png",
+		L"../../Assets/Textures/cobbleStone/metal.png",
+		L"../../Assets/Textures/cobbleStone/roughness.png",
+		commandQueue);
+
+	m_paint = frameManager.CreateMaterial(
+		L"../../Assets/Textures/paint/diffuse.png",
+		L"../../Assets/Textures/paint/normal.png",
+		L"../../Assets/Textures/paint/metal.png",
+		L"../../Assets/Textures/paint/roughness.png",
+		commandQueue);
+
 	m_water = frameManager.CreateMaterial(
 		L"../../Assets/Textures/water/diffuse.png",
 		L"../../Assets/Textures/water/normal.png",
-		L"../../Assets/Textures/water/metal.png",
+		L"../../Assets/Textures/default_metal.png",
 		L"../../Assets/Textures/water/roughness.png",
 		commandQueue);
 
