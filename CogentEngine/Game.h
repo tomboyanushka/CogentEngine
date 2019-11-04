@@ -101,12 +101,10 @@ private:
 
 	ID3DBlob* outlineVS;
 	ID3DBlob* outlinePS;
-	 
 	ID3DBlob* skyVS;
 	ID3DBlob* skyPS;
-
 	ID3DBlob* pbrPS;
-
+	ID3DBlob* toonPS;
 	ID3DBlob* transparencyPS;
 
 	PixelShaderExternalData pixelData;

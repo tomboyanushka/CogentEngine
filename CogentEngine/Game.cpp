@@ -87,15 +87,12 @@ void Game::LoadShaders()
 {
 	D3DReadFileToBlob(L"VertexShader.cso", &vertexShaderByteCode);
 	D3DReadFileToBlob(L"PixelShader.cso", &pixelShaderByteCode);
-
 	D3DReadFileToBlob(L"OutlineVS.cso", &outlineVS);
 	D3DReadFileToBlob(L"OutlinePS.cso", &outlinePS);
-
 	D3DReadFileToBlob(L"SkyVS.cso", &skyVS);
 	D3DReadFileToBlob(L"SkyPS.cso", &skyPS);
-
 	D3DReadFileToBlob(L"PBRPixelShader.cso", &pbrPS);
-
+	D3DReadFileToBlob(L"ToonPS.cso", &toonPS);
 	D3DReadFileToBlob(L"TransparencyPS.cso", &transparencyPS);
 
 	unsigned int bufferSize = sizeof(VertexShaderExternalData);
@@ -244,6 +241,8 @@ void Game::CreateRootSigAndPipelineState()
 		psoDesc.SampleMask = 0xffffffff;
 
 		// -- Toon shading pipe state --
+		psoDesc.PS.pShaderBytecode = toonPS->GetBufferPointer();
+		psoDesc.PS.BytecodeLength = toonPS->GetBufferSize();
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&toonShadingPipeState));
 
 		// -- PBR pipe state --
