@@ -35,7 +35,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 diffuse = diffuseTexture.Sample(basicSampler, input.uv).rgb;
 	float3 color = float3(1,1,1);
 
-	//diffuse lighting
+	//---DIFFUSE LIGHTING---
 	input.normal = normalize(input.normal);
 	float3 worldNormal = normalize(input.normal);
 	input.tangent = normalize(input.tangent);
@@ -45,29 +45,40 @@ float4 main(VertexToPixel input) : SV_TARGET
 	NdotL = saturate(NdotL);
 	float3 totalLight = dirLight.DiffuseColor.rgb * NdotL + dirLight.AmbientColor.rgb;
 
-	//rim lighting
+	//---SPECULAR REFLECTION
+	//properties
+	float4 specularColor = float4(0.9, 0.9, 0.9, 1);
+	float glossiness = 32;
+	float3 viewDir = normalize(cameraPosition - input.worldPos);
+	float3 halfVector = normalize(dirToLight + viewDir);
+	float NdotH = dot(worldNormal, halfVector);
+	float lightIntensity = smoothstep(0, 0.01, NdotL);
+	float specularIntensity = pow(NdotH * lightIntensity, glossiness * glossiness);
+	float specularIntensitySmooth = smoothstep(0.005, 0.01, specularIntensity);
+	float4 specular = specularIntensitySmooth * specularColor;
+
+	//---RIM LIGHTING---
 	//properties
 	float4 rimColor = float4(1, 1, 1, 1);
 	float rimAmount = 0.716;
 	float rimThreshold = 0.1;
-
-	float3 viewDir = normalize(cameraPosition - input.worldPos);
 	float rimDot = 1 - max(dot(viewDir, worldNormal), 0.0);
 	float rimIntensity = rimDot * pow(NdotL, rimThreshold);
 	rimIntensity = smoothstep(rimAmount - 0.01, rimAmount + 0.01, rimIntensity);
 	float4 finalRim = rimIntensity * rimColor;
 
-	//TOonshading - Discretize the intensity, based on a few cutoff points
-	float intensity = NdotL;
-	if (intensity > 0.95)
+	//---TOONSHADING--- 
+	//Discretize the intensity, based on a few cutoff points
+	lightIntensity = NdotL;
+	if (lightIntensity > 0.95)
 		color = 1 * color;
-	else if (intensity > 0.5)
+	else if (lightIntensity > 0.5)
 		color = 0.7 * color;
-	else if (intensity > 0.15)
+	else if (lightIntensity > 0.15)
 		color = 0.1 * color;
 	else
-		color = 0.1 * color;
+		color = 0 * color;
+	//lightIntensity = NdotL > 0 ? 1 : 0;
 
-	//return float4(finalRim, 1);
-	return float4(color * diffuse * totalLight + finalRim, 1); 
+	return float4(color * lightIntensity * diffuse * (totalLight + finalRim + specular), 1);
 }
