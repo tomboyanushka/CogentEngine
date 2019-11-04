@@ -46,13 +46,18 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 totalLight = dirLight.DiffuseColor.rgb * NdotL + dirLight.AmbientColor.rgb;
 
 	//rim lighting
+	//properties
+	float4 rimColor = float4(1, 1, 1, 1);
+	float rimAmount = 0.716;
+	float rimThreshold = 0.1;
+
 	float3 viewDir = normalize(cameraPosition - input.worldPos);
-	float rim = 1 - max(dot(viewDir, worldNormal), 0.0);
-	float3 rimColor = float3(0.3, 0.3, 0.3);
-	float3 finalRim = rimColor * float3(rim, rim, rim);// *pow(NdotL, 0.1);
-	
-	color = color * totalLight;// +finalRim;
-	// Discretize the intensity, based on a few cutoff points
+	float rimDot = 1 - max(dot(viewDir, worldNormal), 0.0);
+	float rimIntensity = rimDot * pow(NdotL, rimThreshold);
+	rimIntensity = smoothstep(rimAmount - 0.01, rimAmount + 0.01, rimIntensity);
+	float4 finalRim = rimIntensity * rimColor;
+
+	//TOonshading - Discretize the intensity, based on a few cutoff points
 	float intensity = NdotL;
 	if (intensity > 0.95)
 		color = 1 * color;
@@ -64,5 +69,5 @@ float4 main(VertexToPixel input) : SV_TARGET
 		color = 0.1 * color;
 
 	//return float4(finalRim, 1);
-	return float4(color * diffuse + finalRim, 1); //(dirLight.AmbientColor + intensity),1);
+	return float4(color * diffuse * totalLight + finalRim, 1); 
 }
