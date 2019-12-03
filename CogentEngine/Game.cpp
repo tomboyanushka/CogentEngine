@@ -58,7 +58,12 @@ void Game::Init()
 	frameManager.Initialize(device.Get());
 
 	//ambient diffuse direction intensity
-	light = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
+	directionalLight = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
+
+	//point light
+	//color //position //range //intensity //padding
+	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
+
 	// Reset the command list to start
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
@@ -297,7 +302,8 @@ void Game::DrawEntity(Entity * entity)
 	vertexData.proj = camera->GetProjectionMatrixTransposed();
 
 	pixelData.cameraPosition = camera->GetPosition();
-	pixelData.dirLight = light;
+	pixelData.dirLight = directionalLight;
+	pixelData.pointLight = pointLight;
 
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
@@ -314,7 +320,7 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	vertexData.proj = camera->GetProjectionMatrixTransposed();
 
 	transparencyData.cameraPosition = camera->GetPosition();
-	transparencyData.dirLight = light;
+	transparencyData.dirLight = directionalLight;
 	transparencyData.blendAmount = blendAmount;
 
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());

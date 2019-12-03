@@ -12,6 +12,7 @@ struct DirectionalLight
 	float3 Direction;
 	float Intensity;
 };
+
 struct PointLight
 {
 	float4 Color;
@@ -32,6 +33,10 @@ struct SpotLight
 	float3 padding;
 };
 
+float Diffuse(float3 normal, float3 dirToLight)
+{
+	return saturate(dot(normal, dirToLight));
+}
 float DiffusePBR(float3 normal, float3 dirToLight)
 {
 	return saturate(dot(normal, dirToLight));
@@ -46,6 +51,21 @@ float Attenuate(float3 lightPos, float3 worldPos, float lightRange)
 
 	// Soft falloff
 	return att * att;
+}
+// === LIGHT TYPES FOR BASIC LIGHTING ===============================
+float3 CalculatePointLight(PointLight light, float3 normal, float3 worldPos, float3 camPos, float shininess, float roughness, float3 surfaceColor)
+{
+	// Calc light direction
+	float3 toLight = normalize(light.Position - worldPos);
+	float3 toCam = normalize(camPos - worldPos);
+
+	// Calculate the light amounts
+	float atten = Attenuate(light.Position, worldPos, light.Range);
+	float diff = Diffuse(normal, toLight);
+	//float spec = SpecularBlinnPhong(normal, toLight, toCam, shininess) * (1.0f - roughness);
+
+	// Combine
+	return (diff * surfaceColor/* + spec*/) * atten * light.Intensity * light.Color.xyz;
 }
 
 // GGX (Trowbridge-Reitz)

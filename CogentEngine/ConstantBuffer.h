@@ -18,7 +18,9 @@ struct SkyboxExternalData
 struct PixelShaderExternalData
 {
 	DirectionalLight dirLight;
+	PointLight pointLight;
 	XMFLOAT3 cameraPosition;
+	float padding;
 };
 
 struct TransparencyExternalData

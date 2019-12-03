@@ -1,4 +1,3 @@
-#include "Lighting.hlsli"
 #include "Common.hlsli"
 
 struct VertexToPixel

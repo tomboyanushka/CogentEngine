@@ -11,3 +11,12 @@ struct DirectionalLight
 	float Intensity;
 };
 
+struct PointLight
+{
+	XMFLOAT4 Color;
+	XMFLOAT3 Position;
+	float Range;
+	float Intensity;
+	float padding[3];
+};
+

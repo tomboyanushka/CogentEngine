@@ -140,7 +140,8 @@ private:
 
 	XMFLOAT3 newDestination;
 
-	DirectionalLight light;
+	DirectionalLight directionalLight;
+	PointLight pointLight;
 
 	Camera* camera;
 
