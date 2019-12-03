@@ -199,5 +199,8 @@
       <Filter>Header Files\Shaders</Filter>
     </None>
     <None Include="packages.config" />
+    <None Include="Common.hlsli">
+      <Filter>Header Files\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

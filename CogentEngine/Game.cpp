@@ -472,11 +472,6 @@ void Game::Draw(float deltaTime, float totalTime)
 			1,
 			frameManager.GetGPUHandle(pixelCBV.heapIndex));
 
-		//for transparency
-		commandList->SetGraphicsRootDescriptorTable(
-			1,
-			frameManager.GetGPUHandle(transparencyCBV.heapIndex));
-
 		//for ibl
 		commandList->SetGraphicsRootDescriptorTable(
 			3,
@@ -495,6 +490,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		DrawSky();
 
 		//transparent objects are drawn last
+		commandList->SetGraphicsRootDescriptorTable(
+			1,
+			frameManager.GetGPUHandle(transparencyCBV.heapIndex));
 		commandList->SetPipelineState(transparencyPipeState);
 		DrawTransparentEntity(entities[2], 0.02);
 		DrawTransparentEntity(entities[3], 0.08);

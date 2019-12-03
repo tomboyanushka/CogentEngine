@@ -1,10 +1,5 @@
 #include "Lighting.hlsli"
-cbuffer externalData : register(b0)
-{
-	DirectionalLight dirLight;
-	float3 cameraPosition;
-}
-
+#include "Common.hlsli"
 
 struct VertexToPixel
 {
@@ -80,5 +75,5 @@ float4 main(VertexToPixel input) : SV_TARGET
 		color = 0 * color;
 	//lightIntensity = NdotL > 0 ? 1 : 0;
 
-	return float4(color * lightIntensity * diffuse * (totalLight + finalRim + specular), 1);
+	return float4(color * lightIntensity * diffuse * (totalLight + finalRim.xyz + specular.xyz), 1);
 }

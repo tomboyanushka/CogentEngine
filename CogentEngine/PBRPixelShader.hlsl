@@ -1,9 +1,5 @@
 #include "Lighting.hlsli"
-cbuffer externalData : register(b0)
-{
-	DirectionalLight dirLight;
-	float3 cameraPosition;
-}
+#include "Common.hlsli"
 
 struct VertexToPixel
 {

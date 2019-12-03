@@ -278,6 +278,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Common.hlsli" />
     <None Include="Lighting.hlsli" />
     <None Include="packages.config" />
   </ItemGroup>
