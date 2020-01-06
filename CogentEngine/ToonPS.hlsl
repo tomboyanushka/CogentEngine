@@ -75,6 +75,6 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//lightIntensity = NdotL > 0 ? 1 : 0;
 
 	//PointLight light, float3 normal, float3 worldPos, float3 camPos, float shininess, float roughness, float3 surfaceColor
-	float3 pointLightColor = CalculatePointLight(pointLight, input.normal, input.worldPos, cameraPosition, 1, 1, diffuse);
+	float3 pointLightColor = CalculatePointLight(pointLight[0], input.normal, input.worldPos, cameraPosition, 1, 1, diffuse);
 	return float4(color * lightIntensity * diffuse * (totalLight + finalRim.xyz + specular.xyz) + pointLightColor, 1);
 }

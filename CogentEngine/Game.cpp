@@ -56,14 +56,7 @@ Game::~Game()
 void Game::Init()
 {
 	frameManager.Initialize(device.Get());
-
-	//ambient diffuse direction intensity
-	directionalLight = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
-
-	//point light
-	//color //position //range //intensity //padding
-	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
-
+	CreateLights();
 	// Reset the command list to start
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, 0);
@@ -100,7 +93,7 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"ToonPS.cso", &toonPS);
 	D3DReadFileToBlob(L"TransparencyPS.cso", &transparencyPS);
 
-	unsigned int bufferSize = sizeof(VertexShaderExternalData);
+	unsigned int bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255); 
 	bufferSize = bufferSize & ~255;  
 
@@ -301,11 +294,13 @@ void Game::DrawEntity(Entity * entity)
 	vertexData.view = camera->GetViewMatrixTransposed();
 	vertexData.proj = camera->GetProjectionMatrixTransposed();
 
+	pixelData.dirLight = directionalLight1;
+	pixelData.pointLight[0] = pointLight;
 	pixelData.cameraPosition = camera->GetPosition();
-	pixelData.dirLight = directionalLight;
-	pixelData.pointLight = pointLight;
+	pixelData.pointLightCount = MAX_POINT_LIGHTS;
 
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
+	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
 
@@ -320,7 +315,7 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	vertexData.proj = camera->GetProjectionMatrixTransposed();
 
 	transparencyData.cameraPosition = camera->GetPosition();
-	transparencyData.dirLight = directionalLight;
+	transparencyData.dirLight = directionalLight1;
 	transparencyData.blendAmount = blendAmount;
 
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
@@ -417,7 +412,7 @@ void Game::Update(float deltaTime, float totalTime)
 	//for the callback functions
 	pool.ExecuteCallbacks();
 
-	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
+	//frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
 	frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV);
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
@@ -604,6 +599,15 @@ void Game::CreateTextures()
 		L"../../Assets/Textures/skybox/envBrdf.dds",
 		commandQueue,
 		DDS);
+}
+
+void Game::CreateLights()
+{
+	//DIRECTIONAL LIGHTS: ambient diffuse direction intensity =====================
+	directionalLight1 = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
+
+	//POINT LIGHTS: color position range intensity padding  =========================
+	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
 }
 
 void Game::DrawSky()

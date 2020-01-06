@@ -167,7 +167,6 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="IJob.h" />
     <ClInclude Include="Job.h" />
-    <ClInclude Include="Light.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="ModelLoader.h" />

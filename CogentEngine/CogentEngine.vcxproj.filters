@@ -66,9 +66,6 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Light.h">
-      <Filter>Header Files\Core</Filter>
-    </ClInclude>
     <ClInclude Include="FrameManager.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>

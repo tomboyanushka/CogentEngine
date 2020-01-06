@@ -27,7 +27,6 @@
 #include "d3dx12.h"
 #include "ConstantBuffer.h"
 #include "Camera.h"
-#include "Light.h"
 
 #include "Mesh.h"
 #include "ModelLoader.h"
@@ -61,6 +60,7 @@ public:
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
 	void CreateMaterials();
 	void CreateTextures();
+	void CreateLights();
 	void DrawSky();
 
 	///AI functions
@@ -107,7 +107,7 @@ private:
 	ID3DBlob* toonPS;
 	ID3DBlob* transparencyPS;
 
-	PixelShaderExternalData pixelData;
+	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
 
 	Mesh* sm_sphere;
@@ -140,7 +140,7 @@ private:
 
 	XMFLOAT3 newDestination;
 
-	DirectionalLight directionalLight;
+	DirectionalLight directionalLight1;
 	PointLight pointLight;
 
 	Camera* camera;

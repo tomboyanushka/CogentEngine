@@ -1,9 +1,10 @@
 #include "Lighting.hlsli"
+#define MAX_POINT_LIGHTS 16
 
 cbuffer externalData : register(b0)
 {
 	DirectionalLight dirLight;
-	PointLight pointLight;
+	PointLight pointLight[MAX_POINT_LIGHTS];
 	float3 cameraPosition;
-	float padding;
+	int pointLightCount;
 }

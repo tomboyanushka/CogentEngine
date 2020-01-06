@@ -1,7 +1,26 @@
 #pragma once
 #include <DirectXMath.h>
-#include "Light.h"
+#define MAX_POINT_LIGHTS 16
+
 using namespace DirectX;
+
+//----------LIGHTS------------
+struct DirectionalLight
+{
+	XMFLOAT4 AmbientColor;
+	XMFLOAT4 DiffuseColor;
+	XMFLOAT3 Direction;
+	float Intensity;
+};
+
+struct PointLight
+{
+	XMFLOAT4 Color;
+	XMFLOAT3 Position;
+	float Range;
+	float Intensity;
+	float padding[3];
+};
 
 struct VertexShaderExternalData
 {
@@ -18,9 +37,9 @@ struct SkyboxExternalData
 struct PixelShaderExternalData
 {
 	DirectionalLight dirLight;
-	PointLight pointLight;
+	PointLight pointLight[MAX_POINT_LIGHTS];
 	XMFLOAT3 cameraPosition;
-	float padding;
+	int pointLightCount;
 };
 
 struct TransparencyExternalData
@@ -29,3 +48,4 @@ struct TransparencyExternalData
 	XMFLOAT3 cameraPosition;
 	float blendAmount;
 };
+
