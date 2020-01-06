@@ -53,12 +53,12 @@ float4 main(VertexToPixel input) : SV_TARGET
 
 	//---RIM LIGHTING---
 	//properties
-	float4 rimColor = float4(1, 1, 1, 1);
+	float4 rimColor = float4(1, 1, 1, 0.5);
 	float rimAmount = 0.716;
 	float rimThreshold = 0.1;
 	float rimDot = 1 - max(dot(viewDir, worldNormal), 0.0);
 	float rimIntensity = rimDot * pow(NdotL, rimThreshold);
-	rimIntensity = smoothstep(rimAmount - 0.01, rimAmount + 0.01, rimIntensity);
+	rimIntensity = smoothstep(rimAmount - 0.01, rimAmount + 0.01, rimDot);
 	float4 finalRim = rimIntensity * rimColor;
 
 	//---TOONSHADING--- 
