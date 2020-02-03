@@ -68,7 +68,7 @@ Entity* FrameManager::CreateEntity(Mesh* mesh, Material* material) // ConstantBu
 
 void FrameManager::CopyData(void* data, size_t size, ConstantBufferView cbv)
 {
-	gpuConstantBuffer.CopyDataWithIndex(data, sizeof(VertexShaderExternalData), cbv.cbOffset);
+	gpuConstantBuffer.CopyDataWithIndex(data, size, cbv.cbOffset);
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE FrameManager::GetGPUHandle(uint32_t index)

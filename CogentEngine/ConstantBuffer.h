@@ -1,6 +1,6 @@
 #pragma once
 #include <DirectXMath.h>
-#define MAX_POINT_LIGHTS 16
+#define MAX_POINT_LIGHTS 3
 
 using namespace DirectX;
 

@@ -478,10 +478,10 @@ void Game::Draw(float deltaTime, float totalTime)
 			3,
 			skyIrradiance.GetGPUHandle());
 
-		commandList->SetPipelineState(pbrPipeState);
-		DrawEntity(entities[0]);
-		DrawEntity(entities[1]);
-		DrawEntity(entities[6]);
+		//commandList->SetPipelineState(pbrPipeState);
+		//DrawEntity(entities[0]);
+		//DrawEntity(entities[1]);
+		//DrawEntity(entities[6]);
 
 		commandList->SetPipelineState(toonShadingPipeState);
 		DrawEntity(entities[4]);
@@ -490,13 +490,13 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		DrawSky();
 
-		//transparent objects are drawn last
-		commandList->SetGraphicsRootDescriptorTable(
-			1,
-			frameManager.GetGPUHandle(transparencyCBV.heapIndex));
-		commandList->SetPipelineState(transparencyPipeState);
-		DrawTransparentEntity(entities[2], 0.02);
-		DrawTransparentEntity(entities[3], 0.08);
+		////transparent objects are drawn last
+		//commandList->SetGraphicsRootDescriptorTable(
+		//	1,
+		//	frameManager.GetGPUHandle(transparencyCBV.heapIndex));
+		//commandList->SetPipelineState(transparencyPipeState);
+		//DrawTransparentEntity(entities[2], 0.02);
+		//DrawTransparentEntity(entities[3], 0.08);
 	}
 
 	// Present
