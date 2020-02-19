@@ -1,4 +1,4 @@
-
+#define NOMINMAX
 #include <Windows.h>
 #include "Game.h"
 

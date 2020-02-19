@@ -1,5 +1,5 @@
-#include "DXCore.h"
 
+#include "DXCore.h"
 #include <WindowsX.h>
 #include <sstream>
 

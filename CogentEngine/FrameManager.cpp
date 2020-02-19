@@ -66,7 +66,7 @@ Entity* FrameManager::CreateEntity(Mesh* mesh, Material* material) // ConstantBu
 	return entity;
 }
 
-void FrameManager::CopyData(void* data, size_t size, ConstantBufferView cbv)
+void FrameManager::CopyData(void* data, uint32_t size, ConstantBufferView cbv)
 {
 	gpuConstantBuffer.CopyDataWithIndex(data, size, cbv.cbOffset);
 }
