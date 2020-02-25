@@ -1,6 +1,6 @@
 #pragma once
 #include <DirectXMath.h>
-#define MAX_POINT_LIGHTS 3
+constexpr int MaxPointLights = 3;
 
 using namespace DirectX;
 
@@ -37,7 +37,7 @@ struct SkyboxExternalData
 struct PixelShaderExternalData
 {
 	DirectionalLight dirLight;
-	PointLight pointLight[MAX_POINT_LIGHTS];
+	PointLight pointLight[MaxPointLights];
 	XMFLOAT3 cameraPosition;
 	int pointLightCount;
 };

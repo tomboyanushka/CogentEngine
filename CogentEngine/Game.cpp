@@ -298,7 +298,7 @@ void Game::DrawEntity(Entity * entity)
 	pixelData.dirLight = directionalLight1;
 	pixelData.pointLight[0] = pointLight;
 	pixelData.cameraPosition = camera->GetPosition();
-	pixelData.pointLightCount = MAX_POINT_LIGHTS;
+	pixelData.pointLightCount = MaxPointLights;
 
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
 	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
@@ -368,30 +368,30 @@ void Game::Update(float deltaTime, float totalTime)
 
 	/*entities[0]->SetPosition(job2.pos);
 	auto bounds = entities[0]->GetBoundingOrientedBox();*/
-	entities[0]->SetPosition(XMFLOAT3(1, 0, 2));
+	entities[0]->SetPosition(XMFLOAT3(1.0f, 0.0f, 2.0f));
 
-	entities[1]->SetPosition(XMFLOAT3(2, 0, 2));
+	entities[1]->SetPosition(XMFLOAT3(2.0f, 0.0f, 2.0f));
 	entities[1]->SetMaterial(&m_scratchedPaint);
 
-	entities[2]->SetPosition(XMFLOAT3(1, 0, 4));
+	entities[2]->SetPosition(XMFLOAT3(1.0f, 0.0f, 4.0f));
 	entities[2]->SetMaterial(&m_water);
 
-	entities[3]->SetPosition(XMFLOAT3(2, 0, 4));
+	entities[3]->SetPosition(XMFLOAT3(2.0f, 0.0f, 4.0f));
 	entities[3]->SetMaterial(&m_water);
 
-	entities[4]->SetPosition(XMFLOAT3(1, 0, 6));
+	entities[4]->SetPosition(XMFLOAT3(1.0f, 0.0f, 6.0f));
 	entities[4]->SetMaterial(&m_cobbleStone);
 
-	entities[5]->SetPosition(XMFLOAT3(2, 0, 6));
+	entities[5]->SetPosition(XMFLOAT3(2.0f, 0.0f, 6.0f));
 	entities[5]->SetMaterial(&m_paint);
 
 	entities[6]->SetMesh(sm_skyCube);
 	entities[6]->SetMaterial(&m_floor);
-	entities[6]->SetScale(XMFLOAT3(25, 0.2, 25));
-	entities[6]->SetPosition(XMFLOAT3(-2, -3, 10));
+	entities[6]->SetScale(XMFLOAT3(25.0f, 0.2f, 25.0f));
+	entities[6]->SetPosition(XMFLOAT3(-2.0f, -3.0f, 10.0f));
 
-	e_plane->SetRotation(XMFLOAT3(-90, -90, 0));
-	e_plane->SetPosition(XMFLOAT3(-2.8, 0, 4));
+	e_plane->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
+	e_plane->SetPosition(XMFLOAT3(-2.8f, 0.0f, 4.0f));
 	e_plane->SetMaterial(&m_plane);
 
 	if (job1.IsCompleted())
