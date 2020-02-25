@@ -491,7 +491,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		DrawSky();
 
-		////transparent objects are drawn last
+		//transparent objects are drawn last
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
 			frameManager.GetGPUHandle(transparencyCBV.heapIndex));

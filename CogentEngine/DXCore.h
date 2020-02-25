@@ -108,6 +108,8 @@ protected:
 	// Helper function for allocating a console window
 	void CreateConsoleWindow(int bufferLines, int bufferColumns, int windowLines, int windowColumns);
 
+	void EnableShaderBasedValidation();
+
 private:
 	// Timing related data
 	double perfCounterSeconds;

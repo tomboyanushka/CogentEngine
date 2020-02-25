@@ -1,6 +1,6 @@
 #pragma once
 #include <DirectXMath.h>
-constexpr int MaxPointLights = 3;
+constexpr int MaxPointLights = 1;
 
 using namespace DirectX;
 

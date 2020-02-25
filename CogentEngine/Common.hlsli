@@ -1,5 +1,5 @@
 #include "Lighting.hlsli"
-#define MAX_POINT_LIGHTS 3
+#define MAX_POINT_LIGHTS 1
 
 cbuffer externalData : register(b0)
 {

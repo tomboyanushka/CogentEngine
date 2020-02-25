@@ -75,7 +75,7 @@ DXCore::~DXCore()
 
 	dxgiFactory->Release();
 	swapChain->Release();
-	
+
 
 	fence->Release();
 }
@@ -175,7 +175,7 @@ HRESULT DXCore::InitDirectX()
 	D3D12GetDebugInterface(IID_PPV_ARGS(&debugController));
 	debugController->EnableDebugLayer();
 #endif
-
+	EnableShaderBasedValidation();
 
 	// Create the DX 12 device
 	hr = D3D12CreateDevice(
@@ -411,7 +411,7 @@ void DXCore::CloseExecuteAndResetCommandList()
 	commandList->Reset(commandAllocator, 0);
 }
 
-HRESULT DXCore::CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer)
+HRESULT DXCore::CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void* data, ID3D12Resource** buffer)
 {
 	// Potential result
 	HRESULT hr = 0;
@@ -497,7 +497,7 @@ HRESULT DXCore::CreateStaticBuffer(unsigned int dataStride, unsigned int dataCou
 	return S_OK;
 }
 
-HRESULT DXCore::CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void * data, ID3D12Resource ** buffer, D3D12_INDEX_BUFFER_VIEW * ibView)
+HRESULT DXCore::CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_INDEX_BUFFER_VIEW* ibView)
 {
 	// Create the static buffer
 	HRESULT hr = CreateStaticBuffer(SizeOfDXGIFormat(format), dataCount, data, buffer);
@@ -513,7 +513,7 @@ HRESULT DXCore::CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, vo
 	return S_OK;
 }
 
-HRESULT DXCore::CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void * data, ID3D12Resource ** buffer, D3D12_VERTEX_BUFFER_VIEW * vbView)
+HRESULT DXCore::CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_VERTEX_BUFFER_VIEW* vbView)
 {
 	// Create the static buffer
 	HRESULT hr = CreateStaticBuffer(dataStride, dataCount, data, buffer);
@@ -836,7 +836,7 @@ void DXCore::CreateConsoleWindow(int bufferLines, int bufferColumns, int windowL
 	rect.Bottom = windowLines;
 	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &rect);
 
-	FILE *stream;
+	FILE* stream;
 	freopen_s(&stream, "CONIN$", "r", stdin);
 	freopen_s(&stream, "CONOUT$", "w", stdout);
 	freopen_s(&stream, "CONOUT$", "w", stderr);
@@ -847,9 +847,14 @@ void DXCore::CreateConsoleWindow(int bufferLines, int bufferColumns, int windowL
 	EnableMenuItem(hmenu, SC_CLOSE, MF_GRAYED);
 }
 
-
-
-
+void DXCore::EnableShaderBasedValidation()
+{
+	Microsoft::WRL::ComPtr<ID3D12Debug> spDebugController0;
+	Microsoft::WRL::ComPtr<ID3D12Debug1> spDebugController1;
+	(D3D12GetDebugInterface(IID_PPV_ARGS(&spDebugController0)));
+	(spDebugController0->QueryInterface(IID_PPV_ARGS(&spDebugController1)));
+	spDebugController1->SetEnableGPUBasedValidation(true);
+}
 
 // --------------------------------------------------------
 // Handles messages that are sent to our window by the
