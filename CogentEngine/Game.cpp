@@ -496,8 +496,8 @@ void Game::Draw(float deltaTime, float totalTime)
 			1,
 			frameManager.GetGPUHandle(transparencyCBV.heapIndex));
 		commandList->SetPipelineState(transparencyPipeState);
-		DrawTransparentEntity(entities[2], 0.02);
-		DrawTransparentEntity(entities[3], 0.08);
+		DrawTransparentEntity(entities[2], 0.02f);
+		DrawTransparentEntity(entities[3], 0.08f);
 	}
 
 	// Present
@@ -812,7 +812,7 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	prevMousePos.y = y;
 
 	SetCapture(hWnd);
-	float distance;
+	float distance = 0.0f;
 
 	//if (IsIntersecting(entities[3], camera, x, y, distance) && isSelected)
 	//{

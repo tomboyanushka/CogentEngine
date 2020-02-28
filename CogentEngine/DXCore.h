@@ -73,7 +73,7 @@ protected:
 	IDXGISwapChain*			swapChain;
 	Microsoft::WRL::ComPtr<ID3D12Device>	device;
 
-	bool					vsync = true;
+	bool					vsync = false;
 
 	D3D12_VIEWPORT			viewport;
 	D3D12_RECT				scissorRect;

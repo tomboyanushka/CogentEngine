@@ -87,6 +87,6 @@ float4 main(VertexToPixel input) : SV_TARGET
 	totalColor = dirPBR;
 
 	float gamma = 2.2f;
-	totalColor = pow(totalColor, 1.0 / gamma);
+    totalColor = abs(pow(totalColor, 1.0 / gamma));
 	return float4(totalColor, 1);
 }
