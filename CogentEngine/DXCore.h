@@ -73,7 +73,7 @@ protected:
 	IDXGISwapChain*			swapChain;
 	Microsoft::WRL::ComPtr<ID3D12Device>	device;
 
-	bool					vsync = false;
+	bool					vsync = true;
 
 	D3D12_VIEWPORT			viewport;
 	D3D12_RECT				scissorRect;
@@ -95,7 +95,7 @@ protected:
 	// Fence for CPU/GPU sync
 	ID3D12Fence* fence;
 	HANDLE fenceEvent;
-	unsigned long currentFence = 0;
+	unsigned long currentFence = 1;
 
 	// DX12 Helper Functions
 	void WaitForGPU();

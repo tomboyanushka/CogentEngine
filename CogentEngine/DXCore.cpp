@@ -390,11 +390,16 @@ void DXCore::WaitForGPU()
 	if (fence->GetCompletedValue() < currentFence)
 	{
 		// Tell the fence to let us know when it's hit
-		fence->SetEventOnCompletion(currentFence, fenceEvent);
+		auto hr = fence->SetEventOnCompletion(currentFence, fenceEvent);
 
-		// Wait here until we get that fence event
-		WaitForSingleObject(fenceEvent, INFINITE);
+		if (SUCCEEDED(hr))
+		{
+			// Wait here until we get that fence event
+			WaitForSingleObject(fenceEvent, INFINITE);
+			currentFence++;
+		}
 	}
+
 }
 
 void DXCore::CloseExecuteAndResetCommandList()
