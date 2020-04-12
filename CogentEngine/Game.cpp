@@ -59,8 +59,8 @@ void Game::Init()
 	frameManager.Initialize(device.Get());
 	CreateLights();
 	// Reset the command list to start
-	commandAllocator->Reset();
-	commandList->Reset(commandAllocator, 0);
+	commandAllocator[currentBackBufferIndex]->Reset();
+	commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
 
 	LoadShaders();
 	CreateMatrices();
@@ -421,8 +421,8 @@ void Game::Update(float deltaTime, float totalTime)
 
 void Game::Draw(float deltaTime, float totalTime)
 {
-
-	ID3D12Resource* backBuffer = backBuffers[currentSwapBuffer];
+	//currentSwapBuffer = swapChain->getcurrent
+	ID3D12Resource* backBuffer = backBuffers[currentBackBufferIndex];
 
 	{
 		D3D12_RESOURCE_BARRIER rb = {};
@@ -439,7 +439,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Clear the RTV
 		commandList->ClearRenderTargetView(
-			rtvHandles[currentSwapBuffer],
+			rtvHandles[currentBackBufferIndex],
 			color,
 			0, 0); // No scissor rectangles
 
@@ -461,7 +461,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->SetGraphicsRootSignature(rootSignature);
 
 		// Set up other commands for rendering
-		commandList->OMSetRenderTargets(1, &rtvHandles[currentSwapBuffer], true, &dsvHandle);
+		commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
 		commandList->RSSetViewports(1, &viewport);
 		commandList->RSSetScissorRects(1, &scissorRect);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -519,10 +519,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		swapChain->Present(vsync ? 1 : 0, 0);
 
 		// Figure out which buffer is next
-		currentSwapBuffer++;
-		if (currentSwapBuffer >= numBackBuffers)
-			currentSwapBuffer = 0;
-
+		currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 	}
 }
 

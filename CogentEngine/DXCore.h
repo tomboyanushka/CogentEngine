@@ -65,22 +65,22 @@ protected:
 
 	// How many swap chain buffers
 	static const unsigned int numBackBuffers = 3;
-	unsigned int currentSwapBuffer = 0;
+	unsigned int currentBackBufferIndex = 0;
 
 	// DirectX related objects and variables
 	D3D_FEATURE_LEVEL		dxFeatureLevel;
 	IDXGIFactory*			dxgiFactory;
-	IDXGISwapChain*			swapChain;
+	IDXGISwapChain4*			swapChain;
 	Microsoft::WRL::ComPtr<ID3D12Device>	device;
 
-	bool					vsync = true;
+	bool					vsync = false;
 
 	D3D12_VIEWPORT			viewport;
 	D3D12_RECT				scissorRect;
 
 	ID3D12GraphicsCommandList*	commandList;
 	ID3D12CommandQueue*			commandQueue;
-	ID3D12CommandAllocator*		commandAllocator;
+	ID3D12CommandAllocator*		commandAllocator[numBackBuffers];
 
 	unsigned int			rtvDescriptorSize;
 	ID3D12DescriptorHeap*	rtvHeap;	// Heap that will store RTV's (probably 2, for back buffer swaps)
@@ -93,7 +93,7 @@ protected:
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 
 	// Fence for CPU/GPU sync
-	ID3D12Fence* fence;
+	ID3D12Fence* fences[numBackBuffers];
 	HANDLE fenceEvent;
 	unsigned long currentFence = 1;
 
