@@ -65,9 +65,13 @@ DXCore::~DXCore()
 
 	// Release all DirectX resources
 	for (int i = 0; i < numBackBuffers; i++)
+	{
 		backBuffers[i]->Release();
+		commandAllocator[i]->Release();
+		fences[i]->Release();
+	}
+
 	depthStencilBuffer->Release();
-	commandAllocator->Release();
 	commandQueue->Release();
 	commandList->Release();
 	rtvHeap->Release();
@@ -77,7 +81,7 @@ DXCore::~DXCore()
 	swapChain->Release();
 
 
-	fence->Release();
+	//fences[currentBackBufferIndex]->Release();
 }
 
 // --------------------------------------------------------
@@ -207,14 +211,16 @@ HRESULT DXCore::InitDirectX()
 	device->CreateCommandQueue(&qDesc, IID_PPV_ARGS(&commandQueue));
 
 	// Set up allocator
-	device->CreateCommandAllocator(
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		IID_PPV_ARGS(&commandAllocator));
-
+	for (unsigned int i = 0; i < numBackBuffers; i++)
+	{
+		device->CreateCommandAllocator(
+			D3D12_COMMAND_LIST_TYPE_DIRECT,
+			IID_PPV_ARGS(&commandAllocator[i]));
+	}
 	device->CreateCommandList(
 		0,								// Node mask - none
 		D3D12_COMMAND_LIST_TYPE_DIRECT,	// Type of command list
-		commandAllocator,				// The allocator
+		commandAllocator[currentBackBufferIndex],				// The allocator
 		0,								// Initial pipeline state - none
 		IID_PPV_ARGS(&commandList));	// Command list
 
@@ -239,7 +245,7 @@ HRESULT DXCore::InitDirectX()
 
 	// Create a DXGI factory so we can make a swap chain
 	CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
-	hr = dxgiFactory->CreateSwapChain(commandQueue, &swapDesc, &swapChain);
+	hr = dxgiFactory->CreateSwapChain(commandQueue, &swapDesc, (IDXGISwapChain**)&swapChain);
 
 
 	// Create descriptor heaps for RTVs
@@ -342,7 +348,11 @@ HRESULT DXCore::InitDirectX()
 	commandQueue->ExecuteCommandLists(1, lists);
 
 	// Make a fence and an event
-	device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+	for (unsigned int i = 0; i < numBackBuffers; i++)
+	{
+		device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fences[i]));
+
+	}
 	fenceEvent = CreateEventEx(0, 0, 0, EVENT_ALL_ACCESS);
 
 	// Make sure we're done before moving on
@@ -384,17 +394,22 @@ void DXCore::WaitForGPU()
 	currentFence++;
 
 	// Sets a fence value on the GPU side
-	commandQueue->Signal(fence, currentFence);
+	commandQueue->Signal(fences[currentBackBufferIndex], currentFence);
 
 	// Have we hit the fence value yet?
-	if (fence->GetCompletedValue() < currentFence)
+	if (fences[currentBackBufferIndex]->GetCompletedValue() < currentFence)
 	{
 		// Tell the fence to let us know when it's hit
-		fence->SetEventOnCompletion(currentFence, fenceEvent);
+		auto hr = fences[currentBackBufferIndex]->SetEventOnCompletion(currentFence, fenceEvent);
 
-		// Wait here until we get that fence event
-		WaitForSingleObject(fenceEvent, INFINITE);
+		if (SUCCEEDED(hr))
+		{
+			// Wait here until we get that fence event
+			WaitForSingleObject(fenceEvent, INFINITE);
+			currentFence++;
+		}
 	}
+
 }
 
 void DXCore::CloseExecuteAndResetCommandList()
@@ -407,8 +422,8 @@ void DXCore::CloseExecuteAndResetCommandList()
 	// be reset while the GPU is processing a command list
 	// See: https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/nf-d3d12-id3d12commandallocator-reset
 	WaitForGPU();
-	commandAllocator->Reset();
-	commandList->Reset(commandAllocator, 0);
+	commandAllocator[currentBackBufferIndex]->Reset();
+	commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
 }
 
 HRESULT DXCore::CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void* data, ID3D12Resource** buffer)
