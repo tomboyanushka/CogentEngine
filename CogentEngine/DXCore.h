@@ -64,8 +64,9 @@ protected:
 	unsigned int height;
 
 	// How many swap chain buffers
-	static const unsigned int numBackBuffers = 3;
+	static const unsigned int NumBackBuffers = 3;
 	unsigned int currentBackBufferIndex = 0;
+	unsigned int previousBackBufferIndex = 0;
 
 	// DirectX related objects and variables
 	D3D_FEATURE_LEVEL		dxFeatureLevel;
@@ -80,22 +81,23 @@ protected:
 
 	ID3D12GraphicsCommandList*	commandList;
 	ID3D12CommandQueue*			commandQueue;
-	ID3D12CommandAllocator*		commandAllocator[numBackBuffers];
+	ID3D12CommandAllocator*		commandAllocator[NumBackBuffers];
 
 	unsigned int			rtvDescriptorSize;
 	ID3D12DescriptorHeap*	rtvHeap;	// Heap that will store RTV's (probably 2, for back buffer swaps)
 	ID3D12DescriptorHeap*	dsvHeap;
 
-	ID3D12Resource* backBuffers[numBackBuffers];
+	ID3D12Resource* backBuffers[NumBackBuffers];
 	ID3D12Resource* depthStencilBuffer;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[numBackBuffers]; // Pointers into the RTV desc heap
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[NumBackBuffers]; // Pointers into the RTV desc heap
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 
 	// Fence for CPU/GPU sync
-	ID3D12Fence* fences[numBackBuffers];
-	HANDLE fenceEvent;
+	ID3D12Fence* fences[NumBackBuffers];
+	HANDLE fenceEvent;// [NumBackBuffers];
 	unsigned long currentFence = 1;
+	uint64_t fenceValues[NumBackBuffers];
 
 	// DX12 Helper Functions
 	void WaitForGPU();

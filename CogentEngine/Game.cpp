@@ -35,10 +35,15 @@ Game::~Game()
 	// Don't clean up until GPU is actually done
 	WaitForGPU();
 
+	//delete meshes
 	delete sm_sphere;
 	delete sm_skyCube;
 	delete sm_plane;
+	delete sm_sponza;
+
+	//delete entities
 	delete e_plane;
+	delete e_sponza;
 	delete camera;
 
 	for (auto e : entities)
@@ -66,7 +71,7 @@ void Game::Init()
 	CreateMatrices();
 	CreateTextures();
 	CreateMaterials();
-	CreateBasicGeometry();
+	CreateMesh();
 	CreateRootSigAndPipelineState();
 
 	//AI Initialization
@@ -111,11 +116,14 @@ void Game::CreateMatrices()
 }
 
 
-void Game::CreateBasicGeometry()
+void Game::CreateMesh()
 {
 	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
+
+	auto sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
+	sm_sponza = sponza.Mesh;
 
 	for (int i = 0; i < numEntities; ++i)
 	{
@@ -123,6 +131,7 @@ void Game::CreateBasicGeometry()
 	}
 
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
+	e_sponza = frameManager.CreateEntity(sm_sponza, &m_scratchedPaint);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -170,7 +179,8 @@ void Game::CreateRootSigAndPipelineState()
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS);
 
 		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[1];
-		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC);
+		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP, 0, 2.0f);
 
 		rootSignatureDesc.NumStaticSamplers = 1;
 		rootSignatureDesc.pStaticSamplers = StaticSamplers;
@@ -394,6 +404,10 @@ void Game::Update(float deltaTime, float totalTime)
 	e_plane->SetPosition(XMFLOAT3(-2.8f, 0.0f, 4.0f));
 	e_plane->SetMaterial(&m_plane);
 
+	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
+	//e_sponza->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
+	e_sponza->SetPosition(XMFLOAT3(0, 0.0f, 10.0f));
+
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
 
@@ -483,6 +497,8 @@ void Game::Draw(float deltaTime, float totalTime)
 		DrawEntity(entities[0]);
 		DrawEntity(entities[1]);
 		DrawEntity(entities[6]);
+		DrawEntity(e_sponza);
+		//DrawMesh(sm_sponza);
 
 		commandList->SetPipelineState(toonShadingPipeState);
 		DrawEntity(entities[4]);
@@ -519,6 +535,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		swapChain->Present(vsync ? 1 : 0, 0);
 
 		// Figure out which buffer is next
+		previousBackBufferIndex = currentBackBufferIndex;
 		currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 	}
 }
@@ -527,8 +544,21 @@ void Game::DrawMesh(Mesh* mesh)
 {
 	commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
-	// Draw
-	commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
+	
+	// Check if mesh is complex or simple
+	if (mesh->MeshEntries.size() > 1)
+	{
+		for (auto m : mesh->MeshEntries)
+		{
+			commandList->DrawIndexedInstanced(m.NumIndices, 1, m.BaseIndex, m.BaseVertex, 0);
+		}
+		
+	}
+	
+	else
+	{
+		commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
+	}
 }
 
 void Game::CreateMaterials()

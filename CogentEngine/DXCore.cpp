@@ -64,7 +64,7 @@ DXCore::~DXCore()
 {
 
 	// Release all DirectX resources
-	for (int i = 0; i < numBackBuffers; i++)
+	for (int i = 0; i < NumBackBuffers; i++)
 	{
 		backBuffers[i]->Release();
 		commandAllocator[i]->Release();
@@ -211,7 +211,7 @@ HRESULT DXCore::InitDirectX()
 	device->CreateCommandQueue(&qDesc, IID_PPV_ARGS(&commandQueue));
 
 	// Set up allocator
-	for (unsigned int i = 0; i < numBackBuffers; i++)
+	for (unsigned int i = 0; i < NumBackBuffers; i++)
 	{
 		device->CreateCommandAllocator(
 			D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -226,31 +226,31 @@ HRESULT DXCore::InitDirectX()
 
 	// Create a description of how our swap
 	// chain should work
-	DXGI_SWAP_CHAIN_DESC swapDesc = {};
-	swapDesc.BufferCount = numBackBuffers;
-	swapDesc.BufferDesc.Width = width;
-	swapDesc.BufferDesc.Height = height;
-	swapDesc.BufferDesc.RefreshRate.Numerator = 60;
-	swapDesc.BufferDesc.RefreshRate.Denominator = 1;
-	swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	swapDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	swapDesc.OutputWindow = hWnd;
-	swapDesc.SampleDesc.Count = 1;
-	swapDesc.SampleDesc.Quality = 0;
-	swapDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapDesc.Windowed = true;
+	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+	swapChainDesc.BufferCount = NumBackBuffers;
+	swapChainDesc.BufferDesc.Width = width;
+	swapChainDesc.BufferDesc.Height = height;
+	swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+	swapChainDesc.OutputWindow = hWnd;
+	swapChainDesc.SampleDesc.Count = 1;
+	swapChainDesc.SampleDesc.Quality = 0;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.Windowed = true;
 
 	// Create a DXGI factory so we can make a swap chain
 	CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
-	hr = dxgiFactory->CreateSwapChain(commandQueue, &swapDesc, (IDXGISwapChain**)&swapChain);
+	hr = dxgiFactory->CreateSwapChain(commandQueue, &swapChainDesc, (IDXGISwapChain**)&swapChain);
 
 
 	// Create descriptor heaps for RTVs
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	rtvHeapDesc.NumDescriptors = numBackBuffers;
+	rtvHeapDesc.NumDescriptors = NumBackBuffers;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
 
@@ -265,7 +265,7 @@ HRESULT DXCore::InitDirectX()
 	device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
 
 	// Set up render target view handles
-	for (unsigned int i = 0; i < numBackBuffers; i++)
+	for (unsigned int i = 0; i < NumBackBuffers; i++)
 	{
 		// Grab this buffer from the swap chain
 		swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffers[i]));
@@ -348,10 +348,12 @@ HRESULT DXCore::InitDirectX()
 	commandQueue->ExecuteCommandLists(1, lists);
 
 	// Make a fence and an event
-	for (unsigned int i = 0; i < numBackBuffers; i++)
+	for (unsigned int i = 0; i < NumBackBuffers; i++)
 	{
 		device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fences[i]));
-
+		// This is to ensure that the fence is set before we create fence event
+		fenceValues[i] = i == 0 ? 1 : 0; 
+		//fenceEvent[i] = CreateEventEx(0, 0, 0, EVENT_ALL_ACCESS);
 	}
 	fenceEvent = CreateEventEx(0, 0, 0, EVENT_ALL_ACCESS);
 
@@ -390,7 +392,23 @@ void DXCore::OnResize()
 // --------------------------------------------------------
 void DXCore::WaitForGPU()
 {
-	// Update the fence value
+	//auto previousFenceValue = fenceValues[previousBackBufferIndex];
+	//auto currentFenceValue = fenceValues[currentBackBufferIndex];
+	//auto currentFenceEvent = fenceEvent[currentBackBufferIndex];
+
+	//// Sets a fence value on the GPU side
+	//commandQueue->Signal(fences[previousBackBufferIndex], previousFenceValue);
+	//// Have we hit the fence value yet?
+	//if (fences[currentBackBufferIndex]->GetCompletedValue() < currentFenceValue)
+	//{
+	//	// Tell the fence to let us know when it's hit
+	//	auto hr = fences[currentBackBufferIndex]->SetEventOnCompletion(currentFenceValue, currentFenceEvent);
+	//	WaitForSingleObjectEx(currentFenceEvent, INFINITE, true);
+	//}
+
+	//fenceValues[currentBackBufferIndex] = currentFenceValue + 1;
+
+		// Update the fence value
 	currentFence++;
 
 	// Sets a fence value on the GPU side
@@ -409,7 +427,6 @@ void DXCore::WaitForGPU()
 			currentFence++;
 		}
 	}
-
 }
 
 void DXCore::CloseExecuteAndResetCommandList()

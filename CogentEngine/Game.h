@@ -9,10 +9,6 @@
 */
 #pragma once
 
-#define ScreenWidth = 1280
-#define ScreenHegight = 720
-#define TerrainIndex = 3
-
 #include "DXCore.h"
 #include <DirectXMath.h>
 #include "DXUtility.h"
@@ -81,7 +77,7 @@ private:
 
 	void LoadShaders();
 	void CreateMatrices();
-	void CreateBasicGeometry();
+	void CreateMesh();
 	void CreateRootSigAndPipelineState();
 
 	ID3D12RootSignature* rootSignature;
@@ -116,6 +112,7 @@ private:
 	Mesh* sm_cube;
 	Mesh* dm_pawn;
 	Mesh* sm_plane;
+	Mesh* sm_sponza;
 
 	ModelLoader mLoader;
 
@@ -132,6 +129,7 @@ private:
 	Material m_plane;
 
 	Entity* e_plane;
+	Entity* e_sponza;
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;

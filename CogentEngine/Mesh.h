@@ -8,6 +8,21 @@
 #include "DirectXMesh.h"
 
 using namespace DirectX;
+
+struct MeshEntry
+{
+	int NumIndices;
+	int BaseVertex;
+	int BaseIndex;
+};
+
+struct MeshData
+{
+	std::vector<Vertex>		Vertices;
+	std::vector<uint32_t>	Indices;
+	std::vector<MeshEntry>	MeshEntries;
+};
+
 class Mesh
 {
 public:
@@ -45,6 +60,8 @@ public:
 	void CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount, 
 		ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 
+	std::vector<MeshEntry>	MeshEntries;
+
 private:
 	ID3D12Resource * vertexBuffer;
 	ID3D12Resource * indexBuffer;
@@ -58,6 +75,7 @@ private:
 
 	std::vector<Vertex> vertices;           // Verts we're assembling
 	std::vector<UINT> indices;           // Indices of these verts
+
 
 	BoundingOrientedBox boundingBox;
 
