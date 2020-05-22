@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include "Constants.h"
 #include <string>
 #include "d3dx12.h"
 #include <wrl.h>
@@ -63,8 +64,6 @@ protected:
 	unsigned int width;
 	unsigned int height;
 
-	// How many swap chain buffers
-	static const unsigned int NumBackBuffers = 3;
 	unsigned int currentBackBufferIndex = 0;
 	unsigned int previousBackBufferIndex = 0;
 
@@ -81,23 +80,24 @@ protected:
 
 	ID3D12GraphicsCommandList*	commandList;
 	ID3D12CommandQueue*			commandQueue;
-	ID3D12CommandAllocator*		commandAllocator[NumBackBuffers];
+	ID3D12CommandAllocator*		commandAllocator[FrameBufferCount];
 
 	unsigned int			rtvDescriptorSize;
-	ID3D12DescriptorHeap*	rtvHeap;	// Heap that will store RTV's (probably 2, for back buffer swaps)
+	// Heap that will store RTV's 
+	ID3D12DescriptorHeap*	rtvHeap;
 	ID3D12DescriptorHeap*	dsvHeap;
 
-	ID3D12Resource* backBuffers[NumBackBuffers];
+	ID3D12Resource* backBuffers[FrameBufferCount];
 	ID3D12Resource* depthStencilBuffer;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[NumBackBuffers]; // Pointers into the RTV desc heap
+	// Pointers into the RTV desc heap
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[FrameBufferCount]; 
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 
 	// Fence for CPU/GPU sync
-	ID3D12Fence* fences[NumBackBuffers];
-	HANDLE fenceEvent;// [NumBackBuffers];
-	unsigned long currentFence = 1;
-	uint64_t fenceValues[NumBackBuffers];
+	ID3D12Fence* fences[FrameBufferCount];
+	HANDLE eventHandle;
+	uint64_t fenceValues[FrameBufferCount];
 
 	// DX12 Helper Functions
 	void WaitForGPU();

@@ -14,14 +14,17 @@ public:
 		const wchar_t* roughTextureFileName, 
 		ID3D12CommandQueue* commandQueue, 
 		uint32_t index, 
-		const DescriptorHeap& heap);
+		const DescriptorHeap* heap,
+		uint32_t heapCount);
 
-	D3D12_GPU_DESCRIPTOR_HANDLE GetFirstGPUHandle();
+	D3D12_GPU_DESCRIPTOR_HANDLE GetFirstGPUHandle(const DescriptorHeap* heap, uint32_t backBufferIndex);
 
 private:
 	Texture diffuseTexture;
 	Texture normalTexture;
 	Texture metalTexture;
 	Texture roughTexture;
+
+	uint32_t materialIndex;
 };
 

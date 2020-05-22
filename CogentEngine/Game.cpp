@@ -81,9 +81,6 @@ void Game::Init()
 	currentIndex = 0;
 	CreateNavmesh();
 	//path = FindPath({ 0,0 }, { 16 , 16 });
-
-	// Wait here until GPU is actually done
-	WaitForGPU();
 }
 
 
@@ -310,10 +307,11 @@ void Game::DrawEntity(Entity * entity)
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.pointLightCount = MaxPointLights;
 
-	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
-	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
-	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
+	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV, currentBackBufferIndex);
+
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
 	DrawMesh(entity->GetMesh());
 }
@@ -329,9 +327,10 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	transparencyData.dirLight = directionalLight1;
 	transparencyData.blendAmount = blendAmount;
 
-	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
-	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
+	frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV, currentBackBufferIndex);
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(),currentBackBufferIndex));
 
 	DrawMesh(entity->GetMesh());
 }
@@ -428,14 +427,21 @@ void Game::Update(float deltaTime, float totalTime)
 	pool.ExecuteCallbacks();
 
 	//frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
-	frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV);
+	//frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV, currentBackBufferIndex);
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
 
 void Game::Draw(float deltaTime, float totalTime)
 {
-	//currentSwapBuffer = swapChain->getcurrent
+	WaitForGPU();
+	// Figure out which buffer is next
+	previousBackBufferIndex = currentBackBufferIndex;
+	currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+	commandAllocator[currentBackBufferIndex]->Reset();
+	commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
+	//currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 	ID3D12Resource* backBuffer = backBuffers[currentBackBufferIndex];
 
 	{
@@ -481,17 +487,17 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		// Set constant buffer
-		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap().pDescriptorHeap.GetAddressOf());
+		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap(currentBackBufferIndex).pDescriptorHeap.GetAddressOf());
 		
 		//for pixel shader
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
-			frameManager.GetGPUHandle(pixelCBV.heapIndex));
+			frameManager.GetGPUHandle(pixelCBV.heapIndex, currentBackBufferIndex));
 
-		//for ibl
+		//for image based lighting
 		commandList->SetGraphicsRootDescriptorTable(
 			3,
-			skyIrradiance.GetGPUHandle());
+			skyIrradiance.GetGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
 		commandList->SetPipelineState(pbrPipeState);
 		DrawEntity(entities[0]);
@@ -510,7 +516,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		//transparent objects are drawn last
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
-			frameManager.GetGPUHandle(transparencyCBV.heapIndex));
+			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
 		commandList->SetPipelineState(transparencyPipeState);
 		DrawTransparentEntity(entities[2], 0.02f);
 		DrawTransparentEntity(entities[3], 0.08f);
@@ -534,9 +540,8 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Present the current back buffer
 		swapChain->Present(vsync ? 1 : 0, 0);
 
-		// Figure out which buffer is next
-		previousBackBufferIndex = currentBackBufferIndex;
-		currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+		//WaitForGPU();
+
 	}
 }
 
@@ -644,13 +649,11 @@ void Game::DrawSky()
 	skyboxExternalData.view = camera->GetViewMatrixTransposed();
 	skyboxExternalData.proj = camera->GetProjectionMatrixTransposed();
 
-	/*gpuConstantBuffer.CopyDataWithIndex(&skyboxExternalData, sizeof(SkyboxExternalData), skyIndex);*/
-	frameManager.CopyData(&skyboxExternalData, sizeof(SkyboxExternalData), skyCBV);
+	frameManager.CopyData(&skyboxExternalData, sizeof(SkyboxExternalData), skyCBV, currentBackBufferIndex);
 
 	commandList->SetPipelineState(skyPipeState.Get());
-
-	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(skyCBV.heapIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(skyCBV.heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
 	DrawMesh(sm_skyCube);
 }

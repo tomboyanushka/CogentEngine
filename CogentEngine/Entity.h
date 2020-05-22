@@ -1,4 +1,6 @@
 #pragma once
+
+#include "Constants.h"
 #include <DirectXMath.h>
 #include "Mesh.h"
 #include "Material.h"
@@ -7,7 +9,7 @@ using namespace DirectX;
 class Entity
 {
 public:
-	Entity(Mesh* mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv);
+	Entity(Mesh* mesh, GPUConstantBuffer* gpuConstantBuffer, const DescriptorHeap* gpuHeap, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv);
 	~Entity();
 
 	XMFLOAT3 GetPosition(); 
