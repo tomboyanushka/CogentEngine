@@ -1,11 +1,12 @@
 #pragma once
-#include "DXUtility.h"
+
+#include "Constants.h"
 #include "ConstantBuffer.h"
+#include "ConstantBufferView.h"
+#include "DXUtility.h"
+#include "Entity.h"
 #include "Material.h"
 #include "Texture.h"
-#include "Entity.h"
-#include "Constants.h"
-#include "ConstantBufferView.h"
 
 
 class FrameManager
@@ -26,10 +27,11 @@ public:
 		TextureType type = WIC);
 
 	Entity* CreateEntity(Mesh* mesh, Material* material);
-	void CopyData(void* data, uint32_t size, ConstantBufferView cbv);
+	void CopyData(void* data, uint32_t size, ConstantBufferView cbv, uint32_t backBufferIndex);
 
-	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(uint32_t index);
-	DescriptorHeap& GetGPUDescriptorHeap();
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(uint32_t index, uint32_t backBufferIndex);
+	DescriptorHeap& GetGPUDescriptorHeap(uint32_t backBufferIndex);
+	DescriptorHeap* GetGPUDescriptorHeap();
 	
 
 private:
@@ -38,9 +40,11 @@ private:
 	uint32_t constantBufferIndex = 0;
 	uint32_t cbOffset = 0;
 
+	// This heap will store the descriptor to the constant buffer
+	GPUConstantBuffer gpuConstantBuffer[FrameBufferCount];
 
-	GPUConstantBuffer gpuConstantBuffer;
-	DescriptorHeap gpuHeap;
+	// This is the memory on the GPU where the constant buffer will be placed.
+	DescriptorHeap gpuHeap[FrameBufferCount];
 	ID3D12Device* device;
 };
 

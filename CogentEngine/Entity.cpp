@@ -2,17 +2,22 @@
 
 
 
-Entity::Entity(Mesh * mesh, char* address, D3D12_GPU_DESCRIPTOR_HANDLE hp, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv)
+Entity::Entity(Mesh * mesh, GPUConstantBuffer* gpuConstantBuffer, const DescriptorHeap* gpuHeap, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv)
 {
 	this->mesh = mesh;
 	this->material = material;
 	this->constantBufferIndex = constantBufferIndex;
 	this->SetPosition(XMFLOAT3(0.0, 0.0, 0.0));
 	this->SetScale(XMFLOAT3(1.0, 1.0, 1.0));
-	this->gpuAddress = address;
-	this->handle = hp;
-	this->boundingOrientedBox = mesh->GetBoundingBox();
-	this->cbv = cbv;
+	for (int i = 0; i < FrameBufferCount; ++i)
+	{
+		this->cbv = cbv;
+		this->gpuAddress = gpuConstantBuffer[i].GetMappedAddress(cbv.cbOffset);
+		this->handle = gpuHeap[i].handleGPU(cbv.heapIndex);
+	}
+
+	//this->boundingOrientedBox = mesh->GetBoundingBox();
+
 }
 
 Entity::~Entity()
@@ -32,7 +37,7 @@ void Entity::SetPosition(XMFLOAT3 setPos)
 void Entity::SetScale(XMFLOAT3 setScale)
 {
 	scale = setScale;
-	this->boundingOrientedBox = GetBoundingOrientedBox();
+	//this->boundingOrientedBox = GetBoundingOrientedBox();
 	boundingOrientedBox.Extents.x *= setScale.x;
 	boundingOrientedBox.Extents.y *= setScale.y;
 	boundingOrientedBox.Extents.z *= setScale.z;

@@ -64,7 +64,7 @@ DXCore::~DXCore()
 {
 
 	// Release all DirectX resources
-	for (int i = 0; i < numBackBuffers; i++)
+	for (int i = 0; i < FrameBufferCount; i++)
 	{
 		backBuffers[i]->Release();
 		commandAllocator[i]->Release();
@@ -179,7 +179,8 @@ HRESULT DXCore::InitDirectX()
 	D3D12GetDebugInterface(IID_PPV_ARGS(&debugController));
 	debugController->EnableDebugLayer();
 #endif
-	EnableShaderBasedValidation();
+	// causes slowdown 
+	//EnableShaderBasedValidation();
 
 	// Create the DX 12 device
 	hr = D3D12CreateDevice(
@@ -211,7 +212,7 @@ HRESULT DXCore::InitDirectX()
 	device->CreateCommandQueue(&qDesc, IID_PPV_ARGS(&commandQueue));
 
 	// Set up allocator
-	for (unsigned int i = 0; i < numBackBuffers; i++)
+	for (unsigned int i = 0; i < FrameBufferCount; i++)
 	{
 		device->CreateCommandAllocator(
 			D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -226,31 +227,27 @@ HRESULT DXCore::InitDirectX()
 
 	// Create a description of how our swap
 	// chain should work
-	DXGI_SWAP_CHAIN_DESC swapDesc = {};
-	swapDesc.BufferCount = numBackBuffers;
-	swapDesc.BufferDesc.Width = width;
-	swapDesc.BufferDesc.Height = height;
-	swapDesc.BufferDesc.RefreshRate.Numerator = 60;
-	swapDesc.BufferDesc.RefreshRate.Denominator = 1;
-	swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	swapDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	swapDesc.OutputWindow = hWnd;
-	swapDesc.SampleDesc.Count = 1;
-	swapDesc.SampleDesc.Quality = 0;
-	swapDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapDesc.Windowed = true;
+	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+	swapChainDesc.BufferCount = FrameBufferCount;
+	swapChainDesc.BufferDesc.Width = width;
+	swapChainDesc.BufferDesc.Height = height;
+	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	swapChainDesc.OutputWindow = hWnd;
+	swapChainDesc.SampleDesc.Count = 1;
+	swapChainDesc.SampleDesc.Quality = 0;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.Windowed = true;
 
 	// Create a DXGI factory so we can make a swap chain
 	CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
-	hr = dxgiFactory->CreateSwapChain(commandQueue, &swapDesc, (IDXGISwapChain**)&swapChain);
+	hr = dxgiFactory->CreateSwapChain(commandQueue, &swapChainDesc, (IDXGISwapChain**)&swapChain);
 
 
 	// Create descriptor heaps for RTVs
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	rtvHeapDesc.NumDescriptors = numBackBuffers;
+	rtvHeapDesc.NumDescriptors = FrameBufferCount;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
 
@@ -265,7 +262,7 @@ HRESULT DXCore::InitDirectX()
 	device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
 
 	// Set up render target view handles
-	for (unsigned int i = 0; i < numBackBuffers; i++)
+	for (unsigned int i = 0; i < FrameBufferCount; i++)
 	{
 		// Grab this buffer from the swap chain
 		swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffers[i]));
@@ -348,12 +345,14 @@ HRESULT DXCore::InitDirectX()
 	commandQueue->ExecuteCommandLists(1, lists);
 
 	// Make a fence and an event
-	for (unsigned int i = 0; i < numBackBuffers; i++)
+	for (unsigned int i = 0; i < FrameBufferCount; i++)
 	{
 		device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fences[i]));
-
+		// This is to ensure that the fence is set before we create fence event
+		fenceValues[i] = i == 0 ? 1 : 0; 
+		//eventHandle[i] = CreateEventEx(0, 0, 0, EVENT_ALL_ACCESS);
 	}
-	fenceEvent = CreateEventEx(0, 0, 0, EVENT_ALL_ACCESS);
+	eventHandle = CreateEventEx(0, 0, 0, EVENT_ALL_ACCESS);
 
 	// Make sure we're done before moving on
 	WaitForGPU();
@@ -390,26 +389,22 @@ void DXCore::OnResize()
 // --------------------------------------------------------
 void DXCore::WaitForGPU()
 {
-	// Update the fence value
-	currentFence++;
+	auto previousFenceValue = fenceValues[previousBackBufferIndex];
 
 	// Sets a fence value on the GPU side
-	commandQueue->Signal(fences[currentBackBufferIndex], currentFence);
+	commandQueue->Signal(fences[previousBackBufferIndex], fenceValues[previousBackBufferIndex]);
 
 	// Have we hit the fence value yet?
-	if (fences[currentBackBufferIndex]->GetCompletedValue() < currentFence)
+	if (fences[currentBackBufferIndex]->GetCompletedValue() < fenceValues[currentBackBufferIndex])
 	{
 		// Tell the fence to let us know when it's hit
-		auto hr = fences[currentBackBufferIndex]->SetEventOnCompletion(currentFence, fenceEvent);
+		auto hr = fences[currentBackBufferIndex]->SetEventOnCompletion(fenceValues[currentBackBufferIndex], eventHandle);
 
-		if (SUCCEEDED(hr))
-		{
-			// Wait here until we get that fence event
-			WaitForSingleObject(fenceEvent, INFINITE);
-			currentFence++;
-		}
+		// Wait here until we get that fence event
+		WaitForSingleObject(eventHandle, INFINITE);
 	}
 
+	fenceValues[currentBackBufferIndex] = previousFenceValue + 1;
 }
 
 void DXCore::CloseExecuteAndResetCommandList()
@@ -421,9 +416,9 @@ void DXCore::CloseExecuteAndResetCommandList()
 	// Always wait before reseting command allocator, as it should not
 	// be reset while the GPU is processing a command list
 	// See: https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/nf-d3d12-id3d12commandallocator-reset
-	WaitForGPU();
-	commandAllocator[currentBackBufferIndex]->Reset();
-	commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
+	//WaitForGPU();
+	//commandAllocator[currentBackBufferIndex]->Reset();
+	//commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
 }
 
 HRESULT DXCore::CreateStaticBuffer(unsigned int dataStride, unsigned int dataCount, void* data, ID3D12Resource** buffer)
@@ -524,7 +519,7 @@ HRESULT DXCore::CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, vo
 	ibView->SizeInBytes = SizeOfDXGIFormat(format) * dataCount;
 	ibView->BufferLocation = (*buffer)->GetGPUVirtualAddress();
 
-	// Everything's good
+	// Every thing's good
 	return S_OK;
 }
 

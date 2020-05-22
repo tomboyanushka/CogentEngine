@@ -35,10 +35,15 @@ Game::~Game()
 	// Don't clean up until GPU is actually done
 	WaitForGPU();
 
+	//delete meshes
 	delete sm_sphere;
 	delete sm_skyCube;
 	delete sm_plane;
+	delete sm_sponza;
+
+	//delete entities
 	delete e_plane;
+	delete e_sponza;
 	delete camera;
 
 	for (auto e : entities)
@@ -66,7 +71,7 @@ void Game::Init()
 	CreateMatrices();
 	CreateTextures();
 	CreateMaterials();
-	CreateBasicGeometry();
+	CreateMesh();
 	CreateRootSigAndPipelineState();
 
 	//AI Initialization
@@ -76,9 +81,6 @@ void Game::Init()
 	currentIndex = 0;
 	CreateNavmesh();
 	//path = FindPath({ 0,0 }, { 16 , 16 });
-
-	// Wait here until GPU is actually done
-	WaitForGPU();
 }
 
 
@@ -111,11 +113,14 @@ void Game::CreateMatrices()
 }
 
 
-void Game::CreateBasicGeometry()
+void Game::CreateMesh()
 {
 	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
+
+	auto sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
+	sm_sponza = sponza.Mesh;
 
 	for (int i = 0; i < numEntities; ++i)
 	{
@@ -123,6 +128,7 @@ void Game::CreateBasicGeometry()
 	}
 
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
+	e_sponza = frameManager.CreateEntity(sm_sponza, &m_scratchedPaint);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -170,7 +176,8 @@ void Game::CreateRootSigAndPipelineState()
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS);
 
 		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[1];
-		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC);
+		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP, 0, 2.0f);
 
 		rootSignatureDesc.NumStaticSamplers = 1;
 		rootSignatureDesc.pStaticSamplers = StaticSamplers;
@@ -300,10 +307,11 @@ void Game::DrawEntity(Entity * entity)
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.pointLightCount = MaxPointLights;
 
-	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
-	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
-	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
+	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV, currentBackBufferIndex);
+
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
 	DrawMesh(entity->GetMesh());
 }
@@ -319,9 +327,10 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	transparencyData.dirLight = directionalLight1;
 	transparencyData.blendAmount = blendAmount;
 
-	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView());
-	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle());
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
+	frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV, currentBackBufferIndex);
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(),currentBackBufferIndex));
 
 	DrawMesh(entity->GetMesh());
 }
@@ -394,6 +403,10 @@ void Game::Update(float deltaTime, float totalTime)
 	e_plane->SetPosition(XMFLOAT3(-2.8f, 0.0f, 4.0f));
 	e_plane->SetMaterial(&m_plane);
 
+	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
+	//e_sponza->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
+	e_sponza->SetPosition(XMFLOAT3(0, 0.0f, 10.0f));
+
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
 
@@ -414,14 +427,21 @@ void Game::Update(float deltaTime, float totalTime)
 	pool.ExecuteCallbacks();
 
 	//frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
-	frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV);
+	//frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV, currentBackBufferIndex);
 	//vsConstBufferUploadHeap->Unmap(0, 0);
 }
 
 
 void Game::Draw(float deltaTime, float totalTime)
 {
-	//currentSwapBuffer = swapChain->getcurrent
+	WaitForGPU();
+	// Figure out which buffer is next
+	previousBackBufferIndex = currentBackBufferIndex;
+	currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+	commandAllocator[currentBackBufferIndex]->Reset();
+	commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
+	//currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 	ID3D12Resource* backBuffer = backBuffers[currentBackBufferIndex];
 
 	{
@@ -467,22 +487,24 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		// Set constant buffer
-		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap().pDescriptorHeap.GetAddressOf());
+		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap(currentBackBufferIndex).pDescriptorHeap.GetAddressOf());
 		
 		//for pixel shader
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
-			frameManager.GetGPUHandle(pixelCBV.heapIndex));
+			frameManager.GetGPUHandle(pixelCBV.heapIndex, currentBackBufferIndex));
 
-		//for ibl
+		//for image based lighting
 		commandList->SetGraphicsRootDescriptorTable(
 			3,
-			skyIrradiance.GetGPUHandle());
+			skyIrradiance.GetGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
 		commandList->SetPipelineState(pbrPipeState);
 		DrawEntity(entities[0]);
 		DrawEntity(entities[1]);
 		DrawEntity(entities[6]);
+		DrawEntity(e_sponza);
+		//DrawMesh(sm_sponza);
 
 		commandList->SetPipelineState(toonShadingPipeState);
 		DrawEntity(entities[4]);
@@ -494,7 +516,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		//transparent objects are drawn last
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
-			frameManager.GetGPUHandle(transparencyCBV.heapIndex));
+			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
 		commandList->SetPipelineState(transparencyPipeState);
 		DrawTransparentEntity(entities[2], 0.02f);
 		DrawTransparentEntity(entities[3], 0.08f);
@@ -518,8 +540,8 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Present the current back buffer
 		swapChain->Present(vsync ? 1 : 0, 0);
 
-		// Figure out which buffer is next
-		currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+		//WaitForGPU();
+
 	}
 }
 
@@ -527,8 +549,21 @@ void Game::DrawMesh(Mesh* mesh)
 {
 	commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
-	// Draw
-	commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
+	
+	// Check if mesh is complex or simple
+	if (mesh->MeshEntries.size() > 1)
+	{
+		for (auto m : mesh->MeshEntries)
+		{
+			commandList->DrawIndexedInstanced(m.NumIndices, 1, m.BaseIndex, m.BaseVertex, 0);
+		}
+		
+	}
+	
+	else
+	{
+		commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
+	}
 }
 
 void Game::CreateMaterials()
@@ -614,13 +649,11 @@ void Game::DrawSky()
 	skyboxExternalData.view = camera->GetViewMatrixTransposed();
 	skyboxExternalData.proj = camera->GetProjectionMatrixTransposed();
 
-	/*gpuConstantBuffer.CopyDataWithIndex(&skyboxExternalData, sizeof(SkyboxExternalData), skyIndex);*/
-	frameManager.CopyData(&skyboxExternalData, sizeof(SkyboxExternalData), skyCBV);
+	frameManager.CopyData(&skyboxExternalData, sizeof(SkyboxExternalData), skyCBV, currentBackBufferIndex);
 
 	commandList->SetPipelineState(skyPipeState.Get());
-
-	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(skyCBV.heapIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(skyCBV.heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
 	DrawMesh(sm_skyCube);
 }

@@ -324,7 +324,7 @@ HRESULT Mesh::CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void
 
 void Mesh::CreateBasicGeometry(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount, ID3D12Device * device, ID3D12GraphicsCommandList* commandList)
 {
-	CalculateTangents(vertices, vertexCount, indices, indexCount);
+	
 
 	//// Create geometry buffers  ------------------------------------
 	CreateVertexBuffer(sizeof(Vertex), vertexCount, vertices, &vertexBuffer, &vbView, device, commandList);
