@@ -115,20 +115,49 @@ void Game::CreateMatrices()
 
 void Game::CreateMesh()
 {
+	// Load meshes
 	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 
-	auto sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
+	// Sponza
+	sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
 	sm_sponza = sponza.Mesh;
+	std::string sponzaDirectory = "../../Assets/Textures/sponza/";
+	for (auto &material : sponza.Materials)
+	{
+		auto diffuse = sponzaDirectory + material.Diffuse;
+		auto normal = sponzaDirectory + material.Normal;
+		auto roughness = sponzaDirectory + material.Roughness;
+		auto metal = sponzaDirectory + material.Metalness;
 
+		if (material.Diffuse.empty())
+		{
+			diffuse = defaultDiffuse.GetName();
+		}
+		if (material.Normal.empty())
+		{
+			normal = defaultNormal.GetName();
+		}
+		if (material.Roughness.empty())
+		{
+			roughness = defaultRoughness.GetName();
+		}
+		if (material.Metalness.empty())
+		{
+			metal = defaultMetal.GetName();
+		}
+
+		Material m = frameManager.CreateMaterial(diffuse, normal, roughness, metal, commandQueue);
+		sponzaMat.push_back(m);
+	}
+	// Create Entities
 	for (int i = 0; i < numEntities; ++i)
 	{
 		entities.push_back(frameManager.CreateEntity(sm_sphere, &m_floor));
 	}
-
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
-	e_sponza = frameManager.CreateEntity(sm_sponza, &m_scratchedPaint);
+	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -177,7 +206,7 @@ void Game::CreateRootSigAndPipelineState()
 
 		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[1];
 		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-			D3D12_TEXTURE_ADDRESS_MODE_WRAP, 0, 2.0f);
+			D3D12_TEXTURE_ADDRESS_MODE_WRAP, 0, (UINT)2.0f);
 
 		rootSignatureDesc.NumStaticSamplers = 1;
 		rootSignatureDesc.pStaticSamplers = StaticSamplers;
@@ -310,6 +339,7 @@ void Game::DrawEntity(Entity * entity)
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV, currentBackBufferIndex);
 
+	// set the material
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
@@ -399,8 +429,9 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[6]->SetScale(XMFLOAT3(25.0f, 0.2f, 25.0f));
 	entities[6]->SetPosition(XMFLOAT3(-2.0f, -3.0f, 10.0f));
 
+	e_plane->SetScale(XMFLOAT3(0.7f, 0.7f, 0.7f));
 	e_plane->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
-	e_plane->SetPosition(XMFLOAT3(-2.8f, 0.0f, 4.0f));
+	e_plane->SetPosition(XMFLOAT3(-2.8f, 2.0f, 2.0f));
 	e_plane->SetMaterial(&m_plane);
 
 	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
@@ -441,7 +472,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	commandAllocator[currentBackBufferIndex]->Reset();
 	commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
-	//currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
 	ID3D12Resource* backBuffer = backBuffers[currentBackBufferIndex];
 
 	{
@@ -500,15 +531,14 @@ void Game::Draw(float deltaTime, float totalTime)
 			skyIrradiance.GetGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
 		commandList->SetPipelineState(pbrPipeState);
-		DrawEntity(entities[0]);
-		DrawEntity(entities[1]);
-		DrawEntity(entities[6]);
+		//DrawEntity(entities[0]);
+		//DrawEntity(entities[1]);
+		//DrawEntity(entities[6]);
 		DrawEntity(e_sponza);
-		//DrawMesh(sm_sponza);
 
 		commandList->SetPipelineState(toonShadingPipeState);
-		DrawEntity(entities[4]);
-		DrawEntity(entities[5]);
+		//DrawEntity(entities[4]);
+		//DrawEntity(entities[5]);
 		DrawEntity(e_plane);
 
 		DrawSky();
@@ -518,8 +548,9 @@ void Game::Draw(float deltaTime, float totalTime)
 			1,
 			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
 		commandList->SetPipelineState(transparencyPipeState);
-		DrawTransparentEntity(entities[2], 0.02f);
-		DrawTransparentEntity(entities[3], 0.08f);
+		// TO DO: Fix Transparency to use depth
+		//DrawTransparentEntity(entities[2], 0.02f);
+		//DrawTransparentEntity(entities[3], 0.08f);
 	}
 
 	// Present
@@ -549,13 +580,18 @@ void Game::DrawMesh(Mesh* mesh)
 {
 	commandList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
 	commandList->IASetIndexBuffer(&mesh->GetIndexBufferView());
-	
+	int i = 0;
 	// Check if mesh is complex or simple
 	if (mesh->MeshEntries.size() > 1)
 	{
 		for (auto m : mesh->MeshEntries)
 		{
+			auto mat = sponzaMat[i];
+			//commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(mat.materialIndex, currentBackBufferIndex));
+			commandList->SetGraphicsRootDescriptorTable(2, mat.GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
+
 			commandList->DrawIndexedInstanced(m.NumIndices, 1, m.BaseIndex, m.BaseVertex, 0);
+			i++;
 		}
 		
 	}
@@ -568,70 +604,96 @@ void Game::DrawMesh(Mesh* mesh)
 
 void Game::CreateMaterials()
 {
+	m_default = frameManager.CreateMaterial(
+		"../../Assets/Textures/default/diffuse.png",
+		"../../Assets/Textures/default/normal.png",
+		"../../Assets/Textures/default/metal.png",
+		"../../Assets/Textures/default/roughness.png",
+		commandQueue);
+
+
 	m_floor = frameManager.CreateMaterial(
-		L"../../Assets/Textures/floor/diffuse.png",
-		L"../../Assets/Textures/floor/normal.png",
-		L"../../Assets/Textures/floor/metal.png",
-		L"../../Assets/Textures/floor/roughness.png",
+		"../../Assets/Textures/floor/diffuse.png",
+		"../../Assets/Textures/floor/normal.png",
+		"../../Assets/Textures/floor/metal.png",
+		"../../Assets/Textures/floor/roughness.png",
 		commandQueue);
 
 	m_scratchedPaint = frameManager.CreateMaterial(
-		L"../../Assets/Textures/scratched/diffuse.png",
-		L"../../Assets/Textures/scratched/normal.png",
-		L"../../Assets/Textures/scratched/metal.png",
-		L"../../Assets/Textures/scratched/roughness.png",
+		"../../Assets/Textures/scratched/diffuse.png",
+		"../../Assets/Textures/scratched/normal.png",
+		"../../Assets/Textures/scratched/metal.png",
+		"../../Assets/Textures/scratched/roughness.png",
 		commandQueue);
 
 	m_cobbleStone = frameManager.CreateMaterial(
-		L"../../Assets/Textures/cobbleStone/diffuse.png",
-		L"../../Assets/Textures/cobbleStone/normal.png",
-		L"../../Assets/Textures/cobbleStone/metal.png",
-		L"../../Assets/Textures/cobbleStone/roughness.png",
+		"../../Assets/Textures/cobbleStone/diffuse.png",
+		"../../Assets/Textures/cobbleStone/normal.png",
+		"../../Assets/Textures/cobbleStone/metal.png",
+		"../../Assets/Textures/cobbleStone/roughness.png",
 		commandQueue);
 
 	m_paint = frameManager.CreateMaterial(
-		L"../../Assets/Textures/paint/diffuse.png",
-		L"../../Assets/Textures/paint/normal.png",
-		L"../../Assets/Textures/paint/metal.png",
-		L"../../Assets/Textures/paint/roughness.png",
+		"../../Assets/Textures/paint/diffuse.png",
+		"../../Assets/Textures/paint/normal.png",
+		"../../Assets/Textures/paint/metal.png",
+		"../../Assets/Textures/paint/roughness.png",
 		commandQueue);
 
 	m_water = frameManager.CreateMaterial(
-		L"../../Assets/Textures/water/diffuse.png",
-		L"../../Assets/Textures/water/normal.png",
-		L"../../Assets/Textures/default_metal.png",
-		L"../../Assets/Textures/water/roughness.png",
+		"../../Assets/Textures/water/diffuse.png",
+		"../../Assets/Textures/water/normal.png",
+		"../../Assets/Textures/default_metal.png",
+		"../../Assets/Textures/water/roughness.png",
 		commandQueue);
 
 	m_plane = frameManager.CreateMaterial(
-		L"../../Assets/Textures/plane/diffuse.png",
-		L"../../Assets/Textures/plane/normal.png",
-		L"../../Assets/Textures/default_metal.png",
-		L"../../Assets/Textures/default_roughness.png",
+		"../../Assets/Textures/plane/diffuse.png",
+		"../../Assets/Textures/plane/normal.png",
+		"../../Assets/Textures/default_metal.png",
+		"../../Assets/Textures/default_roughness.png",
 		commandQueue);
+
+
 }
 
 void Game::CreateTextures()
 {
 	t_skyTexture = frameManager.CreateTexture(
-		L"../../Assets/Textures/skybox/envEnvHDR.dds",
+		"../../Assets/Textures/skybox/envEnvHDR.dds",
 		commandQueue,
 		DDS);
 
 	skyIrradiance = frameManager.CreateTexture(
-		L"../../Assets/Textures/skybox/envDiffuseHDR.dds",
+		"../../Assets/Textures/skybox/envDiffuseHDR.dds",
 		commandQueue,
 		DDS);
 
 	skyPrefilter = frameManager.CreateTexture(
-		L"../../Assets/Textures/skybox/envSpecularHDR.dds",
+		"../../Assets/Textures/skybox/envSpecularHDR.dds",
 		commandQueue,
 		DDS);
 
 	brdfLookUpTexture = frameManager.CreateTexture(
-		L"../../Assets/Textures/skybox/envBrdf.dds",
+		"../../Assets/Textures/skybox/envBrdf.dds",
 		commandQueue,
 		DDS);
+
+	defaultDiffuse = frameManager.CreateTexture(
+		"../../Assets/Textures/default/diffuse.png",
+		commandQueue);
+
+	defaultNormal = frameManager.CreateTexture(
+		"../../Assets/Textures/default/normal.png",
+		commandQueue);
+
+	defaultRoughness = frameManager.CreateTexture(
+		"../../Assets/Textures/default/roughness.png",
+		commandQueue);
+
+	defaultMetal = frameManager.CreateTexture(
+		"../../Assets/Textures/default/metal.png",
+		commandQueue);
 }
 
 void Game::CreateLights()

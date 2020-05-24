@@ -15,14 +15,14 @@ public:
 	void Initialize(ID3D12Device* device);
 	ConstantBufferView CreateConstantBufferView(uint32_t bufferSize);
 	Material CreateMaterial(
-		const wchar_t* diffuseTextureFileName,
-		const wchar_t* normalTextureFileName,
-		const wchar_t* metalTextureFileName,
-		const wchar_t* roughTextureFileName,
+		const std::string& diffuseTextureFileName,
+		const std::string& normalTextureFileName,
+		const std::string& metalTextureFileName,
+		const std::string& roughTextureFileName,
 		ID3D12CommandQueue* commandQueue);
 
 	Texture CreateTexture(
-		const wchar_t* textureFileName,
+		const std::string& textureFileName,
 		ID3D12CommandQueue* commandQueue,
 		TextureType type = WIC);
 

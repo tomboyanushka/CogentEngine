@@ -5,20 +5,22 @@
 
 using namespace DirectX;
 
-void Texture::Create(ID3D12Device* device, const wchar_t* fileName, ID3D12CommandQueue* commandQueue, uint32_t index, const DescriptorHeap* heap, TextureType type)
+void Texture::Create(ID3D12Device* device, const std::string& fileName, ID3D12CommandQueue* commandQueue, uint32_t index, const DescriptorHeap* heap, TextureType type)
 {
 	textureIndex = index;
 	bool isCubeMap = false;
 	ResourceUploadBatch resourceUpload(device);
 	resourceUpload.Begin();
+	this->fileName = fileName;
+	auto fName = ToWString(fileName);
 	switch (type)
 	{
 	case WIC:
-		CreateWICTextureFromFile(device, resourceUpload, fileName, resource.GetAddressOf(), true);
+		CreateWICTextureFromFile(device, resourceUpload, fName.c_str(), resource.GetAddressOf(), true);
 		break;
 
 	case DDS:
-		CreateDDSTextureFromFile(device, resourceUpload, fileName, resource.GetAddressOf(), false, 0, nullptr, &isCubeMap);
+		CreateDDSTextureFromFile(device, resourceUpload, fName.c_str(), resource.GetAddressOf(), false, 0, nullptr, &isCubeMap);
 		break;
 
 	}
@@ -53,4 +55,9 @@ D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetGPUHandle(const DescriptorHeap* heap, ui
 {
 	//return gpuHandle;
 	return heap[backBufferIndex].handleGPU(textureIndex);
+}
+
+std::string Texture::GetName()
+{
+	return fileName;
 }

@@ -11,7 +11,7 @@ void FrameManager::Initialize(ID3D12Device* device)
 	for (int i = 0; i < FrameBufferCount; ++i)
 	{
 		gpuConstantBuffer[i].Create(device, c_MaxConstBufferSize, bufferSize);
-		gpuHeap[i].Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+		gpuHeap[i].Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048, true);
 	}
 
 }
@@ -39,10 +39,10 @@ ConstantBufferView FrameManager::CreateConstantBufferView(uint32_t bufferSize)
 }
 
 Material FrameManager::CreateMaterial(
-	const wchar_t* diffuseTextureFileName,
-	const wchar_t* normalTextureFileName,
-	const wchar_t* metalTextureFileName,
-	const wchar_t* roughTextureFileName,
+	const std::string& diffuseTextureFileName,
+	const std::string& normalTextureFileName,
+	const std::string& metalTextureFileName,
+	const std::string& roughTextureFileName,
 	ID3D12CommandQueue* commandQueue)
 {
 	Material material;
@@ -58,7 +58,7 @@ Material FrameManager::CreateMaterial(
 	return material;
 }
 
-Texture FrameManager::CreateTexture(const wchar_t* textureFileName, ID3D12CommandQueue* commandQueue, TextureType type)
+Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12CommandQueue* commandQueue, TextureType type)
 {
 	Texture texture;
 	texture.Create(device, textureFileName, commandQueue, frameHeapCounter, gpuHeap, type);

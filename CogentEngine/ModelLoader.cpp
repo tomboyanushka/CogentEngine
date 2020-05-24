@@ -98,6 +98,7 @@ Mesh* ModelLoader::Load(std::string filename, ID3D12Device* device, ID3D12Graphi
 	return mesh;
 }
 
+// Function for loading models with submeshes and materials
 ModelData ModelLoader::LoadComplexModel(std::string filename, ID3D12Device * device, ID3D12GraphicsCommandList * commandList)
 {
 	const aiScene* pScene = importer.ReadFile(filename,
@@ -152,7 +153,7 @@ ModelData ModelLoader::LoadComplexModel(std::string filename, ID3D12Device * dev
 		{
 			auto matId = pScene->mMeshes[i]->mMaterialIndex;
 			auto mat = pScene->mMaterials[matId];
-			//auto c = mat->mNumProperties;
+			auto c = mat->mNumProperties;
 			aiString diffuseTexture;
 			aiString normalTexture;
 			aiString roughnessTexture;

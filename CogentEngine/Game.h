@@ -120,6 +120,12 @@ private:
 	Texture skyIrradiance;
 	Texture skyPrefilter;
 	Texture brdfLookUpTexture;
+	
+	// default
+	Texture defaultDiffuse;
+	Texture defaultNormal;
+	Texture defaultRoughness;
+	Texture defaultMetal;
 
 	Material m_floor;
 	Material m_cobbleStone;
@@ -127,6 +133,11 @@ private:
 	Material m_paint;
 	Material m_water;
 	Material m_plane;
+	Material* m_sponza;
+	Material m_default;
+	std::vector<Material> sponzaMat;
+
+	ModelData sponza;
 
 	Entity* e_plane;
 	Entity* e_sponza;
