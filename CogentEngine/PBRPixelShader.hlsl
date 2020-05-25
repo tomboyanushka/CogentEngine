@@ -49,11 +49,11 @@ float2 BrdfLUT(float3 normal, float3 viewDir, float roughness)
 
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	//return float4(0,0,1,1);
 	input.normal = normalize(input.normal);
 	input.tangent = normalize(input.tangent);
 	float4 surfaceColor = diffuseTexture.Sample(basicSampler, input.uv);
 
+    
 	input.normal = calculateNormalFromMap(input.uv, input.normal, input.tangent);
 
 	// Sample the roughness map
@@ -85,8 +85,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//float3 spotPBR = SpotLightPBR(light4, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
 
 	totalColor = dirPBR;
-
+    clip(surfaceColor.a < 0.1f ? -1 : 1);
+    
 	float gamma = 2.2f;
     totalColor = abs(pow(totalColor, 1.0 / gamma));
-	return float4(totalColor, 1);
+	return float4(totalColor * surfaceColor.rgb, 1);
 }

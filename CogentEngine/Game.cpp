@@ -120,37 +120,8 @@ void Game::CreateMesh()
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 
-	// Sponza
-	sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
-	sm_sponza = sponza.Mesh;
-	std::string sponzaDirectory = "../../Assets/Textures/sponza/";
-	for (auto &material : sponza.Materials)
-	{
-		auto diffuse = sponzaDirectory + material.Diffuse;
-		auto normal = sponzaDirectory + material.Normal;
-		auto roughness = sponzaDirectory + material.Roughness;
-		auto metal = sponzaDirectory + material.Metalness;
-
-		if (material.Diffuse.empty())
-		{
-			diffuse = defaultDiffuse.GetName();
-		}
-		if (material.Normal.empty())
-		{
-			normal = defaultNormal.GetName();
-		}
-		if (material.Roughness.empty())
-		{
-			roughness = defaultRoughness.GetName();
-		}
-		if (material.Metalness.empty())
-		{
-			metal = defaultMetal.GetName();
-		}
-
-		Material m = frameManager.CreateMaterial(diffuse, normal, roughness, metal, commandQueue);
-		sponzaMat.push_back(m);
-	}
+	LoadSponza();
+	
 	// Create Entities
 	for (int i = 0; i < numEntities; ++i)
 	{
@@ -688,7 +659,7 @@ void Game::CreateTextures()
 		commandQueue);
 
 	defaultRoughness = frameManager.CreateTexture(
-		"../../Assets/Textures/default/roughness.png",
+		"../../Assets/Textures/default/defaultRoughness.png",
 		commandQueue);
 
 	defaultMetal = frameManager.CreateTexture(
@@ -699,7 +670,7 @@ void Game::CreateTextures()
 void Game::CreateLights()
 {
 	//DIRECTIONAL LIGHTS: ambient diffuse direction intensity =====================
-	directionalLight1 = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(10) };
+	directionalLight1 = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(2) };
 
 	//POINT LIGHTS: color position range intensity padding  =========================
 	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
@@ -718,6 +689,41 @@ void Game::DrawSky()
 	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
 
 	DrawMesh(sm_skyCube);
+}
+
+void Game::LoadSponza()
+{
+	// Sponza
+	sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
+	sm_sponza = sponza.Mesh;
+	std::string sponzaDirectory = "../../Assets/Textures/sponza/";
+	for (auto &material : sponza.Materials)
+	{
+		auto diffuse = sponzaDirectory + material.Diffuse;
+		auto normal = sponzaDirectory + material.Normal;
+		auto roughness = sponzaDirectory + material.Roughness;
+		auto metal = sponzaDirectory + material.Metalness;
+
+		if (material.Diffuse.empty())
+		{
+			diffuse = defaultDiffuse.GetName();
+		}
+		if (material.Normal.empty())
+		{
+			normal = defaultNormal.GetName();
+		}
+		if (material.Roughness.empty())
+		{
+			roughness = defaultRoughness.GetName();
+		}
+		if (material.Metalness.empty())
+		{
+			metal = defaultMetal.GetName();
+		}
+
+		Material m = frameManager.CreateMaterial(diffuse, normal, metal, roughness, commandQueue);
+		sponzaMat.push_back(m);
+	}
 }
 
 void Game::CreateNavmesh()

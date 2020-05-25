@@ -58,6 +58,7 @@ public:
 	void CreateTextures();
 	void CreateLights();
 	void DrawSky();
+	void LoadSponza();
 
 	///AI functions
 	void CreateNavmesh();
