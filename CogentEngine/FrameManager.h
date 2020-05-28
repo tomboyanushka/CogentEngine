@@ -19,7 +19,8 @@ public:
 		const std::string& normalTextureFileName,
 		const std::string& metalTextureFileName,
 		const std::string& roughTextureFileName,
-		ID3D12CommandQueue* commandQueue);
+		ID3D12CommandQueue* commandQueue,
+		TextureType type = WIC);
 
 	Texture CreateTexture(
 		const std::string& textureFileName,

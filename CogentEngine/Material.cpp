@@ -8,13 +8,14 @@ uint32_t Material::Create(ID3D12Device* device,
 	ID3D12CommandQueue* commandQueue, 
 	uint32_t index, 
 	const DescriptorHeap* heap,
-	uint32_t heapCount)
+	uint32_t heapCount,
+	TextureType type)
 {
 
-	diffuseTexture.Create(device, diffuseTextureFileName, commandQueue, index, heap);
-	normalTexture.Create(device, normalTextureFileName, commandQueue, index + 1, heap);
-	metalTexture.Create(device, metalTextureFileName, commandQueue, index + 2, heap);
-	roughTexture.Create(device, roughTextureFileName, commandQueue, index + 3, heap);
+	diffuseTexture.Create(device, diffuseTextureFileName, commandQueue, index, heap, type);
+	normalTexture.Create(device, normalTextureFileName, commandQueue, index + 1, heap, type);
+	metalTexture.Create(device, metalTextureFileName, commandQueue, index + 2, heap, type);
+	roughTexture.Create(device, roughTextureFileName, commandQueue, index + 3, heap, type);
 
 	index += 4;
 	this->materialIndex = index; 

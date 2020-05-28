@@ -43,7 +43,8 @@ Material FrameManager::CreateMaterial(
 	const std::string& normalTextureFileName,
 	const std::string& metalTextureFileName,
 	const std::string& roughTextureFileName,
-	ID3D12CommandQueue* commandQueue)
+	ID3D12CommandQueue* commandQueue,
+	TextureType type)
 {
 	Material material;
 	frameHeapCounter = material.Create(device,
@@ -54,7 +55,8 @@ Material FrameManager::CreateMaterial(
 		commandQueue,
 		frameHeapCounter,
 		gpuHeap,
-		FrameBufferCount);
+		FrameBufferCount,
+		type);
 	return material;
 }
 

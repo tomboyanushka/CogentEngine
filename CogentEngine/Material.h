@@ -21,7 +21,8 @@ public:
 		ID3D12CommandQueue* commandQueue, 
 		uint32_t index, 
 		const DescriptorHeap* heap,
-		uint32_t heapCount);
+		uint32_t heapCount,
+		TextureType type = WIC);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE GetFirstGPUHandle(const DescriptorHeap* heap, uint32_t backBufferIndex);
 

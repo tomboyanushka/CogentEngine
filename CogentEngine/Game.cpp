@@ -659,7 +659,7 @@ void Game::CreateTextures()
 		commandQueue);
 
 	defaultRoughness = frameManager.CreateTexture(
-		"../../Assets/Textures/default/defaultRoughness.png",
+		"../../Assets/Textures/default/roughness.png",
 		commandQueue);
 
 	defaultMetal = frameManager.CreateTexture(
@@ -701,8 +701,8 @@ void Game::LoadSponza()
 	{
 		auto diffuse = sponzaDirectory + material.Diffuse;
 		auto normal = sponzaDirectory + material.Normal;
-		auto roughness = sponzaDirectory + material.Roughness;
 		auto metal = sponzaDirectory + material.Metalness;
+		auto roughness = sponzaDirectory + material.Roughness;
 
 		if (material.Diffuse.empty())
 		{
@@ -721,7 +721,13 @@ void Game::LoadSponza()
 			metal = defaultMetal.GetName();
 		}
 
-		Material m = frameManager.CreateMaterial(diffuse, normal, metal, roughness, commandQueue);
+		// loading dds textures to solve banding by generating mips
+		diffuse.replace(diffuse.size() - 3, 3, "DDS");
+		normal.replace(normal.size() - 3, 3, "DDS");
+		metal.replace(metal.size() - 3, 3, "DDS");
+		roughness.replace(roughness.size() - 3, 3, "DDS");
+
+		Material m = frameManager.CreateMaterial(diffuse, normal, metal, roughness, commandQueue, DDS);
 		sponzaMat.push_back(m);
 	}
 }
