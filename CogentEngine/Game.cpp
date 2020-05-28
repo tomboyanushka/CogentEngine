@@ -13,9 +13,9 @@ using namespace DirectX;
 Game::Game(HINSTANCE hInstance)
 	: DXCore(
 		hInstance,		   
-		"DirectX Game",    
-		1280,			   
-		720,			   
+		"CogentEngine (DX 12)",    
+		1920,			   
+		1080,			   
 		true)			   
 {
 	/*vertexBuffer = 0;
