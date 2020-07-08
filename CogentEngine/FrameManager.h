@@ -7,6 +7,7 @@
 #include "Entity.h"
 #include "Material.h"
 #include "Texture.h"
+#include <unordered_map>
 
 
 class FrameManager
@@ -47,5 +48,8 @@ private:
 	// This is the memory on the GPU where the constant buffer will be placed.
 	DescriptorHeap gpuHeap[FrameBufferCount];
 	ID3D12Device* device;
+
+	std::unordered_map<uint32, std::string> textureMap;
+	std::vector<std::string> materialID;
 };
 

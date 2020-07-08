@@ -63,7 +63,7 @@ Material FrameManager::CreateMaterial(
 Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12CommandQueue* commandQueue, TextureType type)
 {
 	Texture texture;
-	texture.Create(device, textureFileName, commandQueue, frameHeapCounter, gpuHeap, type);
+	texture.CreateTexture(device, textureFileName, commandQueue, frameHeapCounter, gpuHeap, type);
 
 	frameHeapCounter++;
 	return texture;

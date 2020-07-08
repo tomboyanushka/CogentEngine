@@ -5,8 +5,9 @@
 
 using namespace DirectX;
 
-void Texture::Create(ID3D12Device* device, const std::string& fileName, ID3D12CommandQueue* commandQueue, uint32_t index, const DescriptorHeap* heap, TextureType type)
+uint32 Texture::CreateTexture(ID3D12Device* device, const std::string& fileName, ID3D12CommandQueue* commandQueue, uint32_t index, const DescriptorHeap* heap, TextureType type)
 {
+	Texture texture;
 	textureIndex = index;
 	bool isCubeMap = false;
 	ResourceUploadBatch resourceUpload(device);
@@ -34,8 +35,10 @@ void Texture::Create(ID3D12Device* device, const std::string& fileName, ID3D12Co
 		this->gpuHandle = heap[i].handleGPU(index);
 		CreateShaderResourceView(device, resource.Get(), cpuHandle, isCubeMap);
 	}
-}
 
+	return textureIndex;
+}
+ 
 ID3D12Resource* Texture::GetResource()
 {
 	return resource.Get();
