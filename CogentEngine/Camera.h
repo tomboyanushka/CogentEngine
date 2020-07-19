@@ -1,5 +1,6 @@
 #pragma once
 #include "DirectXMath.h"
+#include <string>
 using namespace DirectX;
 
 class Camera
@@ -12,12 +13,10 @@ public:
 	void MoveAbsolute(float x, float y, float z);
 	void Rotate(float x, float y);
 
-
-	//Getters
 	XMFLOAT3 GetPosition();
+	std::string GetPositionString();
 	XMFLOAT4X4 GetViewMatrixTransposed();
 	XMFLOAT4X4 GetProjectionMatrixTransposed();
-
 
 	void Update(float dt);
 	void UpdateViewMatrix();

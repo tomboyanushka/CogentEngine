@@ -1,30 +1,51 @@
 #include "Material.h"
 
+uint32_t Material::materialIndexTracker = 0;
+
 uint32_t Material::Create(ID3D12Device* device, 
 	const std::string& diffuseTextureFileName,
 	const std::string& normalTextureFileName,
-	const std::string& metalTextureFileName,
-	const std::string& roughTextureFileName,
+	const std::string& metalnessTextureFileName,
+	const std::string& roughnessTextureFileName,
 	ID3D12CommandQueue* commandQueue, 
-	uint32_t index, 
-	const DescriptorHeap* heap,
+	const DescriptorHeap* textureHeap,
+	const DescriptorHeap* materialHeap,
 	uint32_t heapCount,
 	TextureType type)
 {
 
-	diffuseTexture.CreateTexture(device, diffuseTextureFileName, commandQueue, index, heap, type);
-	normalTexture.CreateTexture(device, normalTextureFileName, commandQueue, index + 1, heap, type);
-	metalTexture.CreateTexture(device, metalTextureFileName, commandQueue, index + 2, heap, type);
-	roughTexture.CreateTexture(device, roughTextureFileName, commandQueue, index + 3, heap, type);
+	diffuseTexture.CreateTexture(device, diffuseTextureFileName, commandQueue, textureHeap, type);
+	normalTexture.CreateTexture(device, normalTextureFileName, commandQueue, textureHeap, type);
+	metalnessTexture.CreateTexture(device, metalnessTextureFileName, commandQueue, textureHeap, type);
+	roughnessTexture.CreateTexture(device, roughnessTextureFileName, commandQueue, textureHeap, type);
 
-	index += 4;
-	this->materialIndex = index; 
+
+	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker), diffuseTexture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker + 1), normalTexture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker + 2), metalnessTexture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker + 3), roughnessTexture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	this->materialCPUHandle = materialHeap->handleCPU(materialIndexTracker);
+
+	materialIndexTracker += 4;
 	// Returning next index to be used for a new material
-	return materialIndex;
+	return materialIndexTracker;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE Material::GetFirstGPUHandle(const DescriptorHeap* heap, uint32_t backBufferIndex)
+D3D12_GPU_DESCRIPTOR_HANDLE Material::GetGPUHandle(uint32_t backBufferIndex)
 {
-	return diffuseTexture.GetGPUHandle(heap, backBufferIndex);
+	return materialGPUHandle[backBufferIndex];
 }
 
+void Material::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount])
+{
+	for (int i = 0; i < FrameBufferCount; ++i)
+	{
+		materialGPUHandle[i] = handles[i];
+	}
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE Material::GetCPUHandle()
+{
+	return materialCPUHandle;
+}

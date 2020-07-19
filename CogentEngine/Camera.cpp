@@ -52,6 +52,13 @@ XMFLOAT3 Camera::GetPosition()
 	return position;
 }
 
+std::string Camera::GetPositionString()
+{
+	std::string result;
+	result = " x:" + std::to_string(position.x) + " y: " + std::to_string(position.y) + " z: " + std::to_string(position.z) + "\n";
+	return result;
+}
+
 XMFLOAT4X4 Camera::GetViewMatrixTransposed()
 {
 	return viewMatrix;

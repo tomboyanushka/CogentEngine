@@ -14,6 +14,9 @@ void FrameManager::Initialize(ID3D12Device* device)
 		gpuHeap[i].Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048, true);
 	}
 
+	materialHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048, false);
+	textureHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048, false);
+
 }
 
 ConstantBufferView FrameManager::CreateConstantBufferView(uint32_t bufferSize)
@@ -47,24 +50,39 @@ Material FrameManager::CreateMaterial(
 	TextureType type)
 {
 	Material material;
-	frameHeapCounter = material.Create(device,
+	material.Create(device,
 		diffuseTextureFileName,
 		normalTextureFileName,
 		metalTextureFileName,
 		roughTextureFileName,
 		commandQueue,
-		frameHeapCounter,
-		gpuHeap,
+		&materialHeap,
+		&textureHeap,
 		FrameBufferCount,
 		type);
+
+	for (int i = 0; i < FrameBufferCount; ++i)
+	{
+		device->CopyDescriptorsSimple(4, gpuHeap[i].handleCPU(frameHeapCounter), material.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
+	material.SetGPUHandle(handles);
+	frameHeapCounter += 4;
 	return material;
 }
 
 Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12CommandQueue* commandQueue, TextureType type)
 {
 	Texture texture;
-	texture.CreateTexture(device, textureFileName, commandQueue, frameHeapCounter, gpuHeap, type);
+	texture.CreateTexture(device, textureFileName, commandQueue, &textureHeap, type);
+	for (int i = 0; i < FrameBufferCount; ++i)
+	{
+		device->CopyDescriptorsSimple(1, gpuHeap[i].handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	}
 
+	D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
+	texture.SetGPUHandle(handles);
 	frameHeapCounter++;
 	return texture;
 }

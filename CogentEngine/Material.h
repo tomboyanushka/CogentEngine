@@ -19,21 +19,24 @@ public:
 		const std::string& metalTextureFileName,
 		const std::string& roughTextureFileName,
 		ID3D12CommandQueue* commandQueue, 
-		uint32_t index, 
-		const DescriptorHeap* heap,
+		const DescriptorHeap* textureHeap,
+		const DescriptorHeap* materialHeap,
 		uint32_t heapCount,
 		TextureType type = WIC);
 
-	D3D12_GPU_DESCRIPTOR_HANDLE GetFirstGPUHandle(const DescriptorHeap* heap, uint32_t backBufferIndex);
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(uint32_t backBufferIndex);
+	void SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount]);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle();
 
 	Texture diffuseTexture;
 	Texture normalTexture;
-	Texture metalTexture;
-	Texture roughTexture;
-
-	uint32_t materialIndex;
+	Texture metalnessTexture;
+	Texture roughnessTexture;
 
 private:
-
+	static uint32_t materialIndexTracker;
+	D3D12_GPU_DESCRIPTOR_HANDLE materialGPUHandle[FrameBufferCount];
+	D3D12_CPU_DESCRIPTOR_HANDLE materialCPUHandle;
 };
 

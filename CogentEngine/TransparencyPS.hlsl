@@ -46,11 +46,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//float spec = calculateSpecular(input.normal, input.worldPos, dirToLight, cameraPosition) * roughness;
 	float3 totalLight = dirLight.DiffuseColor.rgb * NdotL + dirLight.AmbientColor.rgb;
 	color = color * float4(totalLight,1);
-
-	//for transparency, set the alpha value of this pixel to the blending amount to create the alpha blending effect.
-	color.a = blendAmount;
-	/*float gamma = 2.2f;
-	color = pow(color, 1.0 / gamma);*/
+	color.a = 0.5f;
 
 	return color;
 }

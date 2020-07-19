@@ -5,10 +5,12 @@
 
 using namespace DirectX;
 
-uint32 Texture::CreateTexture(ID3D12Device* device, const std::string& fileName, ID3D12CommandQueue* commandQueue, uint32_t index, const DescriptorHeap* heap, TextureType type)
+uint32_t Texture::textureIndexTracker = 0;
+
+uint32 Texture::CreateTexture(ID3D12Device* device, const std::string& fileName, ID3D12CommandQueue* commandQueue, const DescriptorHeap* textureHeap, TextureType type)
 {
 	Texture texture;
-	textureIndex = index;
+	textureIndexTracker++;
 	bool isCubeMap = false;
 	ResourceUploadBatch resourceUpload(device);
 	resourceUpload.Begin();
@@ -29,12 +31,8 @@ uint32 Texture::CreateTexture(ID3D12Device* device, const std::string& fileName,
 	auto uploadResourcesFinished = resourceUpload.End(commandQueue);
 	uploadResourcesFinished.wait();
 
-	for (int i = 0; i < FrameBufferCount; ++i)
-	{
-		this->cpuHandle = heap[i].handleCPU(index);
-		this->gpuHandle = heap[i].handleGPU(index);
-		CreateShaderResourceView(device, resource.Get(), cpuHandle, isCubeMap);
-	}
+	this->textureCPUHandle = textureHeap->handleCPU(textureIndexTracker);
+	CreateShaderResourceView(device, resource.Get(), textureCPUHandle, isCubeMap);
 
 	return textureIndex;
 }
@@ -44,20 +42,22 @@ ID3D12Resource* Texture::GetResource()
 	return resource.Get();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetCPUHandle(const DescriptorHeap* heap, uint32_t backBufferIndex)
+D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetCPUHandle()
 {
-	//if (textureIndex > -1)
-	//{
-	//	
-	//}
-	return heap[backBufferIndex].handleCPU(textureIndex);
-	//return cpuHandle;
+	return textureCPUHandle;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetGPUHandle(const DescriptorHeap* heap, uint32_t backBufferIndex)
+D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetGPUHandle(uint32_t backBufferIndex)
 {
-	//return gpuHandle;
-	return heap[backBufferIndex].handleGPU(textureIndex);
+	return textureGPUHandle[backBufferIndex];
+}
+
+void Texture::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE* handles)
+{
+	for (int i = 0; i < FrameBufferCount; ++i)
+	{
+		textureGPUHandle[i] = handles[i];
+	}
 }
 
 std::string Texture::GetName()

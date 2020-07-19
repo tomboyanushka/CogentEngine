@@ -107,9 +107,10 @@ void Game::LoadShaders()
 
 void Game::CreateMatrices()
 {
-	camera = new Camera(-1.5, 3.5, -7);
+	//  x:-21.385939 y: 3.882796 z: 10.733005
+	camera = new Camera(-21.386, 4, 10.733);
 	camera->UpdateProjectionMatrix((float)width / height);
-	camera->Rotate(0.2f, 0);
+	camera->Rotate(0.2f, 1.5f);
 }
 
 
@@ -257,12 +258,14 @@ void Game::CreateRootSigAndPipelineState()
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pbrPipeState));
 
 		// -- Transparency pipe state --
+		//psoDesc.DepthStencilState.DepthEnable = false;
 		psoDesc.PS.pShaderBytecode = transparencyPS->GetBufferPointer();
 		psoDesc.PS.BytecodeLength = transparencyPS->GetBufferSize();
 		psoDesc.BlendState = CommonStates::AlphaBlend;
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&transparencyPipeState));
 
 		// -- Outline (VS/PS) --- 
+		psoDesc.DepthStencilState.DepthEnable = true;
 		psoDesc.VS.pShaderBytecode = outlineVS->GetBufferPointer();
 		psoDesc.VS.BytecodeLength = outlineVS->GetBufferSize();
 		psoDesc.PS.pShaderBytecode = outlinePS->GetBufferPointer();
@@ -312,7 +315,7 @@ void Game::DrawEntity(Entity * entity)
 
 	// set the material
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle(currentBackBufferIndex));
 
 	DrawMesh(entity->GetMesh());
 }
@@ -331,7 +334,7 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV, currentBackBufferIndex);
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(),currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle(currentBackBufferIndex));
 
 	DrawMesh(entity->GetMesh());
 }
@@ -356,9 +359,9 @@ void Game::Update(float deltaTime, float totalTime)
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 
-	
-
 	camera->Update(deltaTime);
+
+
 	if (selectedEntityIndex != -1)
 	{
 		auto pos = entities[selectedEntityIndex]->GetPosition();
@@ -383,11 +386,11 @@ void Game::Update(float deltaTime, float totalTime)
 	entities[1]->SetPosition(XMFLOAT3(2.0f, 0.0f, 2.0f));
 	entities[1]->SetMaterial(&m_scratchedPaint);
 
-	entities[2]->SetPosition(XMFLOAT3(1.0f, 0.0f, 4.0f));
-	entities[2]->SetMaterial(&m_water);
+	entities[2]->SetPosition(XMFLOAT3(1.0f, 3.0f, 10.0f));
+	entities[2]->SetMaterial(&m_default);
 
-	entities[3]->SetPosition(XMFLOAT3(2.0f, 0.0f, 4.0f));
-	entities[3]->SetMaterial(&m_water);
+	entities[3]->SetPosition(XMFLOAT3(2.0f, 3.0f, 9.0f));
+	entities[3]->SetMaterial(&m_default);
 
 	entities[4]->SetPosition(XMFLOAT3(1.0f, 0.0f, 6.0f));
 	entities[4]->SetMaterial(&m_cobbleStone);
@@ -444,6 +447,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	commandAllocator[currentBackBufferIndex]->Reset();
 	commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
 
+	// Print position in output log
+	// To do: add this function as utility template function
+	auto cameraPosStr = camera->GetPositionString();
+	std::wstring s = std::wstring(cameraPosStr.begin(), cameraPosStr.end());
+	OutputDebugStringW(s.c_str());
+
 	ID3D12Resource* backBuffer = backBuffers[currentBackBufferIndex];
 
 	{
@@ -499,7 +508,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		//for image based lighting
 		commandList->SetGraphicsRootDescriptorTable(
 			3,
-			skyIrradiance.GetGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
+			skyIrradiance.GetGPUHandle(currentBackBufferIndex));
 
 		commandList->SetPipelineState(pbrPipeState);
 		//DrawEntity(entities[0]);
@@ -520,8 +529,8 @@ void Game::Draw(float deltaTime, float totalTime)
 			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
 		commandList->SetPipelineState(transparencyPipeState);
 		// TO DO: Fix Transparency to use depth
-		//DrawTransparentEntity(entities[2], 0.02f);
-		//DrawTransparentEntity(entities[3], 0.08f);
+		DrawTransparentEntity(entities[2], 0.02f);
+		DrawTransparentEntity(entities[3], 0.08f);
 	}
 
 	// Present
@@ -559,7 +568,7 @@ void Game::DrawMesh(Mesh* mesh)
 		{
 			auto mat = sponzaMat[i];
 			//commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(mat.materialIndex, currentBackBufferIndex));
-			commandList->SetGraphicsRootDescriptorTable(2, mat.GetFirstGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
+			commandList->SetGraphicsRootDescriptorTable(2, mat.GetGPUHandle(currentBackBufferIndex));
 
 			commandList->DrawIndexedInstanced(m.NumIndices, 1, m.BaseIndex, m.BaseVertex, 0);
 			i++;
@@ -686,7 +695,7 @@ void Game::DrawSky()
 
 	commandList->SetPipelineState(skyPipeState.Get());
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(skyCBV.heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle(frameManager.GetGPUDescriptorHeap(), currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle(currentBackBufferIndex));
 
 	DrawMesh(sm_skyCube);
 }

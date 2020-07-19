@@ -121,7 +121,7 @@ public:
 	}
 	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU(UINT index) const
 	{
-		assert(HeapDesc.Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		//assert(HeapDesc.Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 		D3D12_GPU_DESCRIPTOR_HANDLE handle;
 		handle.ptr = MakeOffsetted(hGPUHeapStart.ptr, index);
 		return handle;
