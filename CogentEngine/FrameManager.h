@@ -29,6 +29,7 @@ public:
 		TextureType type = WIC);
 
 	Entity* CreateEntity(Mesh* mesh, Material* material);
+	Entity* CreateTransparentEntity(Mesh* mesh, Material* material);
 	void CopyData(void* data, uint32_t size, ConstantBufferView cbv, uint32_t backBufferIndex);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(uint32_t index, uint32_t backBufferIndex);

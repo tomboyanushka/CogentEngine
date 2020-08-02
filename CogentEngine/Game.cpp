@@ -123,10 +123,12 @@ void Game::CreateMesh()
 
 	LoadSponza();
 	
-	// Create Entities
+	// Create Transparent Entities
 	for (int i = 0; i < numEntities; ++i)
 	{
-		entities.push_back(frameManager.CreateEntity(sm_sphere, &m_floor));
+		TransparentEntity entity;
+		entity.t_Entity = frameManager.CreateEntity(sm_sphere, &m_floor);
+		transparentEntities.push_back(entity);
 	}
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
@@ -361,29 +363,28 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
+	//if (selectedEntityIndex != -1)
+	//{
+	//	auto pos = entities[selectedEntityIndex]->GetPosition();
+	//	if (currentIndex < path.size())
+	//	{
+	//		XMFLOAT3 newPosition = XMFLOAT3((float)path[path.size() - currentIndex - 1].x, -4.0f, (float)path[path.size() - currentIndex - 1].y);
+	//		auto targetPos = XMLoadFloat3(&newPosition);
 
-	if (selectedEntityIndex != -1)
-	{
-		auto pos = entities[selectedEntityIndex]->GetPosition();
-		if (currentIndex < path.size())
-		{
-			XMFLOAT3 newPosition = XMFLOAT3((float)path[path.size() - currentIndex - 1].x, -4.0f, (float)path[path.size() - currentIndex - 1].y);
-			auto targetPos = XMLoadFloat3(&newPosition);
+	//		XMStoreFloat3(&pos, MoveTowards(XMLoadFloat3(&pos), targetPos, 5 * deltaTime));
+	//		entities[selectedEntityIndex]->SetPosition(pos);
+	//	}
 
-			XMStoreFloat3(&pos, MoveTowards(XMLoadFloat3(&pos), targetPos, 5 * deltaTime));
-			entities[selectedEntityIndex]->SetPosition(pos);
-		}
-
-		pos.y = -4;
-	}
+	//	pos.y = -4;
+	//}
 
 	// Scale-->Rotation-->Transform
 
-	entities[2]->SetPosition(XMFLOAT3(1.0f, 3.0f, 10.0f));
-	entities[2]->SetMaterial(&m_default);
+	transparentEntities[0].t_Entity->SetPosition(XMFLOAT3(0.0f, 3.0f, 10.0f));
+	transparentEntities[0].t_Entity->SetMaterial(&m_default);
 
-	entities[3]->SetPosition(XMFLOAT3(2.0f, 3.0f, 9.0f));
-	entities[3]->SetMaterial(&m_default);
+	transparentEntities[1].t_Entity->SetPosition(XMFLOAT3(-3.0f, 3.0f, 10.0f));
+	transparentEntities[1].t_Entity->SetMaterial(&m_default);
 
 	e_plane->SetScale(XMFLOAT3(0.7f, 0.7f, 0.7f));
 	e_plane->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
@@ -413,9 +414,14 @@ void Game::Update(float deltaTime, float totalTime)
 	//for the callback functions
 	pool.ExecuteCallbacks();
 
-	//frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV);
-	//frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV, currentBackBufferIndex);
-	//vsConstBufferUploadHeap->Unmap(0, 0);
+	// Get Linear Z of all transparent entities
+	for (auto t : transparentEntities)
+	{
+		t.zPosition = ComputeZDistance(camera, t.t_Entity->GetPosition());
+		string z = std::to_string(t.zPosition);
+		std::wstring s = std::wstring(z.begin(), z.end());
+		OutputDebugStringW(s.c_str());
+	}
 }
 
 
@@ -430,10 +436,10 @@ void Game::Draw(float deltaTime, float totalTime)
 	commandList->Reset(commandAllocator[currentBackBufferIndex], 0);
 
 	// Print position in output log
-	// To do: add this function as utility template function
-	auto cameraPosStr = camera->GetPositionString();
-	std::wstring s = std::wstring(cameraPosStr.begin(), cameraPosStr.end());
-	OutputDebugStringW(s.c_str());
+	// TO DO: add this function as utility template function
+	//auto cameraPosStr = camera->GetPositionString();
+	//std::wstring s = std::wstring(cameraPosStr.begin(), cameraPosStr.end());
+	//OutputDebugStringW(s.c_str());
 
 	ID3D12Resource* backBuffer = backBuffers[currentBackBufferIndex];
 
@@ -506,8 +512,10 @@ void Game::Draw(float deltaTime, float totalTime)
 			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
 		commandList->SetPipelineState(transparencyPipeState);
 		// TO DO: Fix Transparency to use depth
-		DrawTransparentEntity(entities[2], 0.02f);
-		DrawTransparentEntity(entities[3], 0.08f);
+		for (auto t : transparentEntities)
+		{
+			DrawTransparentEntity(t.t_Entity, 0.05f);
+		}
 	}
 
 	// Present
@@ -716,6 +724,18 @@ void Game::LoadSponza()
 		Material m = frameManager.CreateMaterial(diffuse, normal, metal, roughness, commandQueue, DDS);
 		sponzaMat.push_back(m);
 	}
+}
+
+float Game::ComputeZDistance(Camera* cam, XMFLOAT3 position)
+{
+	XMVECTOR vector1 = XMLoadFloat3(&cam->GetPosition());
+	XMVECTOR vector2 = XMLoadFloat3(&position);
+	XMVECTOR vectorSub = XMVectorSubtract(vector1, vector2);
+	XMVECTOR length = XMVector3Length(vectorSub);
+
+	float distance = 0.0f;
+	XMStoreFloat(&distance, length);
+	return distance;
 }
 
 void Game::CreateNavmesh()

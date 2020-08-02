@@ -33,6 +33,12 @@
 
 #include "AStar.h"
 
+struct TransparentEntity
+{
+	Entity* t_Entity;
+	float zPosition;
+};
+
 class Game
 	: public DXCore
 {
@@ -41,7 +47,7 @@ public:
 	Game(HINSTANCE hInstance);
 	~Game();
 
-	int numEntities = 7;
+	int numEntities = 2;
 	int currentIndex;
 	int textureCount = 3;
 
@@ -60,13 +66,16 @@ public:
 	void DrawSky();
 	void LoadSponza();
 
-	///AI functions
+	// Compute Z distance from Camera
+	float ComputeZDistance(Camera* cam, XMFLOAT3 position);
+
+	// AI functions
 	void CreateNavmesh();
 	AStar::CoordinateList FindPath(AStar::Vec2i source, AStar::Vec2i target);
 	XMVECTOR MoveTowards(XMVECTOR current, XMVECTOR target, float distanceDelta);
 	void AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates);
 
-	///Ray picking
+	// Ray picking
 	bool IsIntersecting(Entity* entity, Camera* camera, int mouseX, int mouseY, float& distance);
 
 	void OnMouseDown(WPARAM buttonState, int x, int y);
@@ -142,9 +151,12 @@ private:
 
 	Entity* e_plane;
 	Entity* e_sponza;
+	Entity* te_sphere1;
+	Entity* te_sphere2;
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;
+	std::vector<TransparentEntity> transparentEntities;
 	int selectedEntityIndex = -1;
 	bool isSelected = false;
 

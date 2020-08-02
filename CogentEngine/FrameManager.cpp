@@ -114,6 +114,15 @@ Entity* FrameManager::CreateEntity(Mesh* mesh, Material* material)
 	return entity;
 }
 
+Entity* FrameManager::CreateTransparentEntity(Mesh* mesh, Material* material)
+{
+	ConstantBufferView cbv = CreateConstantBufferView(sizeof(VertexShaderExternalData));
+	Entity* entity;
+	entity = new Entity(mesh, gpuConstantBuffer, gpuHeap, constantBufferIndex, material, cbv);
+
+	return entity;
+}
+
 void FrameManager::CopyData(void* data, uint32_t size, ConstantBufferView cbv, uint32_t backBufferIndex)
 {
 	gpuConstantBuffer[backBufferIndex].CopyData(data, size, cbv.cbOffset);
