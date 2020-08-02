@@ -108,7 +108,7 @@ void Game::LoadShaders()
 void Game::CreateMatrices()
 {
 	//  x:-21.385939 y: 3.882796 z: 10.733005
-	camera = new Camera(-21.386, 4, 10.733);
+	camera = new Camera(-21.386f, 4.0f, 10.733f);
 	camera->UpdateProjectionMatrix((float)width / height);
 	camera->Rotate(0.2f, 1.5f);
 }
@@ -377,31 +377,13 @@ void Game::Update(float deltaTime, float totalTime)
 		pos.y = -4;
 	}
 
-	//SRT
-
-	/*entities[0]->SetPosition(job2.pos);
-	auto bounds = entities[0]->GetBoundingOrientedBox();*/
-	entities[0]->SetPosition(XMFLOAT3(1.0f, 0.0f, 2.0f));
-
-	entities[1]->SetPosition(XMFLOAT3(2.0f, 0.0f, 2.0f));
-	entities[1]->SetMaterial(&m_scratchedPaint);
+	// Scale-->Rotation-->Transform
 
 	entities[2]->SetPosition(XMFLOAT3(1.0f, 3.0f, 10.0f));
 	entities[2]->SetMaterial(&m_default);
 
 	entities[3]->SetPosition(XMFLOAT3(2.0f, 3.0f, 9.0f));
 	entities[3]->SetMaterial(&m_default);
-
-	entities[4]->SetPosition(XMFLOAT3(1.0f, 0.0f, 6.0f));
-	entities[4]->SetMaterial(&m_cobbleStone);
-
-	entities[5]->SetPosition(XMFLOAT3(2.0f, 0.0f, 6.0f));
-	entities[5]->SetMaterial(&m_paint);
-
-	entities[6]->SetMesh(sm_skyCube);
-	entities[6]->SetMaterial(&m_floor);
-	entities[6]->SetScale(XMFLOAT3(25.0f, 0.2f, 25.0f));
-	entities[6]->SetPosition(XMFLOAT3(-2.0f, -3.0f, 10.0f));
 
 	e_plane->SetScale(XMFLOAT3(0.7f, 0.7f, 0.7f));
 	e_plane->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
@@ -511,14 +493,9 @@ void Game::Draw(float deltaTime, float totalTime)
 			skyIrradiance.GetGPUHandle(currentBackBufferIndex));
 
 		commandList->SetPipelineState(pbrPipeState);
-		//DrawEntity(entities[0]);
-		//DrawEntity(entities[1]);
-		//DrawEntity(entities[6]);
 		DrawEntity(e_sponza);
 
 		commandList->SetPipelineState(toonShadingPipeState);
-		//DrawEntity(entities[4]);
-		//DrawEntity(entities[5]);
 		DrawEntity(e_plane);
 
 		DrawSky();

@@ -1,4 +1,5 @@
 #include "Material.h"
+#include "FrameManager.h"
 
 uint32_t Material::materialIndexTracker = 0;
 
@@ -10,16 +11,21 @@ uint32_t Material::Create(ID3D12Device* device,
 	ID3D12CommandQueue* commandQueue, 
 	const DescriptorHeap* textureHeap,
 	const DescriptorHeap* materialHeap,
+	FrameManager* frameManager,
 	uint32_t heapCount,
 	TextureType type)
 {
 
-	diffuseTexture.CreateTexture(device, diffuseTextureFileName, commandQueue, textureHeap, type);
-	normalTexture.CreateTexture(device, normalTextureFileName, commandQueue, textureHeap, type);
-	metalnessTexture.CreateTexture(device, metalnessTextureFileName, commandQueue, textureHeap, type);
-	roughnessTexture.CreateTexture(device, roughnessTextureFileName, commandQueue, textureHeap, type);
+	//diffuseTexture.CreateTexture(device, diffuseTextureFileName, commandQueue, textureHeap, type);
+	//normalTexture.CreateTexture(device, normalTextureFileName, commandQueue, textureHeap, type);
+	//metalnessTexture.CreateTexture(device, metalnessTextureFileName, commandQueue, textureHeap, type);
+	//roughnessTexture.CreateTexture(device, roughnessTextureFileName, commandQueue, textureHeap, type);
 
-
+	diffuseTexture = frameManager->CreateTexture(diffuseTextureFileName, commandQueue, type);
+	normalTexture = frameManager->CreateTexture(normalTextureFileName, commandQueue, type);
+	metalnessTexture = frameManager->CreateTexture(metalnessTextureFileName, commandQueue, type);
+	roughnessTexture = frameManager->CreateTexture(roughnessTextureFileName, commandQueue, type);
+	
 	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker), diffuseTexture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker + 1), normalTexture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker + 2), metalnessTexture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);

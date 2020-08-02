@@ -7,7 +7,7 @@
 #include "Entity.h"
 #include "Material.h"
 #include "Texture.h"
-#include <unordered_map>
+#include <map>
 
 
 class FrameManager
@@ -53,7 +53,9 @@ private:
 	DescriptorHeap textureHeap;
 	ID3D12Device* device;
 
-	std::unordered_map<uint32, std::string> textureMap;
+	std::map<std::string, Texture> textureMap;
 	std::vector<std::string> materialID;
+
+	int count = 0;
 };
 

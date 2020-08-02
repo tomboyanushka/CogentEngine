@@ -10,6 +10,8 @@ struct DefaultMaterial
 	static Texture DefaultMetal;
 };
 
+class FrameManager;
+
 class Material
 {
 public:
@@ -21,6 +23,7 @@ public:
 		ID3D12CommandQueue* commandQueue, 
 		const DescriptorHeap* textureHeap,
 		const DescriptorHeap* materialHeap,
+		FrameManager* frameManager,
 		uint32_t heapCount,
 		TextureType type = WIC);
 

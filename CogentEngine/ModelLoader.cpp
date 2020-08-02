@@ -98,7 +98,7 @@ Mesh* ModelLoader::Load(std::string filename, ID3D12Device* device, ID3D12Graphi
 	return mesh;
 }
 
-// Function for loading models with submeshes and materials
+// Function for loading models with sub-meshes and materials
 ModelData ModelLoader::LoadComplexModel(std::string filename, ID3D12Device * device, ID3D12GraphicsCommandList * commandList)
 {
 	const aiScene* pScene = importer.ReadFile(filename,
@@ -142,7 +142,7 @@ ModelData ModelLoader::LoadComplexModel(std::string filename, ID3D12Device * dev
 		meshIndices.insert(meshIndices.end(), indices.begin(), indices.end());
 	}
 
-	mesh = new Mesh(meshVertices.data(), meshVertices.size(), meshIndices.data(), meshIndices.size(), device, commandList);
+	mesh = new Mesh(meshVertices.data(), (uint32_t)meshVertices.size(), meshIndices.data(), (uint32_t)meshIndices.size(), device, commandList);
 
 	mesh->MeshEntries = meshEntries;
 

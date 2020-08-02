@@ -58,6 +58,7 @@ Material FrameManager::CreateMaterial(
 		commandQueue,
 		&materialHeap,
 		&textureHeap,
+		this,
 		FrameBufferCount,
 		type);
 
@@ -75,15 +76,32 @@ Material FrameManager::CreateMaterial(
 Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12CommandQueue* commandQueue, TextureType type)
 {
 	Texture texture;
-	texture.CreateTexture(device, textureFileName, commandQueue, &textureHeap, type);
-	for (int i = 0; i < FrameBufferCount; ++i)
+
+	std::string t = "../../Assets/Textures/sponza/Sponza_Thorn_diffuse.DDS";
+	
+	
+	if (textureFileName.compare(t) == 0)
 	{
-		device->CopyDescriptorsSimple(1, gpuHeap[i].handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		count++;
+	}
+	if (textureMap.find(textureFileName) != textureMap.end())
+	{
+		texture = textureMap[textureFileName];
+	}
+	else
+	{
+		texture.CreateTexture(device, textureFileName, commandQueue, &textureHeap, type);
+		for (int i = 0; i < FrameBufferCount; ++i)
+		{
+			device->CopyDescriptorsSimple(1, gpuHeap[i].handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		}
+
+		textureMap.insert({ textureFileName, texture });
+		D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
+		texture.SetGPUHandle(handles);
+		frameHeapCounter++;
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
-	texture.SetGPUHandle(handles);
-	frameHeapCounter++;
 	return texture;
 }
 
