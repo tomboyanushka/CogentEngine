@@ -46,9 +46,9 @@ Game::~Game()
 	delete e_sponza;
 	delete camera;
 
-	for (auto e : entities)
+	for (auto e : transparentEntities)
 	{
-		delete e;
+		delete e.t_Entity;
 	}
 
 	rootSignature->Release();
@@ -415,13 +415,13 @@ void Game::Update(float deltaTime, float totalTime)
 	pool.ExecuteCallbacks();
 
 	// Get Linear Z of all transparent entities
-	for (auto t : transparentEntities)
+	for (auto &t : transparentEntities)
 	{
 		t.zPosition = ComputeZDistance(camera, t.t_Entity->GetPosition());
-		string z = std::to_string(t.zPosition);
-		std::wstring s = std::wstring(z.begin(), z.end());
-		OutputDebugStringW(s.c_str());
 	}
+
+	// Sort the vector
+	std::sort(transparentEntities.begin(), transparentEntities.end(), CompareByLength);
 }
 
 
@@ -511,7 +511,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			1,
 			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
 		commandList->SetPipelineState(transparencyPipeState);
-		// TO DO: Fix Transparency to use depth
+
 		for (auto t : transparentEntities)
 		{
 			DrawTransparentEntity(t.t_Entity, 0.05f);
@@ -736,6 +736,11 @@ float Game::ComputeZDistance(Camera* cam, XMFLOAT3 position)
 	float distance = 0.0f;
 	XMStoreFloat(&distance, length);
 	return distance;
+}
+
+bool Game::CompareByLength(const TransparentEntity& a, const TransparentEntity& b)
+{
+	return a.zPosition > b.zPosition;
 }
 
 void Game::CreateNavmesh()

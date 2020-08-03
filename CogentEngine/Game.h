@@ -68,6 +68,7 @@ public:
 
 	// Compute Z distance from Camera
 	float ComputeZDistance(Camera* cam, XMFLOAT3 position);
+	static bool CompareByLength(const TransparentEntity& a, const TransparentEntity& b);
 
 	// AI functions
 	void CreateNavmesh();
@@ -157,6 +158,7 @@ private:
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;
 	std::vector<TransparentEntity> transparentEntities;
+	std::vector<TransparentEntity> depthSortedEntities;
 	int selectedEntityIndex = -1;
 	bool isSelected = false;
 
