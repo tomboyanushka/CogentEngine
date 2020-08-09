@@ -71,48 +71,52 @@ XMFLOAT4X4 Camera::GetProjectionMatrixTransposed()
 
 void Camera::Update(float dt)
 {
+	HWND hwnd = GetActiveWindow();
 	float speed = dt * 3;
 
-	if (GetAsyncKeyState(VK_SHIFT))
+	if (hwnd == GetForegroundWindow())
 	{
-		speed *= 5;
-	}
-	if (GetAsyncKeyState(VK_CONTROL))
-	{
-		speed *= 0.1f;
-	}
-	if (GetAsyncKeyState('W') & 0x8000)
-	{
-		MoveRelative(0, 0, speed);
-	}
-	if (GetAsyncKeyState('S') & 0x8000)
-	{
-		MoveRelative(0, 0, -speed);
-	}
-	if (GetAsyncKeyState('A') & 0x8000)
-	{
-		MoveRelative(-speed, 0, 0);
-	}
-	if (GetAsyncKeyState('D') & 0x8000)
-	{
-		MoveRelative(speed, 0, 0);
-	}
-	if
-		(GetAsyncKeyState('X') & 0x8000)
-	{
-		MoveAbsolute(0, -speed, 0);
-	}
-	if (GetAsyncKeyState(' ') & 0x8000)
-	{
-		MoveAbsolute(0, speed, 0);
-	}
+		if (GetAsyncKeyState(VK_SHIFT))
+		{
+			speed *= 5;
+		}
+		if (GetAsyncKeyState(VK_CONTROL))
+		{
+			speed *= 0.1f;
+		}
+		if (GetAsyncKeyState('W') & 0x8000)
+		{
+			MoveRelative(0, 0, speed);
+		}
+		if (GetAsyncKeyState('S') & 0x8000)
+		{
+			MoveRelative(0, 0, -speed);
+		}
+		if (GetAsyncKeyState('A') & 0x8000)
+		{
+			MoveRelative(-speed, 0, 0);
+		}
+		if (GetAsyncKeyState('D') & 0x8000)
+		{
+			MoveRelative(speed, 0, 0);
+		}
+		if
+			(GetAsyncKeyState('X') & 0x8000)
+		{
+			MoveAbsolute(0, -speed, 0);
+		}
+		if (GetAsyncKeyState(' ') & 0x8000)
+		{
+			MoveAbsolute(0, speed, 0);
+		}
 
-	if (GetAsyncKeyState('R') & 0x8000)
-	{
-		position = startPosition;
-		roll = 0;
-		pitch = 0;
-		XMStoreFloat4(&direction, XMQuaternionIdentity());
+		if (GetAsyncKeyState('R') & 0x8000)
+		{
+			position = startPosition;
+			roll = 0;
+			pitch = 0;
+			XMStoreFloat4(&direction, XMQuaternionIdentity());
+		}
 	}
 
 	UpdateViewMatrix();
