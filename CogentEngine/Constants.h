@@ -7,4 +7,6 @@ typedef uint32_t uint32;
 // Engine Constants
 
 // Triple buffered
-constexpr uint32_t FrameBufferCount = 3;
+constexpr uint32_t c_FrameBufferCount = 3;
+
+constexpr uint32_t c_HeapSize = 4096;

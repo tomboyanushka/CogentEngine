@@ -8,14 +8,14 @@ void FrameManager::Initialize(ID3D12Device* device)
 	uint32_t bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255);
 	bufferSize = bufferSize & ~255;
-	for (int i = 0; i < FrameBufferCount; ++i)
+	for (int i = 0; i < c_FrameBufferCount; ++i)
 	{
 		gpuConstantBuffer[i].Create(device, c_MaxConstBufferSize, bufferSize);
-		gpuHeap[i].Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048, true);
+		gpuHeap[i].Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, c_HeapSize, true);
 	}
 
-	materialHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048, false);
-	textureHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048, false);
+	materialHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, c_HeapSize, false);
+	textureHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, c_HeapSize, false);
 
 }
 
@@ -27,7 +27,7 @@ ConstantBufferView FrameManager::CreateConstantBufferView(uint32_t bufferSize)
 	cbv.cbOffset = cbOffset;
 	cbv.heapIndex = frameHeapCounter;
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-	for (int i = 0; i < FrameBufferCount; ++i)
+	for (int i = 0; i < c_FrameBufferCount; ++i)
 	{
 		cbvDesc.BufferLocation = gpuConstantBuffer[i].GetAddress(cbOffset);
 		cbvDesc.SizeInBytes = bufferSize;
@@ -45,31 +45,42 @@ Material FrameManager::CreateMaterial(
 	const std::string& diffuseTextureFileName,
 	const std::string& normalTextureFileName,
 	const std::string& metalTextureFileName,
-	const std::string& roughTextureFileName,
+	const std::string& roughnessTextureFileName,
 	ID3D12CommandQueue* commandQueue,
 	TextureType type)
 {
 	Material material;
-	material.Create(device,
-		diffuseTextureFileName,
-		normalTextureFileName,
-		metalTextureFileName,
-		roughTextureFileName,
-		commandQueue,
-		&materialHeap,
-		&textureHeap,
-		this,
-		FrameBufferCount,
-		type);
+	std::string materialName = diffuseTextureFileName + normalTextureFileName + metalTextureFileName + roughnessTextureFileName;
 
-	for (int i = 0; i < FrameBufferCount; ++i)
+	if (materialMap.find(materialName) != materialMap.end())
 	{
-		device->CopyDescriptorsSimple(4, gpuHeap[i].handleCPU(frameHeapCounter), material.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		material = materialMap[materialName];
+	}
+	else
+	{
+		material.Create(device,
+			diffuseTextureFileName,
+			normalTextureFileName,
+			metalTextureFileName,
+			roughnessTextureFileName,
+			commandQueue,
+			&materialHeap,
+			&textureHeap,
+			this,
+			c_FrameBufferCount,
+			type);
+
+		for (int i = 0; i < c_FrameBufferCount; ++i)
+		{
+			device->CopyDescriptorsSimple(4, gpuHeap[i].handleCPU(frameHeapCounter), material.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		}
+
+		D3D12_GPU_DESCRIPTOR_HANDLE handles[c_FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
+		material.SetGPUHandle(handles);
+		frameHeapCounter += 4;
+		materialMap.insert({ materialName, material });
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
-	material.SetGPUHandle(handles);
-	frameHeapCounter += 4;
 	return material;
 }
 
@@ -77,13 +88,6 @@ Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12Co
 {
 	Texture texture;
 
-	std::string t = "../../Assets/Textures/sponza/Sponza_Thorn_diffuse.DDS";
-	
-	
-	if (textureFileName.compare(t) == 0)
-	{
-		count++;
-	}
 	if (textureMap.find(textureFileName) != textureMap.end())
 	{
 		texture = textureMap[textureFileName];
@@ -91,15 +95,15 @@ Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12Co
 	else
 	{
 		texture.CreateTexture(device, textureFileName, commandQueue, &textureHeap, type);
-		for (int i = 0; i < FrameBufferCount; ++i)
+		for (int i = 0; i < c_FrameBufferCount; ++i)
 		{
 			device->CopyDescriptorsSimple(1, gpuHeap[i].handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		}
 
-		textureMap.insert({ textureFileName, texture });
-		D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
+		D3D12_GPU_DESCRIPTOR_HANDLE handles[c_FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
 		texture.SetGPUHandle(handles);
 		frameHeapCounter++;
+		textureMap.insert({ textureFileName, texture });
 	}
 
 	return texture;

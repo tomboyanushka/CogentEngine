@@ -46,15 +46,16 @@ private:
 	uint32_t cbOffset = 0;
 
 	// This heap will store the descriptor to the constant buffer
-	GPUConstantBuffer gpuConstantBuffer[FrameBufferCount];
+	GPUConstantBuffer gpuConstantBuffer[c_FrameBufferCount];
 
 	// This is the memory on the GPU where the constant buffer will be placed.
-	DescriptorHeap gpuHeap[FrameBufferCount];
+	DescriptorHeap gpuHeap[c_FrameBufferCount];
 	DescriptorHeap materialHeap;
 	DescriptorHeap textureHeap;
 	ID3D12Device* device;
 
 	std::map<std::string, Texture> textureMap;
+	std::map<std::string, Material> materialMap;
 	std::vector<std::string> materialID;
 
 	int count = 0;

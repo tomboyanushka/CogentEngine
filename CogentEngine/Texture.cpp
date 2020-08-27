@@ -54,7 +54,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetGPUHandle(uint32_t backBufferIndex)
 
 void Texture::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE* handles)
 {
-	for (int i = 0; i < FrameBufferCount; ++i)
+	for (int i = 0; i < c_FrameBufferCount; ++i)
 	{
 		textureGPUHandle[i] = handles[i];
 	}

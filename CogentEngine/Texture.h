@@ -27,7 +27,7 @@ private:
 	static uint32_t textureIndexTracker;
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 	D3D12_CPU_DESCRIPTOR_HANDLE textureCPUHandle;
-	D3D12_GPU_DESCRIPTOR_HANDLE textureGPUHandle[FrameBufferCount];
+	D3D12_GPU_DESCRIPTOR_HANDLE textureGPUHandle[c_FrameBufferCount];
 
 	uint32_t textureIndex = -1;
 	std::string fileName;

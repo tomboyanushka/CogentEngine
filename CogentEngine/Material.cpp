@@ -43,9 +43,9 @@ D3D12_GPU_DESCRIPTOR_HANDLE Material::GetGPUHandle(uint32_t backBufferIndex)
 	return materialGPUHandle[backBufferIndex];
 }
 
-void Material::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handles[FrameBufferCount])
+void Material::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handles[c_FrameBufferCount])
 {
-	for (int i = 0; i < FrameBufferCount; ++i)
+	for (int i = 0; i < c_FrameBufferCount; ++i)
 	{
 		materialGPUHandle[i] = handles[i];
 	}

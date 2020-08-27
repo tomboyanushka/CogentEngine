@@ -64,7 +64,7 @@ DXCore::~DXCore()
 {
 
 	// Release all DirectX resources
-	for (int i = 0; i < FrameBufferCount; i++)
+	for (int i = 0; i < c_FrameBufferCount; i++)
 	{
 		backBuffers[i]->Release();
 		commandAllocator[i]->Release();
@@ -212,7 +212,7 @@ HRESULT DXCore::InitDirectX()
 	device->CreateCommandQueue(&qDesc, IID_PPV_ARGS(&commandQueue));
 
 	// Set up allocator
-	for (unsigned int i = 0; i < FrameBufferCount; i++)
+	for (unsigned int i = 0; i < c_FrameBufferCount; i++)
 	{
 		device->CreateCommandAllocator(
 			D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -228,7 +228,7 @@ HRESULT DXCore::InitDirectX()
 	// Create a description of how our swap
 	// chain should work
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferCount = FrameBufferCount;
+	swapChainDesc.BufferCount = c_FrameBufferCount;
 	swapChainDesc.BufferDesc.Width = width;
 	swapChainDesc.BufferDesc.Height = height;
 	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -247,7 +247,7 @@ HRESULT DXCore::InitDirectX()
 
 	// Create descriptor heaps for RTVs
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	rtvHeapDesc.NumDescriptors = FrameBufferCount;
+	rtvHeapDesc.NumDescriptors = c_FrameBufferCount;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
 
@@ -262,7 +262,7 @@ HRESULT DXCore::InitDirectX()
 	device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
 
 	// Set up render target view handles
-	for (unsigned int i = 0; i < FrameBufferCount; i++)
+	for (unsigned int i = 0; i < c_FrameBufferCount; i++)
 	{
 		// Grab this buffer from the swap chain
 		swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffers[i]));
@@ -345,7 +345,7 @@ HRESULT DXCore::InitDirectX()
 	commandQueue->ExecuteCommandLists(1, lists);
 
 	// Make a fence and an event
-	for (unsigned int i = 0; i < FrameBufferCount; i++)
+	for (unsigned int i = 0; i < c_FrameBufferCount; i++)
 	{
 		device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fences[i]));
 		// This is to ensure that the fence is set before we create fence event
