@@ -11,9 +11,8 @@ void FrameManager::Initialize(ID3D12Device* device)
 	for (int i = 0; i < c_FrameBufferCount; ++i)
 	{
 		gpuConstantBuffer[i].Create(device, c_MaxConstBufferSize, bufferSize);
-		gpuHeap[i].Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, c_HeapSize, true);
 	}
-
+	gpuHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, c_HeapSize, true);
 	materialHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, c_HeapSize, false);
 	textureHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, c_HeapSize, false);
 
@@ -31,9 +30,9 @@ ConstantBufferView FrameManager::CreateConstantBufferView(uint32_t bufferSize)
 	{
 		cbvDesc.BufferLocation = gpuConstantBuffer[i].GetAddress(cbOffset);
 		cbvDesc.SizeInBytes = bufferSize;
-		device->CreateConstantBufferView(&cbvDesc, gpuHeap[i].handleCPU(frameHeapCounter));
+		
 	}
-
+	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(frameHeapCounter));
 	cbOffset += bufferSize; //(bufferSize / 256);
 	frameHeapCounter++;
 	constantBufferIndex++;
@@ -72,11 +71,11 @@ Material FrameManager::CreateMaterial(
 
 		for (int i = 0; i < c_FrameBufferCount; ++i)
 		{
-			device->CopyDescriptorsSimple(4, gpuHeap[i].handleCPU(frameHeapCounter), material.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+			device->CopyDescriptorsSimple(4, gpuHeap.handleCPU(frameHeapCounter), material.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		}
 
-		D3D12_GPU_DESCRIPTOR_HANDLE handles[c_FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
-		material.SetGPUHandle(handles);
+		D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
+		material.SetGPUHandle(handle);
 		frameHeapCounter += 4;
 		materialMap.insert({ materialName, material });
 	}
@@ -97,11 +96,11 @@ Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12Co
 		texture.CreateTexture(device, textureFileName, commandQueue, &textureHeap, type);
 		for (int i = 0; i < c_FrameBufferCount; ++i)
 		{
-			device->CopyDescriptorsSimple(1, gpuHeap[i].handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+			device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		}
 
-		D3D12_GPU_DESCRIPTOR_HANDLE handles[c_FrameBufferCount] = { gpuHeap[0].handleGPU(frameHeapCounter), gpuHeap[1].handleGPU(frameHeapCounter), gpuHeap[2].handleGPU(frameHeapCounter) };
-		texture.SetGPUHandle(handles);
+		D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
+		texture.SetGPUHandle(handle);
 		frameHeapCounter++;
 		textureMap.insert({ textureFileName, texture });
 	}
@@ -134,15 +133,15 @@ void FrameManager::CopyData(void* data, uint32_t size, ConstantBufferView cbv, u
 
 D3D12_GPU_DESCRIPTOR_HANDLE FrameManager::GetGPUHandle(uint32_t index, uint32_t backBufferIndex)
 {
-	return gpuHeap[backBufferIndex].handleGPU(index);
+	return gpuHeap.handleGPU(index);
 }
 
 DescriptorHeap& FrameManager::GetGPUDescriptorHeap(uint32_t backBufferIndex)
 {
-	return gpuHeap[backBufferIndex];
+	return gpuHeap;
 }
 
-DescriptorHeap* FrameManager::GetGPUDescriptorHeap()
+DescriptorHeap FrameManager::GetGPUDescriptorHeap()
 {
 	return gpuHeap;
 }

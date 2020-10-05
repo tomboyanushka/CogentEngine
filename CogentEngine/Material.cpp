@@ -38,17 +38,14 @@ uint32_t Material::Create(ID3D12Device* device,
 	return materialIndexTracker;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE Material::GetGPUHandle(uint32_t backBufferIndex)
+D3D12_GPU_DESCRIPTOR_HANDLE Material::GetGPUHandle()
 {
-	return materialGPUHandle[backBufferIndex];
+	return materialGPUHandle;
 }
 
-void Material::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handles[c_FrameBufferCount])
+void Material::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle)
 {
-	for (int i = 0; i < c_FrameBufferCount; ++i)
-	{
-		materialGPUHandle[i] = handles[i];
-	}
+	materialGPUHandle = handle;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE Material::GetCPUHandle()

@@ -27,8 +27,8 @@ public:
 		uint32_t heapCount,
 		TextureType type = WIC);
 
-	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(uint32_t backBufferIndex);
-	void SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handles[c_FrameBufferCount]);
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle();
+	void SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle();
 
@@ -39,7 +39,7 @@ public:
 
 private:
 	static uint32_t materialIndexTracker;
-	D3D12_GPU_DESCRIPTOR_HANDLE materialGPUHandle[c_FrameBufferCount];
+	D3D12_GPU_DESCRIPTOR_HANDLE materialGPUHandle;
 	D3D12_CPU_DESCRIPTOR_HANDLE materialCPUHandle;
 };
 

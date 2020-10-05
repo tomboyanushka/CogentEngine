@@ -317,7 +317,7 @@ void Game::DrawEntity(Entity * entity)
 
 	// set the material
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle(currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
 }
@@ -336,7 +336,7 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&transparencyData, sizeof(TransparencyExternalData), transparencyCBV, currentBackBufferIndex);
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle(currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
 }
@@ -496,7 +496,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		//for image based lighting
 		commandList->SetGraphicsRootDescriptorTable(
 			3,
-			skyIrradiance.GetGPUHandle(currentBackBufferIndex));
+			skyIrradiance.GetGPUHandle());
 
 		commandList->SetPipelineState(pbrPipeState);
 		DrawEntity(e_sponza);
@@ -553,7 +553,7 @@ void Game::DrawMesh(Mesh* mesh)
 		{
 			auto mat = sponzaMat[i];
 			//commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(mat.materialIndex, currentBackBufferIndex));
-			commandList->SetGraphicsRootDescriptorTable(2, mat.GetGPUHandle(currentBackBufferIndex));
+			commandList->SetGraphicsRootDescriptorTable(2, mat.GetGPUHandle());
 
 			commandList->DrawIndexedInstanced(m.NumIndices, 1, m.BaseIndex, m.BaseVertex, 0);
 			i++;
@@ -680,7 +680,7 @@ void Game::DrawSky()
 
 	commandList->SetPipelineState(skyPipeState.Get());
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(skyCBV.heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle(currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, t_skyTexture.GetGPUHandle());
 
 	DrawMesh(sm_skyCube);
 }

@@ -47,17 +47,14 @@ D3D12_CPU_DESCRIPTOR_HANDLE Texture::GetCPUHandle()
 	return textureCPUHandle;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetGPUHandle(uint32_t backBufferIndex)
+D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetGPUHandle()
 {
-	return textureGPUHandle[backBufferIndex];
+	return textureGPUHandle;
 }
 
-void Texture::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE* handles)
+void Texture::SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle)
 {
-	for (int i = 0; i < c_FrameBufferCount; ++i)
-	{
-		textureGPUHandle[i] = handles[i];
-	}
+	textureGPUHandle = handle;
 }
 
 std::string Texture::GetName()

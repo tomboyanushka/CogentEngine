@@ -2,7 +2,7 @@
 
 
 
-Entity::Entity(Mesh * mesh, GPUConstantBuffer* gpuConstantBuffer, const DescriptorHeap* gpuHeap, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv)
+Entity::Entity(Mesh * mesh, GPUConstantBuffer* gpuConstantBuffer, const DescriptorHeap gpuHeap, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv)
 {
 	this->mesh = mesh;
 	this->material = material;
@@ -13,7 +13,7 @@ Entity::Entity(Mesh * mesh, GPUConstantBuffer* gpuConstantBuffer, const Descript
 	{
 		this->cbv = cbv;
 		this->gpuAddress = gpuConstantBuffer[i].GetMappedAddress(cbv.cbOffset);
-		this->handle = gpuHeap[i].handleGPU(cbv.heapIndex);
+		this->handle = gpuHeap.handleGPU(cbv.heapIndex);
 	}
 
 	//this->boundingOrientedBox = mesh->GetBoundingBox();

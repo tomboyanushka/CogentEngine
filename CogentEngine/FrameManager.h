@@ -34,7 +34,7 @@ public:
 
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(uint32_t index, uint32_t backBufferIndex);
 	DescriptorHeap& GetGPUDescriptorHeap(uint32_t backBufferIndex);
-	DescriptorHeap* GetGPUDescriptorHeap();
+	DescriptorHeap GetGPUDescriptorHeap();
 
 
 	
@@ -49,7 +49,7 @@ private:
 	GPUConstantBuffer gpuConstantBuffer[c_FrameBufferCount];
 
 	// This is the memory on the GPU where the constant buffer will be placed.
-	DescriptorHeap gpuHeap[c_FrameBufferCount];
+	DescriptorHeap gpuHeap;
 	DescriptorHeap materialHeap;
 	DescriptorHeap textureHeap;
 	ID3D12Device* device;

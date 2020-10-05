@@ -9,7 +9,7 @@ using namespace DirectX;
 class Entity
 {
 public:
-	Entity(Mesh* mesh, GPUConstantBuffer* gpuConstantBuffer, const DescriptorHeap* gpuHeap, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv);
+	Entity(Mesh* mesh, GPUConstantBuffer* gpuConstantBuffer, const DescriptorHeap gpuHeap, uint32_t constantBufferIndex, Material* material, ConstantBufferView cbv);
 	~Entity();
 
 	XMFLOAT3 GetPosition(); 
