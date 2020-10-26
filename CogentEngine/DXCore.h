@@ -80,24 +80,25 @@ protected:
 
 	ID3D12GraphicsCommandList*	commandList;
 	ID3D12CommandQueue*			commandQueue;
-	ID3D12CommandAllocator*		commandAllocator[c_FrameBufferCount];
+	ID3D12CommandAllocator*		commandAllocator[cFrameBufferCount];
 
 	unsigned int			rtvDescriptorSize;
 	// Heap that will store RTV's 
 	ID3D12DescriptorHeap*	rtvHeap;
 	ID3D12DescriptorHeap*	dsvHeap;
+	ID3D12DescriptorHeap*	srvHeap;
 
-	ID3D12Resource* backBuffers[c_FrameBufferCount];
+	ID3D12Resource* backBuffers[cFrameBufferCount];
 	ID3D12Resource* depthStencilBuffer;
 
 	// Pointers into the RTV desc heap
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[c_FrameBufferCount]; 
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[cFrameBufferCount]; 
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 
 	// Fence for CPU/GPU sync
-	ID3D12Fence* fences[c_FrameBufferCount];
+	ID3D12Fence* fences[cFrameBufferCount];
 	HANDLE eventHandle;
-	uint64_t fenceValues[c_FrameBufferCount];
+	uint64_t fenceValues[cFrameBufferCount];
 
 	// DX12 Helper Functions
 	void WaitForGPU();
@@ -106,6 +107,7 @@ protected:
 	HRESULT CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_INDEX_BUFFER_VIEW* ibView);
 	HRESULT CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_VERTEX_BUFFER_VIEW* vbView);
 
+	D3D12_CPU_DESCRIPTOR_HANDLE CreateRenderTarget(ID3D12Resource* resource);
 
 	// Helper function for allocating a console window
 	void CreateConsoleWindow(int bufferLines, int bufferColumns, int windowLines, int windowColumns);
@@ -124,6 +126,9 @@ private:
 	// FPS calculation
 	int fpsFrameCount;
 	float fpsTimeElapsed;
+
+	// Render Target tracking
+	int rtvIndex = 0;
 
 	void UpdateTimer();			// Updates the timer for this frame
 	void UpdateTitleBarStats();	// Puts debug info in the title bar

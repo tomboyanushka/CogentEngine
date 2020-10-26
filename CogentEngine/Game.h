@@ -9,6 +9,7 @@
 */
 #pragma once
 
+
 #include "DXCore.h"
 #include <DirectXMath.h>
 #include "DXUtility.h"
@@ -66,6 +67,11 @@ public:
 	void DrawSky();
 	void LoadSponza();
 
+	void DrawBlur();
+
+	ID3D12Resource* blurTexture;
+	ID3D12Resource* CreateResource();
+
 	// Compute Z distance from Camera
 	float ComputeZDistance(Camera* cam, XMFLOAT3 position);
 	static bool CompareByLength(const TransparentEntity& a, const TransparentEntity& b);
@@ -96,12 +102,15 @@ private:
 	ID3D12PipelineState* outlinePipeState;
 	ID3D12PipelineState* pbrPipeState;
 	ID3D12PipelineState* transparencyPipeState;
+	ID3D12PipelineState* blurPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	FrameManager frameManager;
 	ConstantBufferView pixelCBV;
 	ConstantBufferView transparencyCBV;
 	ConstantBufferView skyCBV;
+	ConstantBufferView blurCBV;
+	ConstantBufferView dofCBV;
 
 	ID3DBlob* vertexShaderByteCode;
 	ID3DBlob* pixelShaderByteCode;
@@ -113,9 +122,13 @@ private:
 	ID3DBlob* pbrPS;
 	ID3DBlob* toonPS;
 	ID3DBlob* transparencyPS;
+	ID3DBlob* blurPS;
+	ID3DBlob* quadVS;
+	ID3DBlob* quadPS;
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
+	BlurExternalData blurData;
 
 	Mesh* sm_sphere;
 	Mesh* sm_skyCube;

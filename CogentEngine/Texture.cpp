@@ -37,6 +37,80 @@ uint32 Texture::CreateTexture(ID3D12Device* device, const std::string& fileName,
 	return textureIndex;
 }
  
+uint32 Texture::CreateResourceTexture(ID3D12Device* device, ID3D12CommandQueue* commandQueue, const DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight)
+{
+	textureIndexTracker++;
+	// Describe and create a Texture2D.
+	D3D12_RESOURCE_DESC textureDesc = {};
+	textureDesc.MipLevels = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Width = textureWidth;
+	textureDesc.Height = textureHeight;
+	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	textureDesc.DepthOrArraySize = 1;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+	// Describe and create a SRV for the texture.
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = textureDesc.Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&textureDesc,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(resource.GetAddressOf()));
+
+	this->textureCPUHandle = textureHeap->handleCPU(textureIndexTracker);
+	//CreateShaderResourceView(device, resource.Get(), textureCPUHandle, isCubeMap);
+	device->CreateShaderResourceView(resource.Get(), &srvDesc, textureCPUHandle);
+
+	return textureIndexTracker;
+}
+
+uint32 Texture::CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight)
+{
+	textureIndexTracker++;
+	// Describe and create a Texture2D.
+	D3D12_RESOURCE_DESC textureDesc = {};
+	textureDesc.MipLevels = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Width = textureWidth;
+	textureDesc.Height = textureHeight;
+	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	textureDesc.DepthOrArraySize = 1;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+	// Describe and create a SRV for the texture.
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = textureDesc.Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&textureDesc,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(&resource));
+
+	this->textureCPUHandle = textureHeap->handleCPU(textureIndexTracker);
+	//CreateShaderResourceView(device, resource.Get(), textureCPUHandle, isCubeMap);
+	device->CreateShaderResourceView(resource, &srvDesc, textureCPUHandle);
+
+	return textureIndexTracker;
+}
+
 ID3D12Resource* Texture::GetResource()
 {
 	return resource.Get();

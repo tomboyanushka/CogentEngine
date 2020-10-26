@@ -18,7 +18,6 @@ TextureCube skyIrradianceTexture	: register(t4);
 TextureCube skyPrefilterTexture		: register(t5);
 Texture2D brdfLookUpTexture			: register(t6);
 
-
 SamplerState basicSampler	: register(s0);
 
 float3 calculateNormalFromMap(float2 uv, float3 normal, float3 tangent)

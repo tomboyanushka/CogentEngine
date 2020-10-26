@@ -4,7 +4,7 @@ constexpr int MaxPointLights = 1;
 
 using namespace DirectX;
 
-//----------LIGHTS------------
+// ----------LIGHTS------------
 struct DirectionalLight
 {
 	XMFLOAT4 AmbientColor;
@@ -28,12 +28,15 @@ struct VertexShaderExternalData
 	XMFLOAT4X4 view;
 	XMFLOAT4X4 proj;
 };
+
+// ----------SKY------------
 struct SkyboxExternalData
 {
 	XMFLOAT4X4 view;
 	XMFLOAT4X4 proj;
 };
 
+// ----------Default PS------------
 struct PixelShaderExternalData
 {
 	DirectionalLight dirLight;
@@ -42,10 +45,29 @@ struct PixelShaderExternalData
 	int pointLightCount;
 };
 
+// ----------TRANSPARENCY------------
 struct TransparencyExternalData
 {
 	DirectionalLight dirLight;
 	XMFLOAT3 cameraPosition;
 	float blendAmount;
+};
+
+//----------Post Processing------------
+
+struct QuadExternalData
+{
+	XMFLOAT4 position;
+	XMFLOAT2 uv;
+};
+
+struct BlurExternalData
+{
+	float pixelWidth;
+	float pixelHeight;
+	float blurAmount;
+	float focusPlaneZ;
+	float zFar;
+	float zNear;
 };
 

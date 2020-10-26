@@ -196,6 +196,18 @@
     <FxCompile Include="ToonPS.hlsl">
       <Filter>Header Files\Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="QuadVS.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="QuadPS.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="CircleOfConfusion.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Blur.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Lighting.hlsli">

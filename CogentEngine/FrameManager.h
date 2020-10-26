@@ -28,6 +28,13 @@ public:
 		ID3D12CommandQueue* commandQueue,
 		TextureType type = WIC);
 
+	Texture CreateResourceTexture(
+		ID3D12CommandQueue* commandQueue);
+
+	Texture CreateTextureFromResource(
+		ID3D12CommandQueue* commandQueue,
+		ID3D12Resource* resource);
+
 	Entity* CreateEntity(Mesh* mesh, Material* material);
 	Entity* CreateTransparentEntity(Mesh* mesh, Material* material);
 	void CopyData(void* data, uint32_t size, ConstantBufferView cbv, uint32_t backBufferIndex);
@@ -46,7 +53,7 @@ private:
 	uint32_t cbOffset = 0;
 
 	// This heap will store the descriptor to the constant buffer
-	GPUConstantBuffer gpuConstantBuffer[c_FrameBufferCount];
+	GPUConstantBuffer gpuConstantBuffer[cFrameBufferCount];
 
 	// This is the memory on the GPU where the constant buffer will be placed.
 	DescriptorHeap gpuHeap;
