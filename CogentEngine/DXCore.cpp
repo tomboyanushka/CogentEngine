@@ -247,7 +247,7 @@ HRESULT DXCore::InitDirectX()
 
 	// Create descriptor heaps for RTVs
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	rtvHeapDesc.NumDescriptors = cFrameBufferCount;
+	rtvHeapDesc.NumDescriptors = cMaxRenderTargetCount;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
 
@@ -267,15 +267,7 @@ HRESULT DXCore::InitDirectX()
 		// Grab this buffer from the swap chain
 		swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffers[i]));
 
-		rtvHandles[i] = CreateRenderTarget(backBuffers[i]);
-		// Make a handle for it
-		//rtvHandles[i] = rtvHeap->GetCPUDescriptorHandleForHeapStart();
-		// rtvHandles[i] = RTVManager.CreateRenderTarget(resource --> backbuffers[i])
-		//
-		//rtvHandles[i].ptr += rtvDescriptorSize * i;
-
-		//// Create the render target view
-		//device->CreateRenderTargetView(backBuffers[i], 0, rtvHandles[i]);
+		rtvHandles[i] = CreateRenderTarget(backBuffers[i], cFrameBufferCount);
 	}
 
 
@@ -542,47 +534,38 @@ HRESULT DXCore::CreateVertexBuffer(unsigned int dataStride, unsigned int dataCou
 	return S_OK;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE DXCore::CreateRenderTarget(ID3D12Resource* resource)
+D3D12_CPU_DESCRIPTOR_HANDLE DXCore::CreateRenderTarget(ID3D12Resource* resource, UINT numDesc)
 {
-	
-	// Create descriptor heaps for RTVs
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	rtvHeapDesc.NumDescriptors = cFrameBufferCount;
-	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
+	//// Create descriptor heaps for RTVs
+	//D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	//rtvHeapDesc.NumDescriptors = numDesc;
+	//rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	//device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
+
+
+
+	//// Heap for DSV
+	//D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+	//dsvHeapDesc.NumDescriptors = 1;
+	//dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	//device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
 
 	// Grab the size (differs per GPU)
 	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	// Heap for DSV
-	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-	dsvHeapDesc.NumDescriptors = 1;
-	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
-
-	//swapChain->GetBuffer(i, IID_PPV_ARGS(&resource));
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
 	rtvHandle.ptr += rtvDescriptorSize * rtvIndex;
 
-	device->CreateRenderTargetView(resource, 0, rtvHandle);
+	D3D12_RENDER_TARGET_VIEW_DESC desc = {};
+	desc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+	desc.Texture2D.MipSlice = 0;
+	desc.Texture2D.PlaneSlice = 0;
+
+	device->CreateRenderTargetView(resource, &desc, rtvHandle);
 	rtvIndex++;
 
 	return rtvHandle;
-	//// Set up render target view handles
-	//for (unsigned int i = 0; i < cFrameBufferCount; i++)
-	//{
-	//	// Grab this buffer from the swap chain
-	//	swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffers[i]));
-
-	//	// Make a handle for it
-	//	rtvHandles[i] = rtvHeap->GetCPUDescriptorHandleForHeapStart();
-	//	// rtvHandles[i] = RTVManager.CreateRenderTarget(resource --> backbuffers[i])
-	//	//
-	//	rtvHandles[i].ptr += rtvDescriptorSize * i;
-
-	//	// Create the render target view
-	//	device->CreateRenderTargetView(backBuffers[i], 0, rtvHandles[i]);
-	//}
 }
 
 // --------------------------------------------------------

@@ -12,11 +12,11 @@ using namespace DirectX;
 
 Game::Game(HINSTANCE hInstance)
 	: DXCore(
-		hInstance,		   
-		"CogentEngine (DX 12)",    
-		1920,			   
-		1080,			   
-		true)			   
+		hInstance,
+		"CogentEngine (DX 12)",
+		1920,
+		1080,
+		true)
 {
 	/*vertexBuffer = 0;
 	indexBuffer = 0;*/
@@ -100,8 +100,8 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"QuadPS.cso", &quadPS);
 
 	unsigned int bufferSize = sizeof(PixelShaderExternalData);
-	bufferSize = (bufferSize + 255); 
-	bufferSize = bufferSize & ~255;  
+	bufferSize = (bufferSize + 255);
+	bufferSize = bufferSize & ~255;
 
 	pixelCBV = frameManager.CreateConstantBufferView(sizeof(PixelShaderExternalData));
 	transparencyCBV = frameManager.CreateConstantBufferView(sizeof(TransparencyExternalData));
@@ -126,7 +126,7 @@ void Game::CreateMesh()
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 
 	LoadSponza();
-	
+
 	// Create Transparent Entities
 	for (int i = 0; i < numEntities; ++i)
 	{
@@ -165,7 +165,7 @@ void Game::CreateRootSigAndPipelineState()
 		range[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
 		// texture 2 cbv
 		// to simplify separating PBR and IBL textures
-		range[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 4); 
+		range[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 4);
 
 		// creating root parameters
 		CD3DX12_ROOT_PARAMETER rootParameters[4];
@@ -272,12 +272,27 @@ void Game::CreateRootSigAndPipelineState()
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&transparencyPipeState));
 
 		// -- Blur (VS/PS) --- 
-		psoDesc.DepthStencilState.DepthEnable = true;
-		psoDesc.VS.pShaderBytecode = quadVS->GetBufferPointer();
-		psoDesc.VS.BytecodeLength = quadVS->GetBufferSize();
-		psoDesc.PS.pShaderBytecode = blurPS->GetBufferPointer();
-		psoDesc.PS.BytecodeLength = blurPS->GetBufferSize();
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&blurPipeState));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC blurDesc = {};
+		blurDesc.pRootSignature = rootSignature;
+		blurDesc.NumRenderTargets = 1;
+		blurDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // TODO: Parameterize
+		blurDesc.SampleDesc.Count = 1;
+		blurDesc.SampleDesc.Quality = 0;
+		blurDesc.InputLayout.pInputElementDescs = nullptr;
+		blurDesc.InputLayout.NumElements = 0;
+		blurDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		blurDesc.DepthStencilState.DepthEnable = false;
+		blurDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		blurDesc.SampleMask = 0xffffffff;
+		blurDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		blurDesc.RasterizerState.DepthClipEnable = false;
+		blurDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		blurDesc.DepthStencilState.DepthEnable = false;
+		blurDesc.VS.pShaderBytecode = quadVS->GetBufferPointer();
+		blurDesc.VS.BytecodeLength = quadVS->GetBufferSize();
+		blurDesc.PS.pShaderBytecode = blurPS->GetBufferPointer();
+		blurDesc.PS.BytecodeLength = blurPS->GetBufferSize();
+		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&blurPipeState));
 
 		// -- Outline (VS/PS) --- 
 		psoDesc.DepthStencilState.DepthEnable = true;
@@ -302,18 +317,18 @@ void Game::CreateRootSigAndPipelineState()
 		rs.CullMode = D3D12_CULL_MODE_FRONT;
 		rs.FillMode = D3D12_FILL_MODE_SOLID;
 		psoDesc.RasterizerState = rs;
-		
+
 		D3D12_DEPTH_STENCIL_DESC ds = {};
 		ds.DepthEnable = true;
 		ds.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 		ds.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 		psoDesc.DepthStencilState = ds;
 
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&skyPipeState));	
+		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&skyPipeState));
 	}
 }
 
-void Game::DrawEntity(Entity * entity)
+void Game::DrawEntity(Entity* entity)
 {
 	VertexShaderExternalData vertexData = {};
 	vertexData.world = entity->GetWorldMatrix();
@@ -360,10 +375,10 @@ void Game::OnResize()
 	DXCore::OnResize();
 
 	/*XMMATRIX P = XMMatrixPerspectiveFovLH(
-		0.25f * 3.1415926535f,	
-		(float)width / height,	
-		0.1f,				  	
-		100.0f);			  	
+		0.25f * 3.1415926535f,
+		(float)width / height,
+		0.1f,
+		100.0f);
 	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); */
 }
 
@@ -428,7 +443,7 @@ void Game::Update(float deltaTime, float totalTime)
 	pool.ExecuteCallbacks();
 
 	// Get Linear Z of all transparent entities
-	for (auto &t : transparentEntities)
+	for (auto& t : transparentEntities)
 	{
 		t.zPosition = ComputeZDistance(camera, t.t_Entity->GetPosition());
 	}
@@ -455,7 +470,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	//OutputDebugStringW(s.c_str());
 
 	ID3D12Resource* backBuffer = backBuffers[currentBackBufferIndex];
-
+	float color[] = { 0.0f, 0.2f, 0.3f, 1.0f };
 	{
 		D3D12_RESOURCE_BARRIER rb = {};
 		rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -467,7 +482,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->ResourceBarrier(1, &rb);
 
 		// Background color (Cornflower Blue in this case) for clearing
-		float color[] = { 0.0f, 0.2f, 0.3f, 1.0f };
+
 
 		// Clear the RTV
 		commandList->ClearRenderTargetView(
@@ -482,6 +497,8 @@ void Game::Draw(float deltaTime, float totalTime)
 			1.0f,	// Depth = 1.0f
 			0,		// Not clearing stencil, but need a value
 			0, 0);	// No scissor rects
+
+
 	}
 
 	// Rendering here!
@@ -500,7 +517,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Set constant buffer
 		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap(currentBackBufferIndex).pDescriptorHeap.GetAddressOf());
-		
+
 		//for pixel shader
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
@@ -530,28 +547,32 @@ void Game::Draw(float deltaTime, float totalTime)
 			DrawTransparentEntity(t.t_Entity, 0.05f);
 		}
 
-		// Transition backbuffer to pixel shader resource D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-		D3D12_RESOURCE_BARRIER rb = {};
-		rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		rb.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		rb.Transition.pResource = backBuffer;
-		rb.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-		rb.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-		rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		commandList->ResourceBarrier(1, &rb);
+		// Post Process Setup===================================
+
+		// Transition back buffer to pixel shader resource 
+		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+		// Transition blurTexture to render target state
+		TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+		commandList->ClearRenderTargetView(
+			blurRTVHandle,
+			color,
+			0, 0); // No scissor rectangles
+
+		commandList->SetPipelineState(blurPipeState);
+
+		commandList->OMSetRenderTargets(1, &blurRTVHandle, true, nullptr);
+
+		DrawBlur(backbufferTexture[currentBackBufferIndex]);
+
+		TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	}
 
 	// Present
 	{
 		// Transition back to present
-		D3D12_RESOURCE_BARRIER rb = {};
-		rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		rb.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		rb.Transition.pResource = backBuffer;
-		rb.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		rb.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT; 
-		rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		commandList->ResourceBarrier(1, &rb);
+		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
 
 		// Must occur BEFORE present
 		CloseExecuteAndResetCommandList();
@@ -581,9 +602,9 @@ void Game::DrawMesh(Mesh* mesh)
 			commandList->DrawIndexedInstanced(m.NumIndices, 1, m.BaseIndex, m.BaseVertex, 0);
 			i++;
 		}
-		
+
 	}
-	
+
 	else
 	{
 		commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
@@ -682,14 +703,25 @@ void Game::CreateTextures()
 	defaultMetal = frameManager.CreateTexture(
 		"../../Assets/Textures/default/metal.png",
 		commandQueue);
+
+	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
+
+	for (int i = 0; i < cFrameBufferCount; ++i)
+	{
+		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
+	}
+	
+	// make blur render target
+	blurRTVHandle = CreateRenderTarget(blurResource, 1);
 }
 
 void Game::CreateLights()
 {
-	//DIRECTIONAL LIGHTS: ambient diffuse direction intensity =====================
+	// DIRECTIONAL LIGHTS: ambient diffuse direction intensity =====================
 	directionalLight1 = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(2) };
 
-	//POINT LIGHTS: color position range intensity padding  =========================
+	// POINT LIGHTS: color position range intensity padding  =======================
 	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
 }
 
@@ -714,7 +746,7 @@ void Game::LoadSponza()
 	sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
 	sm_sponza = sponza.Mesh;
 	std::string sponzaDirectory = "../../Assets/Textures/sponza/";
-	for (auto &material : sponza.Materials)
+	for (auto& material : sponza.Materials)
 	{
 		auto diffuse = sponzaDirectory + material.Diffuse;
 		auto normal = sponzaDirectory + material.Normal;
@@ -749,55 +781,46 @@ void Game::LoadSponza()
 	}
 }
 
-void Game::DrawBlur()
+void Game::DrawBlur(Texture textureIn)
 {
+	D3D12_INDEX_BUFFER_VIEW ibv;
+	ibv.Format = DXGI_FORMAT_R32_UINT;
+	ibv.BufferLocation = 0;
+	ibv.SizeInBytes = 0;
+
+	D3D12_VERTEX_BUFFER_VIEW vbv;
+	vbv.BufferLocation = 0;
+	vbv.SizeInBytes = 0;
+	vbv.StrideInBytes = 0;
+	commandList->IASetVertexBuffers(0, 0, &vbv);
+	commandList->IASetIndexBuffer(&ibv);
 	BlurExternalData blurData = {};
+
+	blurData.pixelHeight = float(1.f / (float)height);
+	blurData.pixelWidth = float(1.f / (float)width);
 	blurData.blurAmount = 5.0f;
 	blurData.focusPlaneZ = 5;
-	blurData.pixelHeight = 1 / height;
-	blurData.pixelWidth = 1 / width;
 	blurData.zFar = 100.0f;
 	blurData.zNear = 0.1f;
 
 	frameManager.CopyData(&blurData, sizeof(BlurExternalData), blurCBV, currentBackBufferIndex);
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(blurCBV.heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
+
+	commandList->DrawInstanced(4, 1, 0, 0);
 }
 
-ID3D12Resource* Game::CreateResource()
+
+void Game::TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
-	// Describe and create a Texture2D.
-	D3D12_RESOURCE_DESC textureDesc = {};
-	textureDesc.MipLevels = 1;
-	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.Width = width;
-	textureDesc.Height = height;
-	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	textureDesc.DepthOrArraySize = 1;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.SampleDesc.Quality = 0;
-	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-
-	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-	// Describe and create a SRV for the texture.
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = textureDesc.Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = 1;
-
-	device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&textureDesc,
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&blurTexture));
-
-	device->CreateRenderTargetView(blurTexture, nullptr, rtvHandles[currentBackBufferIndex]);
-
-	device->CreateShaderResourceView(blurTexture, &srvDesc, srvHeap->GetCPUDescriptorHandleForHeapStart());
-
-	return blurTexture;
+	D3D12_RESOURCE_BARRIER rb = {};
+	rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	rb.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	rb.Transition.pResource = resource;
+	rb.Transition.StateBefore = stateBefore;
+	rb.Transition.StateAfter = stateAfter;
+	rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	commandList->ResourceBarrier(1, &rb);
 }
 
 float Game::ComputeZDistance(Camera* cam, XMFLOAT3 position)
@@ -869,7 +892,7 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 
 }
 
-bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouseY, float& distance)
+bool Game::IsIntersecting(Entity* entity, Camera* camera, int mouseX, int mouseY, float& distance)
 {
 	newDestination = XMFLOAT3(0, 0, 0);
 	uint16_t screenWidth = 1280;
@@ -918,8 +941,8 @@ bool Game::IsIntersecting(Entity* entity, Camera * camera, int mouseX, int mouse
 	XMMATRIX toWorld = XMMatrixMultiply(invView, XMMatrixInverse(&XMMatrixDeterminant(toLocal), toLocal));
 
 	// Compute picking ray in view space.
-	float vx = (+2.0f* (float)mouseX / screenWidth - 1.0f) / P(0, 0);
-	float vy = (-2.0f* (float)mouseX / screenHeight + 1.0f) / P(1, 1);
+	float vx = (+2.0f * (float)mouseX / screenWidth - 1.0f) / P(0, 0);
+	float vy = (-2.0f * (float)mouseX / screenHeight + 1.0f) / P(1, 1);
 
 	// Ray definition in view space.
 	XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1031,9 +1054,6 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 	//		isSelected = false;
 	//	}
 	//}
-
-
-
 }
 
 

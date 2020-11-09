@@ -28,8 +28,8 @@ public:
 		ID3D12CommandQueue* commandQueue,
 		TextureType type = WIC);
 
-	Texture CreateResourceTexture(
-		ID3D12CommandQueue* commandQueue);
+	ID3D12Resource* CreateResource(
+		ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags);
 
 	Texture CreateTextureFromResource(
 		ID3D12CommandQueue* commandQueue,
@@ -64,6 +64,7 @@ private:
 	std::map<std::string, Texture> textureMap;
 	std::map<std::string, Material> materialMap;
 	std::vector<std::string> materialID;
+	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> resources;
 
 	int count = 0;
 };

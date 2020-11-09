@@ -1,11 +1,13 @@
 cbuffer Data : register(b0)
 {
-	float pixelWidth;
-	float pixelHeight;
-	float blurAmount;
-	float focusPlaneZ;
-	float zFar;
-	float zNear;
+    float pixelWidth;
+    float pixelHeight;
+    float blurAmount;
+    float focusPlaneZ;
+    float zFar;
+    float zNear;
+    float pad0;
+    float pad1;
 }
 
 struct VertexToPixel
@@ -35,6 +37,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float4 finalColor = float4(0, 0, 0, 0);
 	uint numSamples = 0;
 
+    float width = 1 / 1920.0;
+    float height = 1 / 1080.0;
+	
 	int blurAmount = 3.0f;
 	float depth = DepthBuffer.Sample(Sampler, input.uv).r;
 	float linearZ = CalcLinearZ(depth);
@@ -43,21 +48,22 @@ float4 main(VertexToPixel input) : SV_TARGET
 	{
 		for (int y = -blurAmount; y <= blurAmount; y++)
 		{
-			float2 uv = input.uv + float2(x * pixelWidth, y * pixelHeight);
+			float2 uv = input.uv + float2(x * width, y * height);
 			totalColor += Pixels.Sample(Sampler, uv);
 
 			numSamples++;
 		}
 	}
-	if (linearZ > focusPlaneZ + 2 || linearZ < focusPlaneZ - 1)
-	{
-		finalColor = totalColor / numSamples;
-	}
-	else
-	{
-		finalColor = Pixels.Sample(Sampler, input.uv);
-		numSamples = 1;
-	}
+    finalColor = totalColor / numSamples;
+	//if (linearZ > focusPlaneZ + 2 || linearZ < focusPlaneZ - 1)
+	//{
+	//	finalColor = totalColor / numSamples;
+	//}
+	//else
+	//{
+	//	finalColor = Pixels.Sample(Sampler, input.uv);
+	//	numSamples = 1;
+	//}
 
 	return finalColor;
 }

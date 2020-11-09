@@ -67,10 +67,12 @@ public:
 	void DrawSky();
 	void LoadSponza();
 
-	void DrawBlur();
+	void DrawBlur(Texture texture);
 
-	ID3D12Resource* blurTexture;
-	ID3D12Resource* CreateResource();
+	void TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
+
+	//ID3D12Resource* blurTexture;
+	//ID3D12Resource* CreateResource();
 
 	// Compute Z distance from Camera
 	float ComputeZDistance(Camera* cam, XMFLOAT3 position);
@@ -144,6 +146,11 @@ private:
 	Texture skyIrradiance;
 	Texture skyPrefilter;
 	Texture brdfLookUpTexture;
+
+	Texture blurTexture;
+	Texture backbufferTexture[cFrameBufferCount];
+	ID3D12Resource* blurResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE blurRTVHandle;
 	
 	// default
 	Texture defaultDiffuse;

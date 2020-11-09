@@ -107,7 +107,7 @@ protected:
 	HRESULT CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_INDEX_BUFFER_VIEW* ibView);
 	HRESULT CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_VERTEX_BUFFER_VIEW* vbView);
 
-	D3D12_CPU_DESCRIPTOR_HANDLE CreateRenderTarget(ID3D12Resource* resource);
+	D3D12_CPU_DESCRIPTOR_HANDLE CreateRenderTarget(ID3D12Resource* resource, UINT numDesc);
 
 	// Helper function for allocating a console window
 	void CreateConsoleWindow(int bufferLines, int bufferColumns, int windowLines, int windowColumns);

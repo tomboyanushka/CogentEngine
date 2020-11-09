@@ -30,7 +30,7 @@ ConstantBufferView FrameManager::CreateConstantBufferView(uint32_t bufferSize)
 	{
 		cbvDesc.BufferLocation = gpuConstantBuffer[i].GetAddress(cbOffset);
 		cbvDesc.SizeInBytes = bufferSize;
-		
+
 	}
 	device->CreateConstantBufferView(&cbvDesc, gpuHeap.handleCPU(frameHeapCounter));
 	cbOffset += bufferSize; //(bufferSize / 256);
@@ -108,20 +108,45 @@ Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12Co
 	return texture;
 }
 
-Texture FrameManager::CreateResourceTexture(ID3D12CommandQueue* commandQueue)
+ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags)
 {
-	Texture texture;
-	texture.CreateResourceTexture(device, commandQueue, &textureHeap, 1920, 1080);
-	for (int i = 0; i < cFrameBufferCount; ++i)
-	{
-		device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	}
+	// ComPtr<Resource> resource;
+	// Create Resource
+	// Push to vector
+	// return resource.Get();
+	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+	// Describe and create a Texture2D.
+	D3D12_RESOURCE_DESC textureDesc = {};
+	textureDesc.MipLevels = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Width = 1920;
+	textureDesc.Height = 1080;
+	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	textureDesc.DepthOrArraySize = 1;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
-	D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
-	texture.SetGPUHandle(handle);
-	frameHeapCounter++;
+	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM,1920, 1080, 1, 0, 1, 0, flags);
 
-	return texture;
+	// Describe and create a SRV for the texture.
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = textureDesc.Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&desc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		nullptr,
+		IID_PPV_ARGS(resource.GetAddressOf()));
+
+	resources.push_back(resource);
+
+	return resource.Get();
 }
 
 Texture FrameManager::CreateTextureFromResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource)

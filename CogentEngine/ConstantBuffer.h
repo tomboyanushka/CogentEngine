@@ -69,5 +69,7 @@ struct BlurExternalData
 	float focusPlaneZ;
 	float zFar;
 	float zNear;
+	float pad0;
+	float pad1;
 };
 

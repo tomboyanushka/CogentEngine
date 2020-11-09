@@ -16,8 +16,6 @@ class Texture
 {
 public:
 	uint32 CreateTexture(ID3D12Device* device, const std::string& fileName, ID3D12CommandQueue* commandQueue, const DescriptorHeap* textureHeap, TextureType type = WIC);
-	
-	uint32 CreateResourceTexture(ID3D12Device* device, ID3D12CommandQueue* commandQueue, const DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight);
 
 	uint32 CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight);
 

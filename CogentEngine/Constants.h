@@ -8,6 +8,6 @@ typedef uint32_t uint32;
 
 // Triple buffered
 constexpr uint32_t cFrameBufferCount = 3;
-constexpr uint32_t cMaxRenderTargetCount = 16;
+constexpr uint32_t cMaxRenderTargetCount = 32;
 
 constexpr uint32_t c_HeapSize = 4096;
