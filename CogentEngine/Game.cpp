@@ -303,7 +303,6 @@ void Game::CreateRootSigAndPipelineState()
 		psoDesc.BlendState = CommonStates::Opaque;
 
 		psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
-		//psoDesc.DepthStencilState.DepthEnable = false;
 
 		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&outlinePipeState));
 
@@ -567,6 +566,12 @@ void Game::Draw(float deltaTime, float totalTime)
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 
 		TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+		// make bb render target
+		// set render target
+		// make blur texture pixel shader resource
+		// quad VS and PS
+		// bb to present
 	}
 
 	// Present
@@ -707,7 +712,7 @@ void Game::CreateTextures()
 	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
 
-	for (int i = 0; i < cFrameBufferCount; ++i)
+	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
 		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
 	}

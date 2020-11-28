@@ -148,7 +148,7 @@ private:
 	Texture brdfLookUpTexture;
 
 	Texture blurTexture;
-	Texture backbufferTexture[cFrameBufferCount];
+	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 	ID3D12Resource* blurResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE blurRTVHandle;
 	

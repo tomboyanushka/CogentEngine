@@ -1,13 +1,17 @@
 #pragma once
 #include <cstdint>
 
-constexpr uint32_t c_MaxConstBufferSize = 1024 * 32; //16 kb
+// Dimensions
+constexpr uint32_t SCREEN_WIDTH			= 1920.0f;
+constexpr uint32_t SCREEN_HEIGHT		= 1080.0f;
+
+
+/// Engine Constants
+constexpr uint32_t MAX_CBUFFER_SIZE			= 1024 * 32;
+constexpr uint32_t FRAME_BUFFER_COUNT		= 3;
+constexpr uint32_t RENDER_TARGET_COUNT		= 32;
+constexpr uint32_t HEAPSIZE					= 4096;
+
+
+// Typedefs
 typedef uint32_t uint32;
-
-// Engine Constants
-
-// Triple buffered
-constexpr uint32_t cFrameBufferCount = 3;
-constexpr uint32_t cMaxRenderTargetCount = 32;
-
-constexpr uint32_t c_HeapSize = 4096;

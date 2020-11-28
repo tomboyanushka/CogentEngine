@@ -64,7 +64,7 @@ DXCore::~DXCore()
 {
 
 	// Release all DirectX resources
-	for (int i = 0; i < cFrameBufferCount; i++)
+	for (int i = 0; i < FRAME_BUFFER_COUNT; i++)
 	{
 		backBuffers[i]->Release();
 		commandAllocator[i]->Release();
@@ -212,7 +212,7 @@ HRESULT DXCore::InitDirectX()
 	device->CreateCommandQueue(&qDesc, IID_PPV_ARGS(&commandQueue));
 
 	// Set up allocator
-	for (unsigned int i = 0; i < cFrameBufferCount; i++)
+	for (unsigned int i = 0; i < FRAME_BUFFER_COUNT; i++)
 	{
 		device->CreateCommandAllocator(
 			D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -228,7 +228,7 @@ HRESULT DXCore::InitDirectX()
 	// Create a description of how our swap
 	// chain should work
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferCount = cFrameBufferCount;
+	swapChainDesc.BufferCount = FRAME_BUFFER_COUNT;
 	swapChainDesc.BufferDesc.Width = width;
 	swapChainDesc.BufferDesc.Height = height;
 	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -247,7 +247,7 @@ HRESULT DXCore::InitDirectX()
 
 	// Create descriptor heaps for RTVs
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	rtvHeapDesc.NumDescriptors = cMaxRenderTargetCount;
+	rtvHeapDesc.NumDescriptors = RENDER_TARGET_COUNT;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
 
@@ -262,12 +262,12 @@ HRESULT DXCore::InitDirectX()
 	device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
 
 	// Set up render target view handles
-	for (unsigned int i = 0; i < cFrameBufferCount; i++)
+	for (unsigned int i = 0; i < FRAME_BUFFER_COUNT; i++)
 	{
 		// Grab this buffer from the swap chain
 		swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffers[i]));
 
-		rtvHandles[i] = CreateRenderTarget(backBuffers[i], cFrameBufferCount);
+		rtvHandles[i] = CreateRenderTarget(backBuffers[i], FRAME_BUFFER_COUNT);
 	}
 
 
@@ -340,7 +340,7 @@ HRESULT DXCore::InitDirectX()
 	commandQueue->ExecuteCommandLists(1, lists);
 
 	// Make a fence and an event
-	for (unsigned int i = 0; i < cFrameBufferCount; i++)
+	for (unsigned int i = 0; i < FRAME_BUFFER_COUNT; i++)
 	{
 		device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fences[i]));
 		// This is to ensure that the fence is set before we create fence event

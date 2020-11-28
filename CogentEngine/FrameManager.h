@@ -53,7 +53,7 @@ private:
 	uint32_t cbOffset = 0;
 
 	// This heap will store the descriptor to the constant buffer
-	GPUConstantBuffer gpuConstantBuffer[cFrameBufferCount];
+	GPUConstantBuffer gpuConstantBuffer[FRAME_BUFFER_COUNT];
 
 	// This is the memory on the GPU where the constant buffer will be placed.
 	DescriptorHeap gpuHeap;

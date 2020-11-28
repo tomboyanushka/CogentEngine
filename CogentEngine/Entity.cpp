@@ -9,7 +9,7 @@ Entity::Entity(Mesh * mesh, GPUConstantBuffer* gpuConstantBuffer, const Descript
 	this->constantBufferIndex = constantBufferIndex;
 	this->SetPosition(XMFLOAT3(0.0, 0.0, 0.0));
 	this->SetScale(XMFLOAT3(1.0, 1.0, 1.0));
-	for (int i = 0; i < cFrameBufferCount; ++i)
+	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
 		this->cbv = cbv;
 		this->gpuAddress = gpuConstantBuffer[i].GetMappedAddress(cbv.cbOffset);

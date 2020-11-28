@@ -80,7 +80,7 @@ protected:
 
 	ID3D12GraphicsCommandList*	commandList;
 	ID3D12CommandQueue*			commandQueue;
-	ID3D12CommandAllocator*		commandAllocator[cFrameBufferCount];
+	ID3D12CommandAllocator*		commandAllocator[FRAME_BUFFER_COUNT];
 
 	unsigned int			rtvDescriptorSize;
 	// Heap that will store RTV's 
@@ -88,17 +88,17 @@ protected:
 	ID3D12DescriptorHeap*	dsvHeap;
 	ID3D12DescriptorHeap*	srvHeap;
 
-	ID3D12Resource* backBuffers[cFrameBufferCount];
+	ID3D12Resource* backBuffers[FRAME_BUFFER_COUNT];
 	ID3D12Resource* depthStencilBuffer;
 
 	// Pointers into the RTV desc heap
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[cFrameBufferCount]; 
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[FRAME_BUFFER_COUNT]; 
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 
 	// Fence for CPU/GPU sync
-	ID3D12Fence* fences[cFrameBufferCount];
+	ID3D12Fence* fences[FRAME_BUFFER_COUNT];
 	HANDLE eventHandle;
-	uint64_t fenceValues[cFrameBufferCount];
+	uint64_t fenceValues[FRAME_BUFFER_COUNT];
 
 	// DX12 Helper Functions
 	void WaitForGPU();
