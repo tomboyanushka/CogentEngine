@@ -119,15 +119,15 @@ ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D
 	D3D12_RESOURCE_DESC textureDesc = {};
 	textureDesc.MipLevels = 1;
 	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.Width = 1920;
-	textureDesc.Height = 1080;
+	textureDesc.Width = SCREEN_WIDTH;
+	textureDesc.Height = SCREEN_HEIGHT;
 	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 	textureDesc.DepthOrArraySize = 1;
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
-	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM,1920, 1080, 1, 0, 1, 0, flags);
+	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0, 1, 0, flags);
 
 	// Describe and create a SRV for the texture.
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -152,7 +152,7 @@ ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D
 Texture FrameManager::CreateTextureFromResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource)
 {
 	Texture texture;
-	texture.CreateTextureFromResource(device, commandQueue, resource, &textureHeap, 1920, 1080);
+	texture.CreateTextureFromResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT);
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
 		device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);

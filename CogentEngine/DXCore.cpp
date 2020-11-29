@@ -674,11 +674,11 @@ void DXCore::UpdateTitleBarStats()
 	std::ostringstream output;
 	output.precision(6);
 	output << titleBarText <<
-		//"    Width: " << width <<
-		//"    Height: " << height <<
+		"    Width: " << width <<
+		"    Height: " << height <<
 		"    FPS: " << fpsFrameCount <<
-		"    Frame Time: " << mspf << "ms"; //<<
-		//"    API: DX 12    Feature Level: ";
+		"    Frame Time: " << mspf << "ms" <<
+		"    API: DX 12    Feature Level: ";
 
 	// Append the version of DirectX the app is using
 	switch (dxFeatureLevel)

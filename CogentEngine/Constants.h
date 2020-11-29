@@ -2,8 +2,8 @@
 #include <cstdint>
 
 // Dimensions
-constexpr uint32_t SCREEN_WIDTH			= 1920.0f;
-constexpr uint32_t SCREEN_HEIGHT		= 1080.0f;
+constexpr uint32_t SCREEN_WIDTH			= 1920;
+constexpr uint32_t SCREEN_HEIGHT		= 1080;
 
 
 /// Engine Constants

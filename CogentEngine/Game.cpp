@@ -14,8 +14,8 @@ Game::Game(HINSTANCE hInstance)
 	: DXCore(
 		hInstance,
 		"CogentEngine (DX 12)",
-		1920,
-		1080,
+		SCREEN_WIDTH,
+		SCREEN_HEIGHT,
 		true)
 {
 	/*vertexBuffer = 0;
@@ -900,8 +900,8 @@ void Game::AddCollider(AStar::Generator& generator, AStar::Vec2i coordinates)
 bool Game::IsIntersecting(Entity* entity, Camera* camera, int mouseX, int mouseY, float& distance)
 {
 	newDestination = XMFLOAT3(0, 0, 0);
-	uint16_t screenWidth = 1280;
-	uint16_t screenHeight = 720;
+	uint16_t screenWidth = SCREEN_WIDTH;
+	uint16_t screenHeight = SCREEN_HEIGHT;
 	auto viewMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetViewMatrixTransposed()));
 	auto projMatrix = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetProjectionMatrixTransposed()));
 

@@ -61,8 +61,8 @@ protected:
 	bool		titleBarStats;	// Show extra stats in title bar?
 
 	// Size of the window's client area
-	unsigned int width;
-	unsigned int height;
+	unsigned int width = SCREEN_WIDTH;
+	unsigned int height = SCREEN_HEIGHT;
 
 	unsigned int currentBackBufferIndex = 0;
 	unsigned int previousBackBufferIndex = 0;
