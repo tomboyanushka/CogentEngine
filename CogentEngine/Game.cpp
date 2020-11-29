@@ -56,6 +56,8 @@ Game::~Game()
 	outlinePipeState->Release();
 	pbrPipeState->Release();
 	transparencyPipeState->Release();
+	quadPipeState->Release();
+	blurPipeState->Release();
 }
 
 
@@ -293,6 +295,13 @@ void Game::CreateRootSigAndPipelineState()
 		blurDesc.PS.pShaderBytecode = blurPS->GetBufferPointer();
 		blurDesc.PS.BytecodeLength = blurPS->GetBufferSize();
 		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&blurPipeState));
+
+		// -- Quad pipe state --
+		blurDesc.VS.pShaderBytecode = quadVS->GetBufferPointer();
+		blurDesc.VS.BytecodeLength = quadVS->GetBufferSize();
+		blurDesc.PS.pShaderBytecode = quadPS->GetBufferPointer();
+		blurDesc.PS.BytecodeLength = quadPS->GetBufferSize();
+		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&quadPipeState));
 
 		// -- Outline (VS/PS) --- 
 		psoDesc.DepthStencilState.DepthEnable = true;
@@ -565,13 +574,25 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 
+		/// Drawing blur to the backbuffer
+		
+		// make bb render target
+		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+		// set render target
+		commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
+
+		// make blur texture pixel shader resource
 		TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-		// make bb render target
-		// set render target
-		// make blur texture pixel shader resource
 		// quad VS and PS
+		commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(blurCBV.heapIndex, currentBackBufferIndex));
+		commandList->SetGraphicsRootDescriptorTable(2, blurTexture.GetGPUHandle());
+		commandList->SetPipelineState(quadPipeState);
+		commandList->DrawInstanced(4, 1, 0, 0);
+
 		// bb to present
+
 	}
 
 	// Present
@@ -801,8 +822,8 @@ void Game::DrawBlur(Texture textureIn)
 	commandList->IASetIndexBuffer(&ibv);
 	BlurExternalData blurData = {};
 
-	blurData.pixelHeight = float(1.f / (float)height);
-	blurData.pixelWidth = float(1.f / (float)width);
+	blurData.pixelHeight = float(1.f / (float)SCREEN_HEIGHT);
+	blurData.pixelWidth = float(1.f / (float)SCREEN_WIDTH);
 	blurData.blurAmount = 5.0f;
 	blurData.focusPlaneZ = 5;
 	blurData.zFar = 100.0f;

@@ -100,6 +100,7 @@ private:
 	void CreateRootSigAndPipelineState();
 
 	ID3D12RootSignature* rootSignature;
+	ID3D12PipelineState* quadPipeState;
 	ID3D12PipelineState* toonShadingPipeState;
 	ID3D12PipelineState* outlinePipeState;
 	ID3D12PipelineState* pbrPipeState;
