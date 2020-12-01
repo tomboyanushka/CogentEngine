@@ -399,6 +399,15 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
+	if (GetAsyncKeyState(VK_TAB))
+	{
+		bBlurEnabled = true;
+	}
+	else
+	{
+		bBlurEnabled = false;
+	}
+
 	//if (selectedEntityIndex != -1)
 	//{
 	//	auto pos = entities[selectedEntityIndex]->GetPosition();
@@ -478,7 +487,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	//OutputDebugStringW(s.c_str());
 
 	ID3D12Resource* backBuffer = backBuffers[currentBackBufferIndex];
-	float color[] = { 0.0f, 0.2f, 0.3f, 1.0f };
+	//float color[] = { 0.0f, 0.2f, 0.3f, 1.0f };
 	{
 		D3D12_RESOURCE_BARRIER rb = {};
 		rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -495,7 +504,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Clear the RTV
 		commandList->ClearRenderTargetView(
 			rtvHandles[currentBackBufferIndex],
-			color,
+			BG_COLOR,
 			0, 0); // No scissor rectangles
 
 		// Clear the depth buffer, too
@@ -556,42 +565,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		}
 
 		// Post Process Setup===================================
-
-		// Transition back buffer to pixel shader resource 
-		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-		// Transition blurTexture to render target state
-		TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-		commandList->ClearRenderTargetView(
-			blurRTVHandle,
-			color,
-			0, 0); // No scissor rectangles
-
-		commandList->SetPipelineState(blurPipeState);
-
-		commandList->OMSetRenderTargets(1, &blurRTVHandle, true, nullptr);
-
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
-
-		/// Drawing blur to the backbuffer
-		
-		// make bb render target
-		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-		// set render target
-		commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
-
-		// make blur texture pixel shader resource
-		TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-		// quad VS and PS
-		commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(blurCBV.heapIndex, currentBackBufferIndex));
-		commandList->SetGraphicsRootDescriptorTable(2, blurTexture.GetGPUHandle());
-		commandList->SetPipelineState(quadPipeState);
-		commandList->DrawInstanced(4, 1, 0, 0);
-
-		// bb to present
 
 	}
 
@@ -809,6 +783,16 @@ void Game::LoadSponza()
 
 void Game::DrawBlur(Texture textureIn)
 {
+	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	commandList->ClearRenderTargetView(
+		blurRTVHandle,
+		BG_COLOR,
+		0, 0); // No scissor rectangles
+
+	commandList->SetPipelineState(blurPipeState);
+
+	commandList->OMSetRenderTargets(1, &blurRTVHandle, true, nullptr);
 	D3D12_INDEX_BUFFER_VIEW ibv;
 	ibv.Format = DXGI_FORMAT_R32_UINT;
 	ibv.BufferLocation = 0;
@@ -832,8 +816,17 @@ void Game::DrawBlur(Texture textureIn)
 	frameManager.CopyData(&blurData, sizeof(BlurExternalData), blurCBV, currentBackBufferIndex);
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(blurCBV.heapIndex, currentBackBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
-
 	commandList->DrawInstanced(4, 1, 0, 0);
+
+	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
+	TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList->SetGraphicsRootDescriptorTable(2, blurTexture.GetGPUHandle());
+	commandList->SetPipelineState(quadPipeState);
+	if (bBlurEnabled)
+	{
+		commandList->DrawInstanced(4, 1, 0, 0);
+	}
 }
 
 

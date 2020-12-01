@@ -182,6 +182,7 @@ private:
 	std::vector<TransparentEntity> depthSortedEntities;
 	int selectedEntityIndex = -1;
 	bool isSelected = false;
+	bool bBlurEnabled = false;
 
 	XMFLOAT3 newDestination;
 
