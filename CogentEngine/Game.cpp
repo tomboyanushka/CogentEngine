@@ -215,125 +215,115 @@ void Game::CreateRootSigAndPipelineState()
 			IID_PPV_ARGS(&rootSignature));
 	}
 
-	// Pipeline state
+	// Pipeline states
 	{
-		// Describe the pipeline state
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+		D3D12_RASTERIZER_DESC defaultRS = {};
+		defaultRS.CullMode = D3D12_CULL_MODE_BACK;
+		defaultRS.FillMode = D3D12_FILL_MODE_SOLID;
+		defaultRS.DepthClipEnable = true;
+		//psoDesc.RasterizerState = defaultRS;
 
-		// -- Input assembler related ---
-		psoDesc.InputLayout.NumElements = inputElementCount;
-		psoDesc.InputLayout.pInputElementDescs = inputElements;
-		psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		psoDesc.pRootSignature = rootSignature;
+		D3D12_DEPTH_STENCIL_DESC defaultDS = {};
+		defaultDS.DepthEnable = true;
+		defaultDS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+		defaultDS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		//psoDesc.DepthStencilState = defaultDS;
 
-		// -- Shaders (VS/PS) --- 
-		psoDesc.VS.pShaderBytecode = vertexShaderByteCode->GetBufferPointer();
-		psoDesc.VS.BytecodeLength = vertexShaderByteCode->GetBufferSize();
-		psoDesc.PS.pShaderBytecode = pixelShaderByteCode->GetBufferPointer();
-		psoDesc.PS.BytecodeLength = pixelShaderByteCode->GetBufferSize();
-
-		// -- Render targets ---
-		psoDesc.NumRenderTargets = 1;
-		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // TODO: Parameterize
-		psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT; // Parameterize
-		psoDesc.SampleDesc.Count = 1;
-		psoDesc.SampleDesc.Quality = 0;
-
-		// -- States ---
-		psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-		psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-		psoDesc.RasterizerState.DepthClipEnable = true;
-
-		psoDesc.DepthStencilState.DepthEnable = true;
-		psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-		psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-
-		psoDesc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
-		psoDesc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
-		psoDesc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-		psoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-		// -- Misc ---
-		psoDesc.SampleMask = 0xffffffff;
+		D3D12_BLEND_DESC defaultBS = {};
+		defaultBS.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+		defaultBS.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+		defaultBS.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		defaultBS.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
 		// -- Toon shading pipe state --
-		psoDesc.PS.pShaderBytecode = toonPS->GetBufferPointer();
-		psoDesc.PS.BytecodeLength = toonPS->GetBufferSize();
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&toonShadingPipeState));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC toonDesc = {};
+		toonDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, toonPS, defaultRS, defaultDS, defaultBS);
+		device->CreateGraphicsPipelineState(&toonDesc, IID_PPV_ARGS(&toonShadingPipeState));
 
 		// -- PBR pipe state --
-		psoDesc.PS.pShaderBytecode = pbrPS->GetBufferPointer();
-		psoDesc.PS.BytecodeLength = pbrPS->GetBufferSize();
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pbrPipeState));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC pbrDesc = {};
+		pbrDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, pbrPS, defaultRS, defaultDS, defaultBS);
+		device->CreateGraphicsPipelineState(&pbrDesc, IID_PPV_ARGS(&pbrPipeState));
 
 		// -- Transparency pipe state --
-		psoDesc.DepthStencilState.DepthEnable = true;
-		psoDesc.PS.pShaderBytecode = transparencyPS->GetBufferPointer();
-		psoDesc.PS.BytecodeLength = transparencyPS->GetBufferSize();
-		psoDesc.BlendState = CommonStates::AlphaBlend;
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&transparencyPipeState));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC transparencyDesc = {};
+		transparencyDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, transparencyPS, defaultRS, defaultDS, CommonStates::AlphaBlend);
+		device->CreateGraphicsPipelineState(&transparencyDesc, IID_PPV_ARGS(&transparencyPipeState));
 
 		// -- Blur (VS/PS) --- 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC blurDesc = {};
-		blurDesc.pRootSignature = rootSignature;
-		blurDesc.NumRenderTargets = 1;
-		blurDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // TODO: Parameterize
-		blurDesc.SampleDesc.Count = 1;
-		blurDesc.SampleDesc.Quality = 0;
-		blurDesc.InputLayout.pInputElementDescs = nullptr;
-		blurDesc.InputLayout.NumElements = 0;
-		blurDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-		blurDesc.DepthStencilState.DepthEnable = false;
-		blurDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		blurDesc.SampleMask = 0xffffffff;
-		blurDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		blurDesc.RasterizerState.DepthClipEnable = false;
-		blurDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		blurDesc.DepthStencilState.DepthEnable = false;
-		blurDesc.VS.pShaderBytecode = quadVS->GetBufferPointer();
-		blurDesc.VS.BytecodeLength = quadVS->GetBufferSize();
-		blurDesc.PS.pShaderBytecode = blurPS->GetBufferPointer();
-		blurDesc.PS.BytecodeLength = blurPS->GetBufferSize();
+		D3D12_RASTERIZER_DESC blurRS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		blurRS.DepthClipEnable = false;
+		D3D12_DEPTH_STENCIL_DESC blurDS = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		blurDS.DepthEnable = false;
+		D3D12_BLEND_DESC blurBlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		blurDesc = CreatePSODescriptor(0, nullptr, quadVS, blurPS, blurRS, blurDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
 		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&blurPipeState));
 
 		// -- Quad pipe state --
-		blurDesc.VS.pShaderBytecode = quadVS->GetBufferPointer();
-		blurDesc.VS.BytecodeLength = quadVS->GetBufferSize();
-		blurDesc.PS.pShaderBytecode = quadPS->GetBufferPointer();
-		blurDesc.PS.BytecodeLength = quadPS->GetBufferSize();
+		blurDesc = CreatePSODescriptor(0, nullptr, quadVS, blurPS, blurRS, blurDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
 		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&quadPipeState));
 
 		// -- Outline (VS/PS) --- 
-		psoDesc.DepthStencilState.DepthEnable = true;
-		psoDesc.VS.pShaderBytecode = outlineVS->GetBufferPointer();
-		psoDesc.VS.BytecodeLength = outlineVS->GetBufferSize();
-		psoDesc.PS.pShaderBytecode = outlinePS->GetBufferPointer();
-		psoDesc.PS.BytecodeLength = outlinePS->GetBufferSize();
-		psoDesc.BlendState = CommonStates::Opaque;
-
-		psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
-
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&outlinePipeState));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC outlineDesc = {};
+		D3D12_RASTERIZER_DESC outlineRS = {};
+		outlineRS.CullMode = D3D12_CULL_MODE_FRONT;
+		outlineRS.FillMode = D3D12_FILL_MODE_SOLID;
+		outlineRS.DepthClipEnable = true;
+		outlineDesc = CreatePSODescriptor(inputElementCount, inputElements, outlineVS, outlinePS, outlineRS, defaultDS);
+		device->CreateGraphicsPipelineState(&outlineDesc, IID_PPV_ARGS(&outlinePipeState));
 
 		// -- SKY (VS/PS) --- 
-		psoDesc.VS.pShaderBytecode = skyVS->GetBufferPointer();
-		psoDesc.VS.BytecodeLength = skyVS->GetBufferSize();
-		psoDesc.PS.pShaderBytecode = skyPS->GetBufferPointer();
-		psoDesc.PS.BytecodeLength = skyPS->GetBufferSize();
-
-		D3D12_RASTERIZER_DESC rs = {};
-		rs.CullMode = D3D12_CULL_MODE_FRONT;
-		rs.FillMode = D3D12_FILL_MODE_SOLID;
-		psoDesc.RasterizerState = rs;
-
-		D3D12_DEPTH_STENCIL_DESC ds = {};
-		ds.DepthEnable = true;
-		ds.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-		ds.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-		psoDesc.DepthStencilState = ds;
-
-		device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&skyPipeState));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC skyboxDesc = {};
+		D3D12_RASTERIZER_DESC skyboxRS = {};
+		skyboxRS.CullMode = D3D12_CULL_MODE_FRONT;
+		skyboxRS.FillMode = D3D12_FILL_MODE_SOLID;
+		D3D12_DEPTH_STENCIL_DESC skyboxDS = {};
+		skyboxDS.DepthEnable = true;
+		skyboxDS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		skyboxDS.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		skyboxDesc = CreatePSODescriptor(inputElementCount, inputElements, skyVS, skyPS, skyboxRS, skyboxDS);
+		device->CreateGraphicsPipelineState(&skyboxDesc, IID_PPV_ARGS(&skyPipeState));
 	}
+}
+
+D3D12_GRAPHICS_PIPELINE_STATE_DESC Game::CreatePSODescriptor(
+	const unsigned int inputElementCount,
+	D3D12_INPUT_ELEMENT_DESC inputElements[],
+	ID3DBlob* vs,
+	ID3DBlob* ps,
+	D3D12_RASTERIZER_DESC rs,
+	D3D12_DEPTH_STENCIL_DESC ds,
+	D3D12_BLEND_DESC bs)
+{
+	// Describe the pipeline state
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+	// -- Input assembler related ---
+	psoDesc.InputLayout.NumElements = inputElementCount;
+	psoDesc.InputLayout.pInputElementDescs = inputElements;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.pRootSignature = rootSignature;
+
+	// -- Shaders (VS/PS) --- 
+	psoDesc.VS.pShaderBytecode = vs->GetBufferPointer();
+	psoDesc.VS.BytecodeLength = vs->GetBufferSize();
+	psoDesc.PS.pShaderBytecode = ps->GetBufferPointer();
+	psoDesc.PS.BytecodeLength = ps->GetBufferSize();
+
+	// -- Render targets ---
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // TODO: Parameterize
+	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT; // Parameterize
+	psoDesc.SampleDesc.Count = 1;
+	psoDesc.SampleDesc.Quality = 0;
+
+	// -- States ---
+	psoDesc.RasterizerState = rs;
+	psoDesc.DepthStencilState = ds;
+	psoDesc.BlendState = bs;
+	// -- Misc ---
+	psoDesc.SampleMask = 0xffffffff;
+	return psoDesc;
 }
 
 void Game::DrawEntity(Entity* entity)

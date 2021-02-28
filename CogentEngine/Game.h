@@ -98,6 +98,15 @@ private:
 	void CreateMatrices();
 	void CreateMesh();
 	void CreateRootSigAndPipelineState();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC CreatePSODescriptor(
+		const unsigned int inputElementCount,
+		D3D12_INPUT_ELEMENT_DESC inputElements[],
+		ID3DBlob* vs,
+		ID3DBlob* ps,
+		D3D12_RASTERIZER_DESC rs,
+		D3D12_DEPTH_STENCIL_DESC ds,
+		D3D12_BLEND_DESC bs = CommonStates::Opaque
+	);
 
 	ID3D12RootSignature* rootSignature;
 	ID3D12PipelineState* quadPipeState;
