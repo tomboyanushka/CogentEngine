@@ -217,17 +217,16 @@ void Game::CreateRootSigAndPipelineState()
 
 	// Pipeline states
 	{
+		// States
 		D3D12_RASTERIZER_DESC defaultRS = {};
 		defaultRS.CullMode = D3D12_CULL_MODE_BACK;
 		defaultRS.FillMode = D3D12_FILL_MODE_SOLID;
 		defaultRS.DepthClipEnable = true;
-		//psoDesc.RasterizerState = defaultRS;
 
 		D3D12_DEPTH_STENCIL_DESC defaultDS = {};
 		defaultDS.DepthEnable = true;
 		defaultDS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 		defaultDS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-		//psoDesc.DepthStencilState = defaultDS;
 
 		D3D12_BLEND_DESC defaultBS = {};
 		defaultBS.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
