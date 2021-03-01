@@ -393,10 +393,9 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&refractionData, sizeof(RefractionExternalData), refractionCBV, currentBackBufferIndex);
 	
-	//commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
 	commandList->SetGraphicsRootDescriptorTable(3, normal.GetGPUHandle());
-	//commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
 }

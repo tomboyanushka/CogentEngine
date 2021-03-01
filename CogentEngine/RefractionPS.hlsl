@@ -20,7 +20,7 @@ struct VertexToPixel
 
 // TEXTURE STUFF
 Texture2D ScenePixels : register(t0);
-Texture2D NormalMap : register(t1);
+Texture2D NormalMap : register(t4);
 SamplerState BasicSampler : register(s0);
 SamplerState RefractSampler : register(s1);
 
