@@ -61,6 +61,7 @@ public:
 	void DrawMesh(Mesh* mesh);
 	void DrawEntity(Entity* entity);
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
+	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal);
 	void CreateMaterials();
 	void CreateTextures();
 	void CreateLights();
@@ -115,6 +116,7 @@ private:
 	ID3D12PipelineState* pbrPipeState;
 	ID3D12PipelineState* transparencyPipeState;
 	ID3D12PipelineState* blurPipeState;
+	ID3D12PipelineState* refractionPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	FrameManager frameManager;
@@ -123,6 +125,7 @@ private:
 	ConstantBufferView skyCBV;
 	ConstantBufferView blurCBV;
 	ConstantBufferView dofCBV;
+	ConstantBufferView refractionCBV;
 
 	ID3DBlob* vertexShaderByteCode;
 	ID3DBlob* pixelShaderByteCode;
@@ -137,10 +140,13 @@ private:
 	ID3DBlob* blurPS;
 	ID3DBlob* quadVS;
 	ID3DBlob* quadPS;
+	ID3DBlob* refractionVS;
+	ID3DBlob* refractionPS;
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
-	BlurExternalData blurData;
+	//RefractionExternalData refractionData;
+	//BlurExternalData blurData;
 
 	Mesh* sm_sphere;
 	Mesh* sm_skyCube;
@@ -184,6 +190,7 @@ private:
 	Entity* e_sponza;
 	Entity* te_sphere1;
 	Entity* te_sphere2;
+	Entity* ref_sphere;
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;

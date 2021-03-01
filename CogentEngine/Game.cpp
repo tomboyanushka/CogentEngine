@@ -44,6 +44,7 @@ Game::~Game()
 	//delete entities
 	delete e_plane;
 	delete e_sponza;
+	delete ref_sphere;
 	delete camera;
 
 	for (auto e : transparentEntities)
@@ -58,6 +59,7 @@ Game::~Game()
 	transparencyPipeState->Release();
 	quadPipeState->Release();
 	blurPipeState->Release();
+	refractionPipeState->Release();
 }
 
 
@@ -100,6 +102,8 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"Blur.cso", &blurPS);
 	D3DReadFileToBlob(L"QuadVS.cso", &quadVS);
 	D3DReadFileToBlob(L"QuadPS.cso", &quadPS);
+	D3DReadFileToBlob(L"RefractionVS.cso", &refractionVS);
+	D3DReadFileToBlob(L"RefractionPS.cso", &refractionPS);
 
 	unsigned int bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255);
@@ -109,6 +113,7 @@ void Game::LoadShaders()
 	transparencyCBV = frameManager.CreateConstantBufferView(sizeof(TransparencyExternalData));
 	skyCBV = frameManager.CreateConstantBufferView(sizeof(SkyboxExternalData));
 	blurCBV = frameManager.CreateConstantBufferView(sizeof(BlurExternalData));
+	refractionCBV = frameManager.CreateConstantBufferView(sizeof(RefractionExternalData));
 }
 
 void Game::CreateMatrices()
@@ -138,6 +143,7 @@ void Game::CreateMesh()
 	}
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
+	ref_sphere = frameManager.CreateEntity(sm_sphere, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -164,10 +170,10 @@ void Game::CreateRootSigAndPipelineState()
 		// pixel cbv
 		range[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 		// texture 1 cbv
-		range[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
+		range[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); // t0 - t3
 		// texture 2 cbv
 		// to simplify separating PBR and IBL textures
-		range[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 4);
+		range[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 4); // t4 - t6
 
 		// creating root parameters
 		CD3DX12_ROOT_PARAMETER rootParameters[4];
@@ -248,6 +254,11 @@ void Game::CreateRootSigAndPipelineState()
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC transparencyDesc = {};
 		transparencyDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, transparencyPS, defaultRS, defaultDS, CommonStates::AlphaBlend);
 		device->CreateGraphicsPipelineState(&transparencyDesc, IID_PPV_ARGS(&transparencyPipeState));
+
+		// -- Refraction pipe state --
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDesc = {};
+		refractionDesc = CreatePSODescriptor(inputElementCount, inputElements, refractionVS, refractionPS, defaultRS, defaultDS);
+		device->CreateGraphicsPipelineState(&refractionDesc, IID_PPV_ARGS(&refractionPipeState));
 
 		// -- Blur (VS/PS) --- 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC blurDesc = {};
@@ -366,6 +377,30 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	DrawMesh(entity->GetMesh());
 }
 
+void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal)
+{
+	commandList->SetPipelineState(refractionPipeState);
+	// vs data
+	VertexShaderExternalData vertexData = {};
+	vertexData.world = entity->GetWorldMatrix();
+	vertexData.view = camera->GetViewMatrixTransposed();
+	vertexData.proj = camera->GetProjectionMatrixTransposed();
+
+	// ps data
+	RefractionExternalData refractionData = {};
+	refractionData.view = camera->GetViewMatrixTransposed();
+	refractionData.cameraPosition = camera->GetPosition();
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
+	frameManager.CopyData(&refractionData, sizeof(RefractionExternalData), refractionCBV, currentBackBufferIndex);
+	
+	//commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(3, normal.GetGPUHandle());
+	//commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
+
+	DrawMesh(entity->GetMesh());
+}
+
 
 void Game::OnResize()
 {
@@ -419,6 +454,8 @@ void Game::Update(float deltaTime, float totalTime)
 
 	transparentEntities[1].t_Entity->SetPosition(XMFLOAT3(-3.0f, 3.0f, 10.0f));
 	transparentEntities[1].t_Entity->SetMaterial(&m_default);
+
+	ref_sphere->SetPosition(XMFLOAT3(-5.0f, 3.0f, 10.0f));
 
 	e_plane->SetScale(XMFLOAT3(0.7f, 0.7f, 0.7f));
 	e_plane->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
@@ -548,13 +585,16 @@ void Game::Draw(float deltaTime, float totalTime)
 			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
 		commandList->SetPipelineState(transparencyPipeState);
 
-		for (auto t : transparentEntities)
+		for (auto transparentEntity : transparentEntities)
 		{
-			DrawTransparentEntity(t.t_Entity, 0.05f);
+			DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 		}
+
+		DrawRefractionEntity(ref_sphere, backbufferTexture[currentBackBufferIndex], defaultNormal);
 
 		// Post Process Setup===================================
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
+
 
 	}
 
@@ -651,8 +691,6 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/default_metal.png",
 		"../../Assets/Textures/default_roughness.png",
 		commandQueue);
-
-
 }
 
 void Game::CreateTextures()
