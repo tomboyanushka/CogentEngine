@@ -145,8 +145,6 @@ private:
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
-	//RefractionExternalData refractionData;
-	//BlurExternalData blurData;
 
 	Mesh* sm_sphere;
 	Mesh* sm_skyCube;
@@ -164,9 +162,14 @@ private:
 	Texture brdfLookUpTexture;
 
 	Texture blurTexture;
+	Texture backbufferCopyTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
+
 	ID3D12Resource* blurResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE blurRTVHandle;
+
+	ID3D12Resource* backbufferCopyResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE backbufferCopyRTVHandle;
 	
 	// default
 	Texture defaultDiffuse;

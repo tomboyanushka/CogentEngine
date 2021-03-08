@@ -2,7 +2,8 @@
 cbuffer externalData : register(b0)
 {
     float4x4 view;
-    float3 CameraPosition;
+    float3 cameraPosition;
+    float pad0;
 };
 
 
@@ -50,7 +51,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     float refrAdjust = 0.1f; // Makes our refraction less extreme, since we're using UV coords not world units
 	
 	// Calculate the refraction amount in WORLD SPACE
-    float3 dirToPixel = normalize(input.worldPos - CameraPosition);
+    float3 dirToPixel = normalize(input.worldPos - cameraPosition);
     float3 refrDir = refract(dirToPixel, input.normal, indexOfRefr);
 
 	// Get the refraction XY direction in VIEW SPACE (relative to the camera)
@@ -59,5 +60,5 @@ float4 main(VertexToPixel input) : SV_TARGET
     refrUV.x *= -1.0f; // Flip the X to point away from the edge (Y already does this due to view space <-> texture space diff)
 	
 	// Sample the pixels of the render target and return
-    return ScenePixels.Sample(BasicSampler, input.screenUV + refrUV);
+    return ScenePixels.Sample(RefractSampler, input.screenUV + refrUV);
 }

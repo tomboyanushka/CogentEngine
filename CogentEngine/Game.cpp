@@ -191,11 +191,13 @@ void Game::CreateRootSigAndPipelineState()
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS);
 
-		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[1];
+		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[2];
 		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
 			D3D12_TEXTURE_ADDRESS_MODE_WRAP, 0, (UINT)2.0f);
+		StaticSamplers[1].Init(1, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+			D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0, (UINT)2.0f);
 
-		rootSignatureDesc.NumStaticSamplers = 1;
+		rootSignatureDesc.NumStaticSamplers = 2;
 		rootSignatureDesc.pStaticSamplers = StaticSamplers;
 
 		ID3DBlob* serializedRootSig = 0;
@@ -379,7 +381,34 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 
 void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal)
 {
+	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	TransitionResourceToState(backbufferCopyResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	commandList->ClearRenderTargetView(
+		backbufferCopyRTVHandle,
+		BG_COLOR,
+		0, 0);
+
+	D3D12_INDEX_BUFFER_VIEW ibv;
+	ibv.Format = DXGI_FORMAT_R32_UINT;
+	ibv.BufferLocation = 0;
+	ibv.SizeInBytes = 0;
+
+	D3D12_VERTEX_BUFFER_VIEW vbv;
+	vbv.BufferLocation = 0;
+	vbv.SizeInBytes = 0;
+	vbv.StrideInBytes = 0;
+	commandList->IASetVertexBuffers(0, 0, &vbv);
+	commandList->IASetIndexBuffer(&ibv);
+	commandList->SetPipelineState(quadPipeState);
+	commandList->OMSetRenderTargets(1, &backbufferCopyRTVHandle, true, nullptr);
+
+	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
+	commandList->DrawInstanced(4, 1, 0, 0);
+
 	commandList->SetPipelineState(refractionPipeState);
+	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	TransitionResourceToState(backbufferCopyResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
 	// vs data
 	VertexShaderExternalData vertexData = {};
 	vertexData.world = entity->GetWorldMatrix();
@@ -392,9 +421,9 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	refractionData.cameraPosition = camera->GetPosition();
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&refractionData, sizeof(RefractionExternalData), refractionCBV, currentBackBufferIndex);
-	
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(1, frameManager.GetGPUHandle(refractionCBV.heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, backbufferCopyTexture.GetGPUHandle());
 	commandList->SetGraphicsRootDescriptorTable(3, normal.GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
@@ -523,9 +552,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		commandList->ResourceBarrier(1, &rb);
 
-		// Background color (Cornflower Blue in this case) for clearing
-
-
 		// Clear the RTV
 		commandList->ClearRenderTargetView(
 			rtvHandles[currentBackBufferIndex],
@@ -539,8 +565,6 @@ void Game::Draw(float deltaTime, float totalTime)
 			1.0f,	// Depth = 1.0f
 			0,		// Not clearing stencil, but need a value
 			0, 0);	// No scissor rects
-
-
 	}
 
 	// Rendering here!
@@ -588,13 +612,12 @@ void Game::Draw(float deltaTime, float totalTime)
 		{
 			DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 		}
+		//TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 		DrawRefractionEntity(ref_sphere, backbufferTexture[currentBackBufferIndex], defaultNormal);
 
 		// Post Process Setup===================================
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
-
-
 	}
 
 	// Present
@@ -630,9 +653,7 @@ void Game::DrawMesh(Mesh* mesh)
 			commandList->DrawIndexedInstanced(m.NumIndices, 1, m.BaseIndex, m.BaseVertex, 0);
 			i++;
 		}
-
 	}
-
 	else
 	{
 		commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
@@ -733,6 +754,9 @@ void Game::CreateTextures()
 	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
 
+	backbufferCopyResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	backbufferCopyTexture = frameManager.CreateTextureFromResource(commandQueue, backbufferCopyResource);
+
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
 		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
@@ -740,6 +764,7 @@ void Game::CreateTextures()
 	
 	// make blur render target
 	blurRTVHandle = CreateRenderTarget(blurResource, 1);
+	backbufferCopyRTVHandle = CreateRenderTarget(backbufferCopyResource, 1);
 }
 
 void Game::CreateLights()

@@ -77,5 +77,5 @@ struct RefractionExternalData
 {
 	XMFLOAT4X4 view;
 	XMFLOAT3 cameraPosition;
+	float pad0;
 };
-
