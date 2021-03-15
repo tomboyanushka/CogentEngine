@@ -38,11 +38,13 @@ Game::~Game()
 	//delete meshes
 	delete sm_sphere;
 	delete sm_skyCube;
+	delete sm_cube;
 	delete sm_plane;
 	delete sm_sponza;
 
 	//delete entities
 	delete e_plane;
+	delete e_cube;
 	delete e_sponza;
 	delete ref_sphere;
 	delete camera;
@@ -61,7 +63,7 @@ Game::~Game()
 	blurPipeState->Release();
 	refractionPipeState->Release();
 
-	backbufferCopyResource->Release();
+	refractionResource->Release();
 	blurResource->Release();
 }
 
@@ -152,11 +154,13 @@ void Game::CreateMesh()
 	// Load meshes
 	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
+	sm_cube = mLoader.Load("../../Assets/Models/Capital.fbx", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 
 	LoadSponza();
 
 	// Create Transparent Entities
+	// To Do : Entity class should have enums for specific purposes
 	for (int i = 0; i < numEntities; ++i)
 	{
 		TransparentEntity entity;
@@ -166,6 +170,7 @@ void Game::CreateMesh()
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
 	ref_sphere = frameManager.CreateEntity(sm_sphere, &m_default);
+	e_cube = frameManager.CreateEntity(sm_cube, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -404,10 +409,10 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal)
 {
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	TransitionResourceToState(backbufferCopyResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	TransitionResourceToState(refractionResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	commandList->SetPipelineState(quadPipeState);
-	commandList->OMSetRenderTargets(1, &backbufferCopyRTVHandle, true, nullptr);
+	commandList->OMSetRenderTargets(1, &refractionRTVHandle, true, nullptr);
 	D3D12_INDEX_BUFFER_VIEW ibv;
 	ibv.Format = DXGI_FORMAT_R32_UINT;
 	ibv.BufferLocation = 0;
@@ -425,7 +430,7 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 
 	commandList->SetPipelineState(refractionPipeState);
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	TransitionResourceToState(backbufferCopyResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	TransitionResourceToState(refractionResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
 	// vs data
 	VertexShaderExternalData vertexData = {};
@@ -441,7 +446,7 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	frameManager.CopyData(&refractionData, sizeof(RefractionExternalData), refractionCBV, currentBackBufferIndex);
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(1, frameManager.GetGPUHandle(refractionCBV.heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, backbufferCopyTexture.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(2, refractionTexture.GetGPUHandle());
 	commandList->SetGraphicsRootDescriptorTable(3, normal.GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
@@ -507,6 +512,10 @@ void Game::Update(float deltaTime, float totalTime)
 	e_plane->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
 	e_plane->SetPosition(XMFLOAT3(-2.8f, 2.0f, 2.0f));
 	e_plane->SetMaterial(&m_plane);
+
+	e_cube->SetScale(XMFLOAT3(0.5f, 0.5f, 0.5f));
+	e_cube->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
+	e_cube->SetPosition(XMFLOAT3(-10.0f, 5.0f, 12.0f));
 
 	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	//e_sponza->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
@@ -631,9 +640,8 @@ void Game::Draw(float deltaTime, float totalTime)
 			DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 		}
 
-		DrawRefractionEntity(ref_sphere, backbufferCopyTexture, defaultNormal);
+		DrawRefractionEntity(e_cube, refractionTexture, defaultNormal);
 
-		// Post Process Setup===================================
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}
 
@@ -768,8 +776,8 @@ void Game::CreateResources()
 {
 	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
-	backbufferCopyResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-	backbufferCopyTexture = frameManager.CreateTextureFromResource(commandQueue, backbufferCopyResource);
+	refractionResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	refractionTexture = frameManager.CreateTextureFromResource(commandQueue, refractionResource);
 
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
@@ -777,7 +785,7 @@ void Game::CreateResources()
 	}
 
 	blurRTVHandle = CreateRenderTarget(blurResource, 1);
-	backbufferCopyRTVHandle = CreateRenderTarget(backbufferCopyResource, 1);
+	refractionRTVHandle = CreateRenderTarget(refractionResource, 1);
 }
 
 void Game::DrawSky()

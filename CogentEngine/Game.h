@@ -160,14 +160,14 @@ private:
 	Texture brdfLookUpTexture;
 
 	Texture blurTexture;
-	Texture backbufferCopyTexture;
+	Texture refractionTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
 	ID3D12Resource* blurResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE blurRTVHandle;
 
-	ID3D12Resource* backbufferCopyResource;
-	D3D12_CPU_DESCRIPTOR_HANDLE backbufferCopyRTVHandle;
+	ID3D12Resource* refractionResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE refractionRTVHandle;
 	
 	// default
 	Texture defaultDiffuse;
@@ -189,6 +189,7 @@ private:
 
 	Entity* e_plane;
 	Entity* e_sponza;
+	Entity* e_cube;
 	Entity* te_sphere1;
 	Entity* te_sphere2;
 	Entity* ref_sphere;
