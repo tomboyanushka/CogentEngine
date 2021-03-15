@@ -60,6 +60,9 @@ Game::~Game()
 	quadPipeState->Release();
 	blurPipeState->Release();
 	refractionPipeState->Release();
+
+	backbufferCopyResource->Release();
+	blurResource->Release();
 }
 
 
@@ -73,9 +76,28 @@ void Game::Init()
 
 	LoadShaders();
 	CreateMatrices();
+
+	// Create Default Textures
+	defaultDiffuse = frameManager.CreateTexture(
+		"../../Assets/Textures/default/diffuse.png",
+		commandQueue);
+
+	defaultNormal = frameManager.CreateTexture(
+		"../../Assets/Textures/default/normal.png",
+		commandQueue);
+
+	defaultRoughness = frameManager.CreateTexture(
+		"../../Assets/Textures/default/roughness.png",
+		commandQueue);
+
+	defaultMetal = frameManager.CreateTexture(
+		"../../Assets/Textures/default/metal.png",
+		commandQueue);
+	
 	CreateTextures();
 	CreateMaterials();
 	CreateMesh();
+	CreateResources();
 	CreateRootSigAndPipelineState();
 
 	//AI Initialization
@@ -383,11 +405,9 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 {
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	TransitionResourceToState(backbufferCopyResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	commandList->ClearRenderTargetView(
-		backbufferCopyRTVHandle,
-		BG_COLOR,
-		0, 0);
 
+	commandList->SetPipelineState(quadPipeState);
+	commandList->OMSetRenderTargets(1, &backbufferCopyRTVHandle, true, nullptr);
 	D3D12_INDEX_BUFFER_VIEW ibv;
 	ibv.Format = DXGI_FORMAT_R32_UINT;
 	ibv.BufferLocation = 0;
@@ -399,10 +419,8 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	vbv.StrideInBytes = 0;
 	commandList->IASetVertexBuffers(0, 0, &vbv);
 	commandList->IASetIndexBuffer(&ibv);
-	commandList->SetPipelineState(quadPipeState);
-	commandList->OMSetRenderTargets(1, &backbufferCopyRTVHandle, true, nullptr);
 
-	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(2, backbufferTexture[currentBackBufferIndex].GetGPUHandle());
 	commandList->DrawInstanced(4, 1, 0, 0);
 
 	commandList->SetPipelineState(refractionPipeState);
@@ -612,9 +630,8 @@ void Game::Draw(float deltaTime, float totalTime)
 		{
 			DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 		}
-		//TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-		DrawRefractionEntity(ref_sphere, backbufferTexture[currentBackBufferIndex], defaultNormal);
+		DrawRefractionEntity(ref_sphere, backbufferCopyTexture, defaultNormal);
 
 		// Post Process Setup===================================
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
@@ -623,7 +640,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	// Present
 	{
 		// Transition back to present
-		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
 		// Must occur BEFORE present
 		CloseExecuteAndResetCommandList();
@@ -735,36 +752,7 @@ void Game::CreateTextures()
 		commandQueue,
 		DDS);
 
-	defaultDiffuse = frameManager.CreateTexture(
-		"../../Assets/Textures/default/diffuse.png",
-		commandQueue);
 
-	defaultNormal = frameManager.CreateTexture(
-		"../../Assets/Textures/default/normal.png",
-		commandQueue);
-
-	defaultRoughness = frameManager.CreateTexture(
-		"../../Assets/Textures/default/roughness.png",
-		commandQueue);
-
-	defaultMetal = frameManager.CreateTexture(
-		"../../Assets/Textures/default/metal.png",
-		commandQueue);
-
-	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
-
-	backbufferCopyResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-	backbufferCopyTexture = frameManager.CreateTextureFromResource(commandQueue, backbufferCopyResource);
-
-	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
-	{
-		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
-	}
-	
-	// make blur render target
-	blurRTVHandle = CreateRenderTarget(blurResource, 1);
-	backbufferCopyRTVHandle = CreateRenderTarget(backbufferCopyResource, 1);
 }
 
 void Game::CreateLights()
@@ -774,6 +762,22 @@ void Game::CreateLights()
 
 	// POINT LIGHTS: color position range intensity padding  =======================
 	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
+}
+
+void Game::CreateResources()
+{
+	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
+	backbufferCopyResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	backbufferCopyTexture = frameManager.CreateTextureFromResource(commandQueue, backbufferCopyResource);
+
+	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
+	{
+		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
+	}
+
+	blurRTVHandle = CreateRenderTarget(blurResource, 1);
+	backbufferCopyRTVHandle = CreateRenderTarget(backbufferCopyResource, 1);
 }
 
 void Game::DrawSky()
@@ -793,7 +797,6 @@ void Game::DrawSky()
 
 void Game::LoadSponza()
 {
-	// Sponza
 	sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
 	sm_sponza = sponza.Mesh;
 	std::string sponzaDirectory = "../../Assets/Textures/sponza/";
@@ -836,10 +839,10 @@ void Game::DrawBlur(Texture textureIn)
 {
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	commandList->ClearRenderTargetView(
-		blurRTVHandle,
-		BG_COLOR,
-		0, 0); // No scissor rectangles
+	//commandList->ClearRenderTargetView(
+	//	blurRTVHandle,
+	//	BG_COLOR,
+	//	0, 0); // No scissor rectangles
 
 	commandList->SetPipelineState(blurPipeState);
 
@@ -1006,7 +1009,7 @@ bool Game::IsIntersecting(Entity* entity, Camera* camera, int mouseX, int mouseY
 	XMFLOAT4X4 P;
 	XMStoreFloat4x4(&P, projMatrix);
 
-	// Tranform ray to vi space of Mesh.
+	// Transform ray to vi space of Mesh.
 	XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
 	XMMATRIX toWorld = XMMatrixMultiply(invView, XMMatrixInverse(&XMMatrixDeterminant(toLocal), toLocal));
 

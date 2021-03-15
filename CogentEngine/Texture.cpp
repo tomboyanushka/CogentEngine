@@ -34,6 +34,7 @@ uint32 Texture::CreateTexture(ID3D12Device* device, const std::string& fileName,
 	this->textureCPUHandle = textureHeap->handleCPU(textureIndexTracker);
 	CreateShaderResourceView(device, resource.Get(), textureCPUHandle, isCubeMap);
 
+	textureIndex = textureIndexTracker;
 	return textureIndex;
 }
  
@@ -59,9 +60,10 @@ uint32 Texture::CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQue
 	srvDesc.Format = textureDesc.Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
-
+	this->resource = resourceIn;
 	this->textureCPUHandle = textureHeap->handleCPU(textureIndexTracker);
 	device->CreateShaderResourceView(resourceIn, &srvDesc, textureCPUHandle);
+	textureIndex = textureIndexTracker;
 	return textureIndexTracker;
 }
 

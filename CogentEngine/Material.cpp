@@ -15,12 +15,6 @@ uint32_t Material::Create(ID3D12Device* device,
 	uint32_t heapCount,
 	TextureType type)
 {
-
-	//diffuseTexture.CreateTexture(device, diffuseTextureFileName, commandQueue, textureHeap, type);
-	//normalTexture.CreateTexture(device, normalTextureFileName, commandQueue, textureHeap, type);
-	//metalnessTexture.CreateTexture(device, metalnessTextureFileName, commandQueue, textureHeap, type);
-	//roughnessTexture.CreateTexture(device, roughnessTextureFileName, commandQueue, textureHeap, type);
-
 	diffuseTexture = frameManager->CreateTexture(diffuseTextureFileName, commandQueue, type);
 	normalTexture = frameManager->CreateTexture(normalTextureFileName, commandQueue, type);
 	metalnessTexture = frameManager->CreateTexture(metalnessTextureFileName, commandQueue, type);

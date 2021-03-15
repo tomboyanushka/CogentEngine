@@ -65,15 +65,13 @@ public:
 	void CreateMaterials();
 	void CreateTextures();
 	void CreateLights();
+	void CreateResources();
 	void DrawSky();
 	void LoadSponza();
 
 	void DrawBlur(Texture texture);
 
 	void TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
-	//ID3D12Resource* blurTexture;
-	//ID3D12Resource* CreateResource();
 
 	// Compute Z distance from Camera
 	float ComputeZDistance(Camera* cam, XMFLOAT3 position);

@@ -86,7 +86,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	totalColor = dirPBR;
     clip(surfaceColor.a < 0.1f ? -1 : 1);
     
-	float gamma = 2.2f;
+	float gamma = 2.4f;
     totalColor = abs(pow(totalColor, 1.0 / gamma));
 	return float4(totalColor * surfaceColor.rgb, 1);
 }

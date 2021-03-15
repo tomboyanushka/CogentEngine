@@ -69,10 +69,7 @@ Material FrameManager::CreateMaterial(
 			FRAME_BUFFER_COUNT,
 			type);
 
-		for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
-		{
-			device->CopyDescriptorsSimple(4, gpuHeap.handleCPU(frameHeapCounter), material.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		}
+		device->CopyDescriptorsSimple(4, gpuHeap.handleCPU(frameHeapCounter), material.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
 		material.SetGPUHandle(handle);
@@ -94,10 +91,8 @@ Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12Co
 	else
 	{
 		texture.CreateTexture(device, textureFileName, commandQueue, &textureHeap, type);
-		for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
-		{
-			device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		}
+
+		device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
 		texture.SetGPUHandle(handle);
