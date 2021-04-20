@@ -105,7 +105,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)packages\Assimp_native_4.1.4.1.0\build\native\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -265,6 +265,20 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="RefractionPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="RefractionVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="SkyPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
@@ -320,7 +334,7 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\Assimp_native_4.1.4.1.0\build\native\Assimp_native_4.1.targets" Condition="Exists('..\packages\Assimp_native_4.1.4.1.0\build\native\Assimp_native_4.1.targets')" />
     <Import Project="..\packages\directxtk12_desktop_2015.2019.4.26.1\build\native\directxtk12_desktop_2015.targets" Condition="Exists('..\packages\directxtk12_desktop_2015.2019.4.26.1\build\native\directxtk12_desktop_2015.targets')" />
-    <Import Project="..\packages\directxmesh_desktop_win10.2019.8.23.1\build\native\directxmesh_desktop_win10.targets" Condition="Exists('..\packages\directxmesh_desktop_win10.2019.8.23.1\build\native\directxmesh_desktop_win10.targets')" />
+    <Import Project="..\packages\directxmesh_desktop_win10.2021.1.10.1\build\native\directxmesh_desktop_win10.targets" Condition="Exists('..\packages\directxmesh_desktop_win10.2021.1.10.1\build\native\directxmesh_desktop_win10.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -328,6 +342,6 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Assimp_native_4.1.4.1.0\build\native\Assimp_native_4.1.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Assimp_native_4.1.4.1.0\build\native\Assimp_native_4.1.targets'))" />
     <Error Condition="!Exists('..\packages\directxtk12_desktop_2015.2019.4.26.1\build\native\directxtk12_desktop_2015.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk12_desktop_2015.2019.4.26.1\build\native\directxtk12_desktop_2015.targets'))" />
-    <Error Condition="!Exists('..\packages\directxmesh_desktop_win10.2019.8.23.1\build\native\directxmesh_desktop_win10.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxmesh_desktop_win10.2019.8.23.1\build\native\directxmesh_desktop_win10.targets'))" />
+    <Error Condition="!Exists('..\packages\directxmesh_desktop_win10.2021.1.10.1\build\native\directxmesh_desktop_win10.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxmesh_desktop_win10.2021.1.10.1\build\native\directxmesh_desktop_win10.targets'))" />
   </Target>
 </Project>

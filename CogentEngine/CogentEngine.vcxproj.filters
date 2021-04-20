@@ -208,6 +208,12 @@
     <FxCompile Include="Blur.hlsl">
       <Filter>Header Files\Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="RefractionVS.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="RefractionPS.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Lighting.hlsli">

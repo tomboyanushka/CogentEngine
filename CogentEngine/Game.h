@@ -61,18 +61,17 @@ public:
 	void DrawMesh(Mesh* mesh);
 	void DrawEntity(Entity* entity);
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
+	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal);
 	void CreateMaterials();
 	void CreateTextures();
 	void CreateLights();
+	void CreateResources();
 	void DrawSky();
 	void LoadSponza();
 
 	void DrawBlur(Texture texture);
 
 	void TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
-	//ID3D12Resource* blurTexture;
-	//ID3D12Resource* CreateResource();
 
 	// Compute Z distance from Camera
 	float ComputeZDistance(Camera* cam, XMFLOAT3 position);
@@ -115,6 +114,7 @@ private:
 	ID3D12PipelineState* pbrPipeState;
 	ID3D12PipelineState* transparencyPipeState;
 	ID3D12PipelineState* blurPipeState;
+	ID3D12PipelineState* refractionPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	FrameManager frameManager;
@@ -123,6 +123,7 @@ private:
 	ConstantBufferView skyCBV;
 	ConstantBufferView blurCBV;
 	ConstantBufferView dofCBV;
+	ConstantBufferView refractionCBV;
 
 	ID3DBlob* vertexShaderByteCode;
 	ID3DBlob* pixelShaderByteCode;
@@ -137,10 +138,11 @@ private:
 	ID3DBlob* blurPS;
 	ID3DBlob* quadVS;
 	ID3DBlob* quadPS;
+	ID3DBlob* refractionVS;
+	ID3DBlob* refractionPS;
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
-	BlurExternalData blurData;
 
 	Mesh* sm_sphere;
 	Mesh* sm_skyCube;
@@ -158,9 +160,14 @@ private:
 	Texture brdfLookUpTexture;
 
 	Texture blurTexture;
+	Texture refractionTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
+
 	ID3D12Resource* blurResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE blurRTVHandle;
+
+	ID3D12Resource* refractionResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE refractionRTVHandle;
 	
 	// default
 	Texture defaultDiffuse;
@@ -182,8 +189,10 @@ private:
 
 	Entity* e_plane;
 	Entity* e_sponza;
+	Entity* e_cube;
 	Entity* te_sphere1;
 	Entity* te_sphere2;
+	Entity* ref_sphere;
 
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;

@@ -38,12 +38,15 @@ Game::~Game()
 	//delete meshes
 	delete sm_sphere;
 	delete sm_skyCube;
+	delete sm_cube;
 	delete sm_plane;
 	delete sm_sponza;
 
 	//delete entities
 	delete e_plane;
+	delete e_cube;
 	delete e_sponza;
+	delete ref_sphere;
 	delete camera;
 
 	for (auto e : transparentEntities)
@@ -58,6 +61,10 @@ Game::~Game()
 	transparencyPipeState->Release();
 	quadPipeState->Release();
 	blurPipeState->Release();
+	refractionPipeState->Release();
+
+	refractionResource->Release();
+	blurResource->Release();
 }
 
 
@@ -71,9 +78,28 @@ void Game::Init()
 
 	LoadShaders();
 	CreateMatrices();
+
+	// Create Default Textures
+	defaultDiffuse = frameManager.CreateTexture(
+		"../../Assets/Textures/default/diffuse.png",
+		commandQueue);
+
+	defaultNormal = frameManager.CreateTexture(
+		"../../Assets/Textures/default/normal.png",
+		commandQueue);
+
+	defaultRoughness = frameManager.CreateTexture(
+		"../../Assets/Textures/default/roughness.png",
+		commandQueue);
+
+	defaultMetal = frameManager.CreateTexture(
+		"../../Assets/Textures/default/metal.png",
+		commandQueue);
+	
 	CreateTextures();
 	CreateMaterials();
 	CreateMesh();
+	CreateResources();
 	CreateRootSigAndPipelineState();
 
 	//AI Initialization
@@ -100,6 +126,8 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"Blur.cso", &blurPS);
 	D3DReadFileToBlob(L"QuadVS.cso", &quadVS);
 	D3DReadFileToBlob(L"QuadPS.cso", &quadPS);
+	D3DReadFileToBlob(L"RefractionVS.cso", &refractionVS);
+	D3DReadFileToBlob(L"RefractionPS.cso", &refractionPS);
 
 	unsigned int bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255);
@@ -109,6 +137,7 @@ void Game::LoadShaders()
 	transparencyCBV = frameManager.CreateConstantBufferView(sizeof(TransparencyExternalData));
 	skyCBV = frameManager.CreateConstantBufferView(sizeof(SkyboxExternalData));
 	blurCBV = frameManager.CreateConstantBufferView(sizeof(BlurExternalData));
+	refractionCBV = frameManager.CreateConstantBufferView(sizeof(RefractionExternalData));
 }
 
 void Game::CreateMatrices()
@@ -125,11 +154,13 @@ void Game::CreateMesh()
 	// Load meshes
 	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
+	sm_cube = mLoader.Load("../../Assets/Models/Capital.fbx", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 
 	LoadSponza();
 
 	// Create Transparent Entities
+	// To Do : Entity class should have enums for specific purposes
 	for (int i = 0; i < numEntities; ++i)
 	{
 		TransparentEntity entity;
@@ -138,6 +169,8 @@ void Game::CreateMesh()
 	}
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
+	ref_sphere = frameManager.CreateEntity(sm_sphere, &m_default);
+	e_cube = frameManager.CreateEntity(sm_cube, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -164,10 +197,10 @@ void Game::CreateRootSigAndPipelineState()
 		// pixel cbv
 		range[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 		// texture 1 cbv
-		range[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
+		range[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); // t0 - t3
 		// texture 2 cbv
 		// to simplify separating PBR and IBL textures
-		range[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 4);
+		range[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 4); // t4 - t6
 
 		// creating root parameters
 		CD3DX12_ROOT_PARAMETER rootParameters[4];
@@ -185,11 +218,13 @@ void Game::CreateRootSigAndPipelineState()
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS);
 
-		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[1];
+		CD3DX12_STATIC_SAMPLER_DESC StaticSamplers[2];
 		StaticSamplers[0].Init(0, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
 			D3D12_TEXTURE_ADDRESS_MODE_WRAP, 0, (UINT)2.0f);
+		StaticSamplers[1].Init(1, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+			D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0, (UINT)2.0f);
 
-		rootSignatureDesc.NumStaticSamplers = 1;
+		rootSignatureDesc.NumStaticSamplers = 2;
 		rootSignatureDesc.pStaticSamplers = StaticSamplers;
 
 		ID3DBlob* serializedRootSig = 0;
@@ -248,6 +283,11 @@ void Game::CreateRootSigAndPipelineState()
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC transparencyDesc = {};
 		transparencyDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, transparencyPS, defaultRS, defaultDS, CommonStates::AlphaBlend);
 		device->CreateGraphicsPipelineState(&transparencyDesc, IID_PPV_ARGS(&transparencyPipeState));
+
+		// -- Refraction pipe state --
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDesc = {};
+		refractionDesc = CreatePSODescriptor(inputElementCount, inputElements, refractionVS, refractionPS, defaultRS, defaultDS);
+		device->CreateGraphicsPipelineState(&refractionDesc, IID_PPV_ARGS(&refractionPipeState));
 
 		// -- Blur (VS/PS) --- 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC blurDesc = {};
@@ -366,6 +406,52 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	DrawMesh(entity->GetMesh());
 }
 
+void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal)
+{
+	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	TransitionResourceToState(refractionResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	commandList->SetPipelineState(quadPipeState);
+	commandList->OMSetRenderTargets(1, &refractionRTVHandle, true, nullptr);
+	D3D12_INDEX_BUFFER_VIEW ibv;
+	ibv.Format = DXGI_FORMAT_R32_UINT;
+	ibv.BufferLocation = 0;
+	ibv.SizeInBytes = 0;
+
+	D3D12_VERTEX_BUFFER_VIEW vbv;
+	vbv.BufferLocation = 0;
+	vbv.SizeInBytes = 0;
+	vbv.StrideInBytes = 0;
+	commandList->IASetVertexBuffers(0, 0, &vbv);
+	commandList->IASetIndexBuffer(&ibv);
+
+	commandList->SetGraphicsRootDescriptorTable(2, backbufferTexture[currentBackBufferIndex].GetGPUHandle());
+	commandList->DrawInstanced(4, 1, 0, 0);
+
+	commandList->SetPipelineState(refractionPipeState);
+	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	TransitionResourceToState(refractionResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
+	// vs data
+	VertexShaderExternalData vertexData = {};
+	vertexData.world = entity->GetWorldMatrix();
+	vertexData.view = camera->GetViewMatrixTransposed();
+	vertexData.proj = camera->GetProjectionMatrixTransposed();
+
+	// ps data
+	RefractionExternalData refractionData = {};
+	refractionData.view = camera->GetViewMatrixTransposed();
+	refractionData.cameraPosition = camera->GetPosition();
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
+	frameManager.CopyData(&refractionData, sizeof(RefractionExternalData), refractionCBV, currentBackBufferIndex);
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(1, frameManager.GetGPUHandle(refractionCBV.heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(3, normal.GetGPUHandle());
+
+	DrawMesh(entity->GetMesh());
+}
+
 
 void Game::OnResize()
 {
@@ -420,10 +506,16 @@ void Game::Update(float deltaTime, float totalTime)
 	transparentEntities[1].t_Entity->SetPosition(XMFLOAT3(-3.0f, 3.0f, 10.0f));
 	transparentEntities[1].t_Entity->SetMaterial(&m_default);
 
+	ref_sphere->SetPosition(XMFLOAT3(-5.0f, 3.0f, 10.0f));
+
 	e_plane->SetScale(XMFLOAT3(0.7f, 0.7f, 0.7f));
 	e_plane->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
 	e_plane->SetPosition(XMFLOAT3(-2.8f, 2.0f, 2.0f));
 	e_plane->SetMaterial(&m_plane);
+
+	e_cube->SetScale(XMFLOAT3(0.5f, 0.5f, 0.5f));
+	e_cube->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
+	e_cube->SetPosition(XMFLOAT3(-10.0f, 5.0f, 12.0f));
 
 	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	//e_sponza->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
@@ -487,9 +579,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		commandList->ResourceBarrier(1, &rb);
 
-		// Background color (Cornflower Blue in this case) for clearing
-
-
 		// Clear the RTV
 		commandList->ClearRenderTargetView(
 			rtvHandles[currentBackBufferIndex],
@@ -503,8 +592,6 @@ void Game::Draw(float deltaTime, float totalTime)
 			1.0f,	// Depth = 1.0f
 			0,		// Not clearing stencil, but need a value
 			0, 0);	// No scissor rects
-
-
 	}
 
 	// Rendering here!
@@ -548,20 +635,20 @@ void Game::Draw(float deltaTime, float totalTime)
 			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
 		commandList->SetPipelineState(transparencyPipeState);
 
-		for (auto t : transparentEntities)
+		for (auto transparentEntity : transparentEntities)
 		{
-			DrawTransparentEntity(t.t_Entity, 0.05f);
+			DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 		}
 
-		// Post Process Setup===================================
-		DrawBlur(backbufferTexture[currentBackBufferIndex]);
+		DrawRefractionEntity(e_cube, refractionTexture, defaultNormal);
 
+		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}
 
 	// Present
 	{
 		// Transition back to present
-		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PRESENT);
+		TransitionResourceToState(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
 		// Must occur BEFORE present
 		CloseExecuteAndResetCommandList();
@@ -591,9 +678,7 @@ void Game::DrawMesh(Mesh* mesh)
 			commandList->DrawIndexedInstanced(m.NumIndices, 1, m.BaseIndex, m.BaseVertex, 0);
 			i++;
 		}
-
 	}
-
 	else
 	{
 		commandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
@@ -651,8 +736,6 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/default_metal.png",
 		"../../Assets/Textures/default_roughness.png",
 		commandQueue);
-
-
 }
 
 void Game::CreateTextures()
@@ -677,32 +760,7 @@ void Game::CreateTextures()
 		commandQueue,
 		DDS);
 
-	defaultDiffuse = frameManager.CreateTexture(
-		"../../Assets/Textures/default/diffuse.png",
-		commandQueue);
 
-	defaultNormal = frameManager.CreateTexture(
-		"../../Assets/Textures/default/normal.png",
-		commandQueue);
-
-	defaultRoughness = frameManager.CreateTexture(
-		"../../Assets/Textures/default/roughness.png",
-		commandQueue);
-
-	defaultMetal = frameManager.CreateTexture(
-		"../../Assets/Textures/default/metal.png",
-		commandQueue);
-
-	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
-
-	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
-	{
-		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
-	}
-	
-	// make blur render target
-	blurRTVHandle = CreateRenderTarget(blurResource, 1);
 }
 
 void Game::CreateLights()
@@ -712,6 +770,22 @@ void Game::CreateLights()
 
 	// POINT LIGHTS: color position range intensity padding  =======================
 	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
+}
+
+void Game::CreateResources()
+{
+	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
+	refractionResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	refractionTexture = frameManager.CreateTextureFromResource(commandQueue, refractionResource);
+
+	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
+	{
+		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
+	}
+
+	blurRTVHandle = CreateRenderTarget(blurResource, 1);
+	refractionRTVHandle = CreateRenderTarget(refractionResource, 1);
 }
 
 void Game::DrawSky()
@@ -731,7 +805,6 @@ void Game::DrawSky()
 
 void Game::LoadSponza()
 {
-	// Sponza
 	sponza = mLoader.LoadComplexModel("../../Assets/Models/Sponza.fbx", device.Get(), commandList);
 	sm_sponza = sponza.Mesh;
 	std::string sponzaDirectory = "../../Assets/Textures/sponza/";
@@ -774,10 +847,10 @@ void Game::DrawBlur(Texture textureIn)
 {
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	commandList->ClearRenderTargetView(
-		blurRTVHandle,
-		BG_COLOR,
-		0, 0); // No scissor rectangles
+	//commandList->ClearRenderTargetView(
+	//	blurRTVHandle,
+	//	BG_COLOR,
+	//	0, 0); // No scissor rectangles
 
 	commandList->SetPipelineState(blurPipeState);
 
@@ -944,7 +1017,7 @@ bool Game::IsIntersecting(Entity* entity, Camera* camera, int mouseX, int mouseY
 	XMFLOAT4X4 P;
 	XMStoreFloat4x4(&P, projMatrix);
 
-	// Tranform ray to vi space of Mesh.
+	// Transform ray to vi space of Mesh.
 	XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
 	XMMATRIX toWorld = XMMatrixMultiply(invView, XMMatrixInverse(&XMMatrixDeterminant(toLocal), toLocal));
 
