@@ -90,10 +90,12 @@ protected:
 
 	ID3D12Resource* backBuffers[FRAME_BUFFER_COUNT];
 	ID3D12Resource* depthStencilBuffer;
+	ID3D12Resource* customDepthStencilBuffer;
 
 	// Pointers into the RTV desc heap
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[FRAME_BUFFER_COUNT]; 
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE customdsvHandle;
 
 	// Fence for CPU/GPU sync
 	ID3D12Fence* fences[FRAME_BUFFER_COUNT];
@@ -113,6 +115,8 @@ protected:
 	void CreateConsoleWindow(int bufferLines, int bufferColumns, int windowLines, int windowColumns);
 
 	void EnableShaderBasedValidation();
+
+	void CreateCustomDepthStencil();
 
 private:
 	// Timing related data
@@ -134,5 +138,6 @@ private:
 	void UpdateTitleBarStats();	// Puts debug info in the title bar
 
 	unsigned int SizeOfDXGIFormat(DXGI_FORMAT format);
+
 };
 

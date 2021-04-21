@@ -258,6 +258,16 @@ void Game::CreateRootSigAndPipelineState()
 		defaultRS.FillMode = D3D12_FILL_MODE_SOLID;
 		defaultRS.DepthClipEnable = true;
 
+		D3D12_RASTERIZER_DESC frontFaceRS = {};
+		frontFaceRS.CullMode = D3D12_CULL_MODE_FRONT;
+		frontFaceRS.FillMode = D3D12_FILL_MODE_SOLID;
+		frontFaceRS.DepthClipEnable = true;
+
+		D3D12_DEPTH_STENCIL_DESC frontFaceDS = {};
+		frontFaceDS.DepthEnable = true;
+		frontFaceDS.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+		frontFaceDS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+
 		D3D12_DEPTH_STENCIL_DESC defaultDS = {};
 		defaultDS.DepthEnable = true;
 		defaultDS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
@@ -283,6 +293,11 @@ void Game::CreateRootSigAndPipelineState()
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC transparencyDesc = {};
 		transparencyDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, transparencyPS, defaultRS, defaultDS, CommonStates::AlphaBlend);
 		device->CreateGraphicsPipelineState(&transparencyDesc, IID_PPV_ARGS(&transparencyPipeState));
+
+		// -- Refraction depth pipe state for double bounce refraction
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDepthDesc = {};
+		refractionDepthDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, nullptr, frontFaceRS, frontFaceDS);
+		device->CreateGraphicsPipelineState(&refractionDepthDesc, IID_PPV_ARGS(&refractionDepthPipeState));
 
 		// -- Refraction pipe state --
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDesc = {};
@@ -346,8 +361,11 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC Game::CreatePSODescriptor(
 	// -- Shaders (VS/PS) --- 
 	psoDesc.VS.pShaderBytecode = vs->GetBufferPointer();
 	psoDesc.VS.BytecodeLength = vs->GetBufferSize();
-	psoDesc.PS.pShaderBytecode = ps->GetBufferPointer();
-	psoDesc.PS.BytecodeLength = ps->GetBufferSize();
+	if (ps)
+	{
+		psoDesc.PS.pShaderBytecode = ps->GetBufferPointer();
+		psoDesc.PS.BytecodeLength = ps->GetBufferSize();
+	}
 
 	// -- Render targets ---
 	psoDesc.NumRenderTargets = 1;

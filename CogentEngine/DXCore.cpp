@@ -72,6 +72,7 @@ DXCore::~DXCore()
 	}
 
 	depthStencilBuffer->Release();
+	customDepthStencilBuffer->Release();
 	commandQueue->Release();
 	commandList->Release();
 	rtvHeap->Release();
@@ -257,7 +258,7 @@ HRESULT DXCore::InitDirectX()
 
 	// Heap for DSV
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.NumDescriptors = 2;
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
 
@@ -315,6 +316,8 @@ HRESULT DXCore::InitDirectX()
 
 	// Transition the depth buffer
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(depthStencilBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+
+	CreateCustomDepthStencil();
 
 	// Lastly, set up a viewport so we render into
 	// to correct portion of the window
@@ -536,20 +539,6 @@ HRESULT DXCore::CreateVertexBuffer(unsigned int dataStride, unsigned int dataCou
 
 D3D12_CPU_DESCRIPTOR_HANDLE DXCore::CreateRenderTarget(ID3D12Resource* resource, UINT numDesc)
 {
-	//// Create descriptor heaps for RTVs
-	//D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	//rtvHeapDesc.NumDescriptors = numDesc;
-	//rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	//device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
-
-
-
-	//// Heap for DSV
-	//D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-	//dsvHeapDesc.NumDescriptors = 1;
-	//dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	//device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
-
 	// Grab the size (differs per GPU)
 	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
@@ -967,5 +956,53 @@ LRESULT DXCore::ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	// Let Windows handle any messages we're not touching
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
+}
+
+void DXCore::CreateCustomDepthStencil()
+{
+	// Create depth stencil buffer
+	D3D12_RESOURCE_DESC customDepthBufferDesc = {};
+	customDepthBufferDesc.Alignment = 0;
+	customDepthBufferDesc.DepthOrArraySize = 1;
+	customDepthBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	customDepthBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	customDepthBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	customDepthBufferDesc.Height = height;
+	customDepthBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	customDepthBufferDesc.MipLevels = 1;
+	customDepthBufferDesc.SampleDesc.Count = 1;
+	customDepthBufferDesc.SampleDesc.Quality = 0;
+	customDepthBufferDesc.Width = width;
+
+	D3D12_CLEAR_VALUE clear = {};
+	clear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	clear.DepthStencil.Depth = 1.0f;
+	clear.DepthStencil.Stencil = 0;
+
+	D3D12_HEAP_PROPERTIES props = {};
+	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	props.CreationNodeMask = 1;
+	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	props.Type = D3D12_HEAP_TYPE_DEFAULT;
+	props.VisibleNodeMask = 1;
+
+	device->CreateCommittedResource(
+		&props,
+		D3D12_HEAP_FLAG_NONE,
+		&customDepthBufferDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		&clear,
+		IID_PPV_ARGS(&customDepthStencilBuffer));
+
+	// Create the view to the depth stencil buffer
+	customdsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+
+	device->CreateDepthStencilView(
+		customDepthStencilBuffer,
+		0,	// Default view (first mip)
+		customdsvHandle);
+
+	// Transition the depth buffer
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(customDepthStencilBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
 }
 

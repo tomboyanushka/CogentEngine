@@ -115,6 +115,7 @@ private:
 	ID3D12PipelineState* transparencyPipeState;
 	ID3D12PipelineState* blurPipeState;
 	ID3D12PipelineState* refractionPipeState;
+	ID3D12PipelineState* refractionDepthPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	FrameManager frameManager;
