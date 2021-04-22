@@ -994,8 +994,11 @@ void DXCore::CreateCustomDepthStencil()
 		&clear,
 		IID_PPV_ARGS(&customDepthStencilBuffer));
 
+	auto dsvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
 	// Create the view to the depth stencil buffer
 	customdsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+	customdsvHandle.ptr += dsvDescriptorSize * 1;
 
 	device->CreateDepthStencilView(
 		customDepthStencilBuffer,

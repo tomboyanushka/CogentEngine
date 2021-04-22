@@ -44,7 +44,8 @@ Game::~Game()
 
 	//delete entities
 	delete e_plane;
-	delete e_cube;
+	delete e_capitol;
+	delete e_capitol2;
 	delete e_sponza;
 	delete ref_sphere;
 	delete camera;
@@ -170,7 +171,8 @@ void Game::CreateMesh()
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
 	ref_sphere = frameManager.CreateEntity(sm_sphere, &m_default);
-	e_cube = frameManager.CreateEntity(sm_cube, &m_default);
+	e_capitol = frameManager.CreateEntity(sm_cube, &m_default);
+	e_capitol2 = frameManager.CreateEntity(sm_cube, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -263,11 +265,6 @@ void Game::CreateRootSigAndPipelineState()
 		frontFaceRS.FillMode = D3D12_FILL_MODE_SOLID;
 		frontFaceRS.DepthClipEnable = true;
 
-		D3D12_DEPTH_STENCIL_DESC frontFaceDS = {};
-		frontFaceDS.DepthEnable = true;
-		frontFaceDS.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
-		frontFaceDS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-
 		D3D12_DEPTH_STENCIL_DESC defaultDS = {};
 		defaultDS.DepthEnable = true;
 		defaultDS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
@@ -296,7 +293,7 @@ void Game::CreateRootSigAndPipelineState()
 
 		// -- Refraction depth pipe state for double bounce refraction
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDepthDesc = {};
-		refractionDepthDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, nullptr, frontFaceRS, frontFaceDS);
+		refractionDepthDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, nullptr, frontFaceRS, defaultDS);
 		device->CreateGraphicsPipelineState(&refractionDepthDesc, IID_PPV_ARGS(&refractionDepthPipeState));
 
 		// -- Refraction pipe state --
@@ -424,6 +421,24 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	DrawMesh(entity->GetMesh());
 }
 
+void Game::DoubleBounceRefractionSetup(Entity* entity)
+{
+	commandList->SetPipelineState(refractionDepthPipeState);
+	commandList->OMSetRenderTargets(0, nullptr, true, &customdsvHandle);
+
+	// vs data
+	VertexShaderExternalData vertexData = {};
+	vertexData.world = entity->GetWorldMatrix();
+	vertexData.view = camera->GetViewMatrixTransposed();
+	vertexData.proj = camera->GetProjectionMatrixTransposed();
+
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
+
+	DrawMesh(entity->GetMesh());
+}
+
 void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal)
 {
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
@@ -531,9 +546,13 @@ void Game::Update(float deltaTime, float totalTime)
 	e_plane->SetPosition(XMFLOAT3(-2.8f, 2.0f, 2.0f));
 	e_plane->SetMaterial(&m_plane);
 
-	e_cube->SetScale(XMFLOAT3(0.5f, 0.5f, 0.5f));
-	e_cube->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
-	e_cube->SetPosition(XMFLOAT3(-10.0f, 5.0f, 12.0f));
+	e_capitol->SetScale(XMFLOAT3(0.5f, 0.5f, 0.5f));
+	e_capitol->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
+	e_capitol->SetPosition(XMFLOAT3(-10.0f, 5.0f, 8.0f));
+
+	e_capitol2->SetScale(XMFLOAT3(0.5f, 0.5f, 0.5f));
+	e_capitol2->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
+	e_capitol2->SetPosition(XMFLOAT3(-10.0f, 5.0f, 12.0f));
 
 	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	//e_sponza->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
@@ -603,9 +622,21 @@ void Game::Draw(float deltaTime, float totalTime)
 			BG_COLOR,
 			0, 0); // No scissor rectangles
 
+		commandList->ClearRenderTargetView(
+			blurRTVHandle,
+			BG_COLOR,
+			0, 0); // No scissor rectangles
+
 		// Clear the depth buffer, too
 		commandList->ClearDepthStencilView(
 			dsvHandle,
+			D3D12_CLEAR_FLAG_DEPTH,
+			1.0f,	// Depth = 1.0f
+			0,		// Not clearing stencil, but need a value
+			0, 0);	// No scissor rects
+
+		commandList->ClearDepthStencilView(
+			customdsvHandle,
 			D3D12_CLEAR_FLAG_DEPTH,
 			1.0f,	// Depth = 1.0f
 			0,		// Not clearing stencil, but need a value
@@ -657,8 +688,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		{
 			DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 		}
+		DoubleBounceRefractionSetup(e_capitol2);
 
-		DrawRefractionEntity(e_cube, refractionTexture, defaultNormal);
+		DrawRefractionEntity(e_capitol, refractionTexture, defaultNormal);
 
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}

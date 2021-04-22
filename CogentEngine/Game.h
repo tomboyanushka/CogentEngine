@@ -61,6 +61,7 @@ public:
 	void DrawMesh(Mesh* mesh);
 	void DrawEntity(Entity* entity);
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
+	void DoubleBounceRefractionSetup(Entity* entity);
 	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal);
 	void CreateMaterials();
 	void CreateTextures();
@@ -190,7 +191,8 @@ private:
 
 	Entity* e_plane;
 	Entity* e_sponza;
-	Entity* e_cube;
+	Entity* e_capitol;
+	Entity* e_capitol2;
 	Entity* te_sphere1;
 	Entity* te_sphere2;
 	Entity* ref_sphere;
