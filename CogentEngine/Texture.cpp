@@ -39,13 +39,20 @@ uint32 Texture::CreateTexture(ID3D12Device* device, const std::string& fileName,
 }
  
 
-uint32 Texture::CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resourceIn, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight)
+uint32 Texture::CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resourceIn, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, bool isDepthTexture)
 {
 	textureIndexTracker++;
 	// Describe and create a Texture2D.
 	D3D12_RESOURCE_DESC textureDesc = {};
 	textureDesc.MipLevels = 1;
-	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	if (isDepthTexture)
+	{
+		textureDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	}
+	else
+	{
+		textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	}
 	textureDesc.Width = textureWidth;
 	textureDesc.Height = textureHeight;
 	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;

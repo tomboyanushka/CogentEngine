@@ -62,7 +62,7 @@ public:
 	void DrawEntity(Entity* entity);
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
 	void DoubleBounceRefractionSetup(Entity* entity);
-	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal);
+	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth);
 	void CreateMaterials();
 	void CreateTextures();
 	void CreateLights();
@@ -160,9 +160,9 @@ private:
 	Texture skyIrradiance;
 	Texture skyPrefilter;
 	Texture brdfLookUpTexture;
-
 	Texture blurTexture;
 	Texture refractionTexture;
+	Texture customDepthTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
 	ID3D12Resource* blurResource;

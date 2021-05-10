@@ -62,6 +62,7 @@ Game::~Game()
 	transparencyPipeState->Release();
 	quadPipeState->Release();
 	blurPipeState->Release();
+	refractionDepthPipeState->Release();
 	refractionPipeState->Release();
 
 	refractionResource->Release();
@@ -437,9 +438,13 @@ void Game::DoubleBounceRefractionSetup(Entity* entity)
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
+
+	// Transition the depth buffer to pixel shader resource to pass this info to the refraction shader
+	
+	TransitionResourceToState(customDepthStencilBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
-void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal)
+void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth)
 {
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	TransitionResourceToState(refractionResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -475,14 +480,20 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	RefractionExternalData refractionData = {};
 	refractionData.view = camera->GetViewMatrixTransposed();
 	refractionData.cameraPosition = camera->GetPosition();
+
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&refractionData, sizeof(RefractionExternalData), refractionCBV, currentBackBufferIndex);
+
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(1, frameManager.GetGPUHandle(refractionCBV.heapIndex, currentBackBufferIndex));
-	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
-	commandList->SetGraphicsRootDescriptorTable(3, normal.GetGPUHandle());
+
+	D3D12_CPU_DESCRIPTOR_HANDLE refractionTextureHandles[3] = { textureIn.GetCPUHandle(), normal.GetCPUHandle(), customDepth.GetCPUHandle() };
+	auto refgpuhandle = frameManager.Allocate(refractionTextureHandles, 3);
+	commandList->SetGraphicsRootDescriptorTable(2, refgpuhandle);
 
 	DrawMesh(entity->GetMesh());
+
+	TransitionResourceToState(customDepthStencilBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 }
 
 
@@ -622,11 +633,6 @@ void Game::Draw(float deltaTime, float totalTime)
 			BG_COLOR,
 			0, 0); // No scissor rectangles
 
-		commandList->ClearRenderTargetView(
-			blurRTVHandle,
-			BG_COLOR,
-			0, 0); // No scissor rectangles
-
 		// Clear the depth buffer, too
 		commandList->ClearDepthStencilView(
 			dsvHandle,
@@ -641,6 +647,8 @@ void Game::Draw(float deltaTime, float totalTime)
 			1.0f,	// Depth = 1.0f
 			0,		// Not clearing stencil, but need a value
 			0, 0);	// No scissor rects
+
+		frameManager.ResetFrameCounter();
 	}
 
 	// Rendering here!
@@ -690,7 +698,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		}
 		DoubleBounceRefractionSetup(e_capitol2);
 
-		DrawRefractionEntity(e_capitol, refractionTexture, defaultNormal);
+		DrawRefractionEntity(e_capitol, refractionTexture, defaultNormal, customDepthTexture);
 
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}
@@ -828,6 +836,7 @@ void Game::CreateResources()
 	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
 	refractionResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 	refractionTexture = frameManager.CreateTextureFromResource(commandQueue, refractionResource);
+	customDepthTexture = frameManager.CreateTextureFromResource(commandQueue, customDepthStencilBuffer, true);
 
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{

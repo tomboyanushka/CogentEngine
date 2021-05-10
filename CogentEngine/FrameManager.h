@@ -33,21 +33,22 @@ public:
 
 	Texture CreateTextureFromResource(
 		ID3D12CommandQueue* commandQueue,
-		ID3D12Resource* resource);
+		ID3D12Resource* resource,
+		bool isDepthTexture = false);
 
 	Entity* CreateEntity(Mesh* mesh, Material* material);
 	Entity* CreateTransparentEntity(Mesh* mesh, Material* material);
 	void CopyData(void* data, uint32_t size, ConstantBufferView cbv, uint32_t backBufferIndex);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(uint32_t index, uint32_t backBufferIndex);
+	D3D12_GPU_DESCRIPTOR_HANDLE Allocate(D3D12_CPU_DESCRIPTOR_HANDLE* handles, int num);
+	void ResetFrameCounter();
 	DescriptorHeap& GetGPUDescriptorHeap(uint32_t backBufferIndex);
 	DescriptorHeap GetGPUDescriptorHeap();
 
-
-	
-
 private:
 	uint32_t frameHeapCounter = 0;
+	uint32_t baseFreameHeapCounter = 500;
 	uint32_t frameIndex;
 	uint32_t constantBufferIndex = 0;
 	uint32_t cbOffset = 0;

@@ -11,19 +11,20 @@ cbuffer externalData : register(b0)
 // - Should match the output of our corresponding vertex shader
 struct VertexToPixel
 {
-    float4 position : SV_POSITION;
-    float2 uv : TEXCOORD;
-    float3 normal : NORMAL;
-    float3 tangent : TANGENT;
-    float3 worldPos : POSITION;
-    noperspective float2 screenUV : TEXCOORD1;
+    float4 position                 : SV_POSITION;
+    float2 uv                       : TEXCOORD;
+    float3 normal                   : NORMAL;
+    float3 tangent                  : TANGENT;
+    float3 worldPos                 : POSITION;
+    noperspective float2 screenUV   : TEXCOORD1;
 };
 
 // TEXTURE STUFF
-Texture2D ScenePixels : register(t0);
-Texture2D NormalMap : register(t4);
-SamplerState BasicSampler : register(s0);
-SamplerState RefractSampler : register(s1);
+Texture2D ScenePixels           : register(t0);
+Texture2D NormalMap             : register(t1);
+Texture2D CustomDepthTexture    : register(t2);
+SamplerState BasicSampler       : register(s0);
+SamplerState RefractSampler     : register(s1);
 
 
 // Entry point for this pixel shader

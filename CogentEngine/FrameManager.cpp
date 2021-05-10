@@ -144,20 +144,39 @@ ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D
 	return resource.Get();
 }
 
-Texture FrameManager::CreateTextureFromResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource)
+Texture FrameManager::CreateTextureFromResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, bool isDepthTexture)
 {
 	Texture texture;
-	texture.CreateTextureFromResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT);
-	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
-	{
-		device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	}
+	texture.CreateTextureFromResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT, isDepthTexture);
+	device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
 	texture.SetGPUHandle(handle);
 	frameHeapCounter++;
 
 	return texture;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE FrameManager::Allocate(D3D12_CPU_DESCRIPTOR_HANDLE* handles, int num)
+{
+	auto currentFrameHeapCounter = frameHeapCounter;
+	
+	for (int i = 0; i < num; ++i)
+	{
+		device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), handles[i], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		frameHeapCounter++;
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(currentFrameHeapCounter);
+	return handle;
+}
+
+void FrameManager::ResetFrameCounter()
+{
+	if (frameHeapCounter > 2048)
+	{
+		frameHeapCounter = baseFreameHeapCounter;
+	}
 }
 
 Entity* FrameManager::CreateEntity(Mesh* mesh, Material* material)
