@@ -46,6 +46,8 @@ public:
 	DescriptorHeap& GetGPUDescriptorHeap(uint32_t backBufferIndex);
 	DescriptorHeap GetGPUDescriptorHeap();
 
+	void MarkBaseFrameHeapCounter() { baseFreameHeapCounter = frameHeapCounter; }
+
 private:
 	uint32_t frameHeapCounter = 0;
 	uint32_t baseFreameHeapCounter = 500;
