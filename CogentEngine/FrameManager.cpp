@@ -103,12 +103,8 @@ Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12Co
 	return texture;
 }
 
-ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags)
+ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName)
 {
-	// ComPtr<Resource> resource;
-	// Create Resource
-	// Push to vector
-	// return resource.Get();
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 	// Describe and create a Texture2D.
 	D3D12_RESOURCE_DESC textureDesc = {};
@@ -123,6 +119,7 @@ ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D
 	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
 	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0, 1, 0, flags);
+	auto clearVal = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_R8G8B8A8_UNORM, 1.f, 0.f);
 
 	// Describe and create a SRV for the texture.
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -136,8 +133,9 @@ ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D
 		D3D12_HEAP_FLAG_NONE,
 		&desc,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		nullptr,
+		&clearVal,
 		IID_PPV_ARGS(resource.GetAddressOf()));
+	resource->SetName(resourceName);
 
 	resources.push_back(resource);
 

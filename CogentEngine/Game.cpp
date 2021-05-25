@@ -131,6 +131,7 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"QuadPS.cso", &quadPS);
 	D3DReadFileToBlob(L"RefractionVS.cso", &refractionVS);
 	D3DReadFileToBlob(L"RefractionPS.cso", &refractionPS);
+	D3DReadFileToBlob(L"NormalsTexture.cso", &normalsPS);
 
 	unsigned int bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255);
@@ -173,8 +174,8 @@ void Game::CreateMesh()
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
 	ref_sphere = frameManager.CreateEntity(sm_sphere, &m_default);
-	e_capitol = frameManager.CreateEntity(sm_cube, &m_default);
-	e_capitol2 = frameManager.CreateEntity(sm_cube, &m_default);
+	e_capitol = frameManager.CreateEntity(sm_sphere, &m_default);
+	e_capitol2 = frameManager.CreateEntity(sm_sphere, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -206,7 +207,7 @@ void Game::CreateRootSigAndPipelineState()
 		// to simplify separating PBR and IBL textures
 		range[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 4); // t4 - t6
 		// texture 3 cbv
-		range[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7); // t7
+		range[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 7); // t7 - t8
 
 		// creating root parameters
 		CD3DX12_ROOT_PARAMETER rootParameters[5];
@@ -299,7 +300,8 @@ void Game::CreateRootSigAndPipelineState()
 
 		// -- Refraction depth pipe state for double bounce refraction
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDepthDesc = {};
-		refractionDepthDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, nullptr, frontFaceRS, defaultDS);
+		
+		refractionDepthDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, normalsPS, frontFaceRS, defaultDS);
 		device->CreateGraphicsPipelineState(&refractionDepthDesc, IID_PPV_ARGS(&refractionDepthPipeState));
 
 		// -- Refraction pipe state --
@@ -313,13 +315,17 @@ void Game::CreateRootSigAndPipelineState()
 		blurRS.DepthClipEnable = false;
 		D3D12_DEPTH_STENCIL_DESC blurDS = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		blurDS.DepthEnable = false;
-		D3D12_BLEND_DESC blurBlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		blurDesc = CreatePSODescriptor(0, nullptr, quadVS, blurPS, blurRS, blurDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
 		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&blurPipeState));
 
 		// -- Quad pipe state --
-		blurDesc = CreatePSODescriptor(0, nullptr, quadVS, quadPS, defaultRS, defaultDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
-		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&quadPipeState));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC quadDesc = {};
+		D3D12_RASTERIZER_DESC quadRS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		quadRS.DepthClipEnable = false;
+		D3D12_DEPTH_STENCIL_DESC quadDS = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		quadDS.DepthEnable = false;
+		quadDesc = CreatePSODescriptor(0, nullptr, quadVS, quadPS, quadRS, quadDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
+		device->CreateGraphicsPipelineState(&quadDesc, IID_PPV_ARGS(&quadPipeState));
 
 		// -- Outline (VS/PS) --- 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC outlineDesc = {};
@@ -429,8 +435,9 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 
 void Game::DoubleBounceRefractionSetup(Entity* entity)
 {
+	//TransitionResourceToState(backfaceNormalResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	commandList->SetPipelineState(refractionDepthPipeState);
-	commandList->OMSetRenderTargets(0, nullptr, true, &customdsvHandle);
+	commandList->OMSetRenderTargets(1, &backfaceNormalHandle, true, &customdsvHandle);
 
 	// vs data
 	VertexShaderExternalData vertexData = {};
@@ -474,6 +481,7 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	commandList->SetPipelineState(refractionPipeState);
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	TransitionResourceToState(textureIn.GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	TransitionResourceToState(backfaceNormalResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
 	// vs data
@@ -503,6 +511,7 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	DrawMesh(entity->GetMesh());
 
 	TransitionResourceToState(customDepthStencilBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	TransitionResourceToState(backfaceNormalResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
 
@@ -637,6 +646,11 @@ void Game::Draw(float deltaTime, float totalTime)
 		commandList->ResourceBarrier(1, &rb);
 
 		// Clear the RTV
+		commandList->ClearRenderTargetView(
+			backfaceNormalHandle,
+			BG_COLOR,
+			0, 0); // No scissor rectangles
+
 		commandList->ClearRenderTargetView(
 			rtvHandles[currentBackBufferIndex],
 			BG_COLOR,
@@ -841,11 +855,13 @@ void Game::CreateLights()
 
 void Game::CreateResources()
 {
-	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"BlurResource");
 	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
-	refractionResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	refractionResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"RefractionResource");
 	refractionTexture = frameManager.CreateTextureFromResource(commandQueue, refractionResource);
 	customDepthTexture = frameManager.CreateTextureFromResource(commandQueue, customDepthStencilBuffer, true);
+	backfaceNormalResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"BackfaceNormalResource");
+	backfaceNormalTexture = frameManager.CreateTextureFromResource(commandQueue, backfaceNormalResource);
 
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
@@ -854,6 +870,7 @@ void Game::CreateResources()
 
 	blurRTVHandle = CreateRenderTarget(blurResource, 1);
 	refractionRTVHandle = CreateRenderTarget(refractionResource, 1);
+	backfaceNormalHandle = CreateRenderTarget(backfaceNormalResource, 1);
 }
 
 void Game::DrawSky()

@@ -21,11 +21,12 @@ struct VertexToPixel
 };
 
 // TEXTURE STUFF
-Texture2D ScenePixels           : register(t0);
-Texture2D NormalMap             : register(t4);
-Texture2D CustomDepthTexture    : register(t7);
-SamplerState BasicSampler       : register(s0);
-SamplerState RefractSampler     : register(s1);
+Texture2D ScenePixels               : register(t0);
+Texture2D NormalMap                 : register(t4);
+Texture2D CustomDepthTexture        : register(t7);
+Texture2D BackfaceNormalsTexture    : register(t8);
+SamplerState BasicSampler           : register(s0);
+SamplerState RefractSampler         : register(s1);
 
 
 // Entry point for this pixel shader
@@ -38,7 +39,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	// Sample and unpack normal
     float3 normalFromTexture = NormalMap.Sample(BasicSampler, input.uv).xyz * 2 - 1;
     
-    float backFaceDepth = CustomDepthTexture.Sample(BasicSampler, input.uv).r;
+    float backFaceDepth = CustomDepthTexture.Sample(BasicSampler, input.screenUV).r;
     float frontFaceDepth = input.depth;
 
 	// Create the TBN matrix which allows us to go from TANGENT space to WORLD space
@@ -82,14 +83,18 @@ float4 main(VertexToPixel input) : SV_TARGET
 
     float3 p2 = input.worldPos + (depthBetween * refRay);
     float2 p2UV = mul(float4(p2, 0.0f), view).xy;
+    
+    float3 backfaceNormals = BackfaceNormalsTexture.Sample(BasicSampler, p2UV).rgb;
+    
+    float3 doubleBounceRefRay = refract(refRay, backfaceNormals, indexOfRefr);
 
 	// Get the refraction XY direction in VIEW SPACE (relative to the camera)
 	// We use this as a UV offset when sampling the texture
-    float2 refrUV = mul(float4(refRay, 0.0f), view).xy * refrAdjust;
+    float2 refrUV = mul(float4(doubleBounceRefRay, 0.0f), view).xy;// * refrAdjust;
     refrUV.x *= -1.0f; // Flip the X to point away from the edge (Y already does this due to view space <-> texture space diff)
 
 
-    float3 output = ScenePixels.Sample(RefractSampler, input.screenUV + p2UV).rgb;
+    float3 output = ScenePixels.Sample(RefractSampler, input.screenUV + refrUV).rgb;
 	// Sample the pixels of the render target and return
     return float4(output, 1.f);
 }

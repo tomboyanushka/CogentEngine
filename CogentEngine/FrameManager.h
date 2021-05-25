@@ -29,7 +29,7 @@ public:
 		TextureType type = WIC);
 
 	ID3D12Resource* CreateResource(
-		ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags);
+		ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName);
 
 	Texture CreateTextureFromResource(
 		ID3D12CommandQueue* commandQueue,

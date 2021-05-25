@@ -142,6 +142,7 @@ private:
 	ID3DBlob* quadPS;
 	ID3DBlob* refractionVS;
 	ID3DBlob* refractionPS;
+	ID3DBlob* normalsPS;
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
@@ -163,6 +164,7 @@ private:
 	Texture blurTexture;
 	Texture refractionTexture;
 	Texture customDepthTexture;
+	Texture backfaceNormalTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
 	ID3D12Resource* blurResource;
@@ -170,6 +172,9 @@ private:
 
 	ID3D12Resource* refractionResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE refractionRTVHandle;
+
+	ID3D12Resource* backfaceNormalResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE backfaceNormalHandle;
 	
 	// default
 	Texture defaultDiffuse;
