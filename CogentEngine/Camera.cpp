@@ -1,8 +1,11 @@
 #include "Camera.h"
 #include "Windows.h"
+#include "Constants.h"
 
 Camera::Camera(float x, float y, float z)
 {
+	zNear = 0.1f;
+	zFar = 100.f;
 	//creating a camera at a certain position
 	position = XMFLOAT3(x, y, z);
 	startPosition = XMFLOAT3(x, y, z);
@@ -67,6 +70,21 @@ XMFLOAT4X4 Camera::GetViewMatrixTransposed()
 XMFLOAT4X4 Camera::GetProjectionMatrixTransposed()
 {
 	return projMatrix;
+}
+
+DirectX::XMFLOAT4X4 Camera::GetProjectionMatrixInverseTransposed()
+{
+	// TODO: store projection matrix without transposing and calculate it only once.
+	float aspectRatio = float(SCREEN_WIDTH) / float(SCREEN_HEIGHT);
+	XMMATRIX P = XMMatrixPerspectiveFovLH(
+		0.25f * XM_PI,
+		aspectRatio,
+		zNear, //nearZ
+		zFar); //farZ
+	P = XMMatrixInverse(nullptr, P);
+	XMFLOAT4X4 pInv;
+	XMStoreFloat4x4(&pInv, XMMatrixTranspose(P));
+	return pInv;
 }
 
 void Camera::Update(float dt)
@@ -140,8 +158,8 @@ void Camera::UpdateProjectionMatrix(float aspectRatio)
 	XMMATRIX P = XMMatrixPerspectiveFovLH(
 		0.25f * XM_PI,
 		aspectRatio,
-		0.1f, //nearZ
-		100); //farZ
+		zNear, //nearZ
+		zFar); //farZ
 
 	XMStoreFloat4x4(&projMatrix, XMMatrixTranspose(P));
 

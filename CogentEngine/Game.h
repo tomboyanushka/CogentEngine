@@ -62,7 +62,7 @@ public:
 	void DrawEntity(Entity* entity);
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
 	void DoubleBounceRefractionSetup(Entity* entity);
-	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth);
+	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth, bool doubleBounce);
 	void CreateMaterials();
 	void CreateTextures();
 	void CreateLights();
@@ -110,6 +110,7 @@ private:
 
 	ID3D12RootSignature* rootSignature;
 	ID3D12PipelineState* quadPipeState;
+	ID3D12PipelineState* quadDepthPipeState;
 	ID3D12PipelineState* toonShadingPipeState;
 	ID3D12PipelineState* outlinePipeState;
 	ID3D12PipelineState* pbrPipeState;
@@ -164,6 +165,8 @@ private:
 	Texture blurTexture;
 	Texture refractionTexture;
 	Texture customDepthTexture;
+	Texture depthTextureCopy;
+	Texture mainDepthTexture;
 	Texture backfaceNormalTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
@@ -175,6 +178,9 @@ private:
 
 	ID3D12Resource* backfaceNormalResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE backfaceNormalHandle;
+
+	ID3D12Resource* depthTextureCopyResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE depthTextureRTVHandle;
 	
 	// default
 	Texture defaultDiffuse;

@@ -278,7 +278,7 @@ HRESULT DXCore::InitDirectX()
 	depthBufferDesc.DepthOrArraySize = 1;
 	depthBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	depthBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-	depthBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthBufferDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	depthBufferDesc.Height = height;
 	depthBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	depthBufferDesc.MipLevels = 1;
@@ -287,7 +287,7 @@ HRESULT DXCore::InitDirectX()
 	depthBufferDesc.Width = width;
 
 	D3D12_CLEAR_VALUE clear = {};
-	clear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	clear.Format = DXGI_FORMAT_D32_FLOAT;
 	clear.DepthStencil.Depth = 1.0f;
 	clear.DepthStencil.Stencil = 0;
 
@@ -537,7 +537,7 @@ HRESULT DXCore::CreateVertexBuffer(unsigned int dataStride, unsigned int dataCou
 	return S_OK;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE DXCore::CreateRenderTarget(ID3D12Resource* resource, UINT numDesc)
+D3D12_CPU_DESCRIPTOR_HANDLE DXCore::CreateRenderTarget(ID3D12Resource* resource, UINT numDesc, DXGI_FORMAT format)
 {
 	// Grab the size (differs per GPU)
 	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -546,7 +546,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE DXCore::CreateRenderTarget(ID3D12Resource* resource,
 	rtvHandle.ptr += rtvDescriptorSize * rtvIndex;
 
 	D3D12_RENDER_TARGET_VIEW_DESC desc = {};
-	desc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.Format = format;
 	desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 	desc.Texture2D.MipSlice = 0;
 	desc.Texture2D.PlaneSlice = 0;
@@ -966,7 +966,7 @@ void DXCore::CreateCustomDepthStencil()
 	customDepthBufferDesc.DepthOrArraySize = 1;
 	customDepthBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	customDepthBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-	customDepthBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	customDepthBufferDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	customDepthBufferDesc.Height = height;
 	customDepthBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	customDepthBufferDesc.MipLevels = 1;
@@ -975,7 +975,7 @@ void DXCore::CreateCustomDepthStencil()
 	customDepthBufferDesc.Width = width;
 
 	D3D12_CLEAR_VALUE clear = {};
-	clear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	clear.Format = DXGI_FORMAT_D32_FLOAT;
 	clear.DepthStencil.Depth = 1.0f;
 	clear.DepthStencil.Stencil = 0;
 

@@ -29,12 +29,13 @@ public:
 		TextureType type = WIC);
 
 	ID3D12Resource* CreateResource(
-		ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName);
+		ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	Texture CreateTextureFromResource(
 		ID3D12CommandQueue* commandQueue,
 		ID3D12Resource* resource,
-		bool isDepthTexture = false);
+		bool isDepthTexture = false,
+		DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	Entity* CreateEntity(Mesh* mesh, Material* material);
 	Entity* CreateTransparentEntity(Mesh* mesh, Material* material);
