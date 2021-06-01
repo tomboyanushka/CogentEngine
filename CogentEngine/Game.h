@@ -165,8 +165,6 @@ private:
 	Texture blurTexture;
 	Texture refractionTexture;
 	Texture customDepthTexture;
-	Texture depthTextureCopy;
-	Texture mainDepthTexture;
 	Texture backfaceNormalTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
@@ -178,9 +176,6 @@ private:
 
 	ID3D12Resource* backfaceNormalResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE backfaceNormalHandle;
-
-	ID3D12Resource* depthTextureCopyResource;
-	D3D12_CPU_DESCRIPTOR_HANDLE depthTextureRTVHandle;
 	
 	// default
 	Texture defaultDiffuse;

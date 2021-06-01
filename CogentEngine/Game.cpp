@@ -300,7 +300,8 @@ void Game::CreateRootSigAndPipelineState()
 
 		// -- Refraction depth pipe state for double bounce refraction
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDepthDesc = {};
-		
+		refractionDepthDesc.RTVFormats[0] = DXGI_FORMAT_R32_FLOAT;
+		refractionDepthDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 		refractionDepthDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, normalsPS, frontFaceRS, defaultDS);
 		device->CreateGraphicsPipelineState(&refractionDepthDesc, IID_PPV_ARGS(&refractionDepthPipeState));
 
@@ -326,8 +327,6 @@ void Game::CreateRootSigAndPipelineState()
 		quadDS.DepthEnable = false;
 		quadDesc = CreatePSODescriptor(0, nullptr, quadVS, quadPS, quadRS, quadDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
 		device->CreateGraphicsPipelineState(&quadDesc, IID_PPV_ARGS(&quadPipeState));
-		quadDesc.RTVFormats[0] = DXGI_FORMAT_R32_FLOAT;
- 		device->CreateGraphicsPipelineState(&quadDesc, IID_PPV_ARGS(&quadDepthPipeState));
 
 		// -- Outline (VS/PS) --- 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC outlineDesc = {};
@@ -437,7 +436,6 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 
 void Game::DoubleBounceRefractionSetup(Entity* entity)
 {
-	//TransitionResourceToState(backfaceNormalResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	commandList->SetPipelineState(refractionDepthPipeState);
 	commandList->OMSetRenderTargets(1, &backfaceNormalHandle, true, &customdsvHandle);
 
@@ -452,27 +450,6 @@ void Game::DoubleBounceRefractionSetup(Entity* entity)
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
-
-	TransitionResourceToState(depthStencilBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList->SetPipelineState(quadDepthPipeState);
-	commandList->OMSetRenderTargets(1, &depthTextureRTVHandle, true, nullptr);
-
-	commandList->SetGraphicsRootDescriptorTable(2, mainDepthTexture.GetGPUHandle());
-
-	D3D12_INDEX_BUFFER_VIEW ibv;
-	ibv.Format = DXGI_FORMAT_R32_UINT;
-	ibv.BufferLocation = 0;
-	ibv.SizeInBytes = 0;
-
-	D3D12_VERTEX_BUFFER_VIEW vbv;
-	vbv.BufferLocation = 0;
-	vbv.SizeInBytes = 0;
-	vbv.StrideInBytes = 0;
-	commandList->IASetVertexBuffers(0, 0, &vbv);
-	commandList->IASetIndexBuffer(&ibv);
-
-	commandList->DrawInstanced(4, 1, 0, 0);
-	TransitionResourceToState(depthStencilBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 }
 
 //TODO: DrawQuad()
@@ -901,11 +878,6 @@ void Game::CreateResources()
 	backfaceNormalResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"BackfaceNormalResource");
 	backfaceNormalTexture = frameManager.CreateTextureFromResource(commandQueue, backfaceNormalResource);
 
-	depthTextureCopyResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"DepthtextureResource", DXGI_FORMAT_R32_FLOAT);
-	depthTextureCopy = frameManager.CreateTextureFromResource(commandQueue, depthTextureCopyResource, isDepthTexture, DXGI_FORMAT_R32_FLOAT);
-
-	mainDepthTexture = frameManager.CreateTextureFromResource(commandQueue, depthStencilBuffer, isDepthTexture, DXGI_FORMAT_R32_FLOAT);
-
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
 		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
@@ -914,7 +886,6 @@ void Game::CreateResources()
 	blurRTVHandle = CreateRenderTarget(blurResource, 1);
 	refractionRTVHandle = CreateRenderTarget(refractionResource, 1);
 	backfaceNormalHandle = CreateRenderTarget(backfaceNormalResource, 1);
-	depthTextureRTVHandle = CreateRenderTarget(depthTextureCopyResource, 1, DXGI_FORMAT_R32_FLOAT);
 }
 
 void Game::DrawSky()

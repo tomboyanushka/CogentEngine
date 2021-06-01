@@ -30,8 +30,6 @@ Texture2D ScenePixels : register(t0);
 Texture2D NormalMap : register(t4);
 Texture2D CustomDepthTexture : register(t7);
 Texture2D BackfaceNormalsTexture : register(t8);
-Texture2D DepthTexture : register(t9);
-
 SamplerState BasicSampler : register(s0);
 SamplerState RefractSampler : register(s1);
 
@@ -59,39 +57,6 @@ float4 refraction(float3 incident, float3 normal, float ni_nt, float ni_nt_sqr)
     return (cosSqr <= 0.0 ?
 		float4(normalize(reflect(incident, normal)), -1.0) :
 		float4(normalize(ni_nt * incident + (ni_nt * IdotN - sqrt(cosSqr)) * normal), 1.0));
-}
-
-void IndexEnvironmentMap(float3 t2, float3 p2Tilde, out float oldDist, out float3 tempT2) 
-{
-    float local1X = nearZ * farZ;
-    
-    float local1Y = farZ - nearZ;
-    
-    float local1W = farZ;
-    
-    float3 tmpT2 = t2 / -t2.z;
-	// Compute the texture locations of ctrPlusT2 and refractToNear.
-    float index, minDist = 1000.0, deltaDist = 1000.0;
-    for (index = 0.0; index < 2.0; index += 1.0)
-    {
-        float texel = DepthTexture.Sample(BasicSampler, ConvertToScreenSpace(p2Tilde + tmpT2 * index)).x;
-        float distA = -(local1X / (texel * local1Y - local1W)) + p2Tilde.z;
-        if (abs(distA - index) < deltaDist)
-        {
-            deltaDist = abs(distA - index);
-            minDist = index;
-        }
-    }
-		
-    float distOld = minDist;
-    for (float index1 = 0.0; index1 < 10.0; index1 += 1.0)
-    {
-        float texel1 = DepthTexture.Sample( BasicSampler, ConvertToScreenSpace(p2Tilde + distOld * tmpT2)).x;
-		distOld = -(local1X / (texel1 * local1Y - local1W)) + p2Tilde.z;
-    }
-    
-    oldDist = distOld;
-    tempT2 = tmpT2;
 }
 
 // Entry point for this pixel shader
@@ -128,46 +93,36 @@ float4 main(VertexToPixel input) : SV_TARGET
     // Finding the angles to apply Snell's law to get the transmitted vector
     float angleOfIncidence = acos(dot(input.normal, ogRay)) / (length(input.normal) * length(ogRay));
     angleOfIncidence = degrees(angleOfIncidence);
-    
+
     float angleOfTransmission = acos(dot(-input.normal, ogRay)) / (length(input.normal) * length(ogRay));
     angleOfTransmission = degrees(angleOfTransmission);
-    
-    // nI * sin(angle(i)) = nT * sin(angle(t))
-    // where ni and nt are the indices of refraction for the incident and transmission media
-    float indexOfTransmission = (indexOfRefr * sin(angleOfIncidence)) / sin(angleOfTransmission);
-    
+ 
     // Calculate the distance between point of refraction and point it will hit on the backface
     // by getting a difference in depth from the two depth textures
     // dv = distance between the front and back face, read from z buffer texture
     // dn = distance along normal
     // d = weight distance
-    float dn = 1; //length(input.normal);
-    //float dv = distance(backFaceDepth, frontFaceDepth);
+    float dn = length(input.normal);
     float dv = distance(VSPositionFromDepth(input.uv, input.depth), VSPositionFromDepth(input.uv, backFaceDepth));
     float angle = (angleOfTransmission / angleOfIncidence);
     float depthBetween = (angle * dv) + ((1 - angle) * dn);
-    float3 p2 = refRay * dv + input.worldPos;
-    //float3 p2 = input.worldPos + (depthBetween * refRay);
-    float2 p2UV = mul(float4(p2, 0.0f), view).xy * refrAdjust;
+    float3 p2 = input.worldPos + (depthBetween * refRay);
+    float2 p2UV = mul(float4(p2, 0.0f), view).xy;
     
     float3 backfaceNormals = BackfaceNormalsTexture.Sample(BasicSampler, p2UV).rgb;
     
     float3 doubleBounceRefRay = refraction(refRay, backfaceNormals, indexOfRefr, indexOfRefr * indexOfRefr); // T2
 
-    float distOld = 0.f;
-    float3 tempT2 = 0.f.xxx;
-    //IndexEnvironmentMap(doubleBounceRefRay, p2, distOld, tempT2);
 	// Get the refraction XY direction in VIEW SPACE (relative to the camera)
 	// We use this as a UV offset when sampling the texture
     float2 refrUV;
     if (doubleBounce)
     {
-        //refrUV = mul(float4(doubleBounceRefRay + distOld * tempT2, 0.0f), view).xy; // * refrAdjust;
-        refrUV = ConvertToScreenSpace(doubleBounceRefRay + distOld * tempT2) * refrAdjust;
+        refrUV = ConvertToScreenSpace(doubleBounceRefRay) * refrAdjust;
     }
     else
     {
-        refrUV = mul(float4(refRay, 0.0f), view).xy * refrAdjust;
+        refrUV = ConvertToScreenSpace(refRay) * refrAdjust;
     }
     refrUV.x *= -1.0f; // Flip the X to point away from the edge (Y already does this due to view space <-> texture space diff)
 
