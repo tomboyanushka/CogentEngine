@@ -50,7 +50,6 @@ float3 VSPositionFromDepth(float2 uv, float depth)
 // A simple refraction shader similar to the built in GLSL one (only this one is real)
 float4 refraction(float3 incident, float3 normal, float ni_nt, float ni_nt_sqr)
 {
-    float4 returnVal;
     float tmp = 1.0;
     float IdotN = dot(-incident, normal);
     float cosSqr = 1.0 - ni_nt_sqr * (1.0 - IdotN * IdotN);
@@ -89,6 +88,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	// Calculate the refraction amount in WORLD SPACE
     float3 ogRay = normalize(input.worldPos - cameraPosition);
     float3 refRay = refraction(ogRay, input.normal, 1.f / indexOfRefr, 1.f / (indexOfRefr * indexOfRefr));
+    //float3 refRay = refract(ogRay, input.normal, indexOfRefr);
     
     // Finding the angles to apply Snell's law to get the transmitted vector
     float angleOfIncidence = acos(dot(input.normal, ogRay)) / (length(input.normal) * length(ogRay));
@@ -106,8 +106,9 @@ float4 main(VertexToPixel input) : SV_TARGET
     float dv = distance(VSPositionFromDepth(input.uv, input.depth), VSPositionFromDepth(input.uv, backFaceDepth));
     float angle = (angleOfTransmission / angleOfIncidence);
     float depthBetween = (angle * dv) + ((1 - angle) * dn);
-    float3 p2 = input.worldPos + (depthBetween * refRay);
-    float2 p2UV = mul(float4(p2, 0.0f), view).xy;
+    float3 p1 = input.worldPos;
+    float3 p2 = p1 + (dv * refRay);
+    float2 p2UV = ConvertToScreenSpace(p2);
     
     float3 backfaceNormals = BackfaceNormalsTexture.Sample(BasicSampler, p2UV).rgb;
     

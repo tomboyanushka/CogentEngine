@@ -21,7 +21,7 @@ Game::Game(HINSTANCE hInstance)
 	/*vertexBuffer = 0;
 	indexBuffer = 0;*/
 	camera = 0;
-
+	
 #if defined(DEBUG) || defined(_DEBUG)
 	CreateConsoleWindow(500, 120, 32, 120);
 	printf("Console window created successfully.  Feel free to printf() here.");
@@ -586,8 +586,8 @@ void Game::Update(float deltaTime, float totalTime)
 	e_plane->SetMaterial(&m_plane);
 
 	e_capitol->SetScale(XMFLOAT3(5.f, 5.f, 5.f));
-	e_capitol->SetRotation(XMFLOAT3(0.0f, -90.0f, 0.0f));
-	e_capitol->SetPosition(XMFLOAT3(-10.0f, 3.0f, 12.0f));
+	e_capitol->SetRotation(XMFLOAT3(0.0f, -120.0f, 0.0f));
+	e_capitol->SetPosition(XMFLOAT3(-10.0f, 2.0f, 12.0f));
 
 	e_capitol2->SetScale(XMFLOAT3(2.5f, 2.5f, 2.5f));
 	e_capitol2->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
