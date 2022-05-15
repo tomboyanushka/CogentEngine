@@ -83,8 +83,8 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//float3 pointPBR = PointLightPBR(light3, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
 	//float3 spotPBR = SpotLightPBR(light4, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
 
-	totalColor = dirPBR;
-    clip(surfaceColor.a < 0.1f ? -1 : 1);
+	totalColor = dirPBR * dirLight.Intensity;
+    clip(surfaceColor.a < 0.05f ? -1 : 1);
     
 	float gamma = 2.4f;
     totalColor = abs(pow(totalColor, 1.0 / gamma));
