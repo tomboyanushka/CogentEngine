@@ -507,11 +507,7 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(1, frameManager.GetGPUHandle(refractionCBV.heapIndex, currentBackBufferIndex));
-
-	//D3D12_CPU_DESCRIPTOR_HANDLE refractionTextureHandles[2] = { normal.GetCPUHandle(), customDepth.GetCPUHandle(), };
-	//auto refgpuhandle = frameManager.Allocate(refractionTextureHandles, 2);
 	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
-	//commandList->SetGraphicsRootDescriptorTable(3, refgpuhandle);
 	commandList->SetGraphicsRootDescriptorTable(3, normal.GetGPUHandle());
 	commandList->SetGraphicsRootDescriptorTable(4, customDepth.GetGPUHandle());
 
@@ -525,13 +521,6 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 void Game::OnResize()
 {
 	DXCore::OnResize();
-
-	/*XMMATRIX P = XMMatrixPerspectiveFovLH(
-		0.25f * 3.1415926535f,
-		(float)width / height,
-		0.1f,
-		100.0f);
-	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); */
 }
 
 static bool sgbDoubleBounce = false;
@@ -560,21 +549,6 @@ void Game::Update(float deltaTime, float totalTime)
 	{
 		bBlurEnabled = false;
 	}
-
-	//if (selectedEntityIndex != -1)
-	//{
-	//	auto pos = entities[selectedEntityIndex]->GetPosition();
-	//	if (currentIndex < path.size())
-	//	{
-	//		XMFLOAT3 newPosition = XMFLOAT3((float)path[path.size() - currentIndex - 1].x, -4.0f, (float)path[path.size() - currentIndex - 1].y);
-	//		auto targetPos = XMLoadFloat3(&newPosition);
-
-	//		XMStoreFloat3(&pos, MoveTowards(XMLoadFloat3(&pos), targetPos, 5 * deltaTime));
-	//		entities[selectedEntityIndex]->SetPosition(pos);
-	//	}
-
-	//	pos.y = -4;
-	//}
 
 	// Scale-->Rotation-->Transform
 
@@ -608,7 +582,6 @@ void Game::Update(float deltaTime, float totalTime)
 
 	if (job2.IsCompleted())
 	{
-		//job2.W = W2;
 		job2.totalTime = totalTime;
 		auto f2 = pool.Enqueue(&job2);
 	}
@@ -730,8 +703,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		DoubleBounceRefractionSetup(e_capitol);
 
 		DrawRefractionEntity(e_capitol, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
-		
-		//DrawRefractionEntity(e_capitol2, refractionTexture, defaultNormal, customDepthTexture, false);
 
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}
