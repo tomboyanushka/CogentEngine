@@ -719,10 +719,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		DrawSky();
 
 		//transparent objects are drawn last
-		commandList->SetGraphicsRootDescriptorTable(
-			1,
-			frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
-		commandList->SetPipelineState(transparencyPipeState);
+		//DrawTransparentEntities();
 
 		for (auto transparentEntity : transparentEntities)
 		{
@@ -858,7 +855,7 @@ void Game::CreateTextures()
 void Game::CreateLights()
 {
 	// DIRECTIONAL LIGHTS: ambient diffuse direction intensity =====================
-	directionalLight1 = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 1.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(2) };
+	directionalLight1 = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 0.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(0.3) };
 
 	// POINT LIGHTS: color position range intensity padding  =======================
 	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
@@ -947,10 +944,6 @@ void Game::DrawBlur(Texture textureIn)
 {
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	//commandList->ClearRenderTargetView(
-	//	blurRTVHandle,
-	//	BG_COLOR,
-	//	0, 0); // No scissor rectangles
 
 	commandList->SetPipelineState(blurPipeState);
 
@@ -988,6 +981,19 @@ void Game::DrawBlur(Texture textureIn)
 	if (bBlurEnabled)
 	{
 		commandList->DrawInstanced(4, 1, 0, 0);
+	}
+}
+
+void Game::DrawTransparentEntities()
+{
+	commandList->SetGraphicsRootDescriptorTable(
+		1,
+		frameManager.GetGPUHandle(transparencyCBV.heapIndex, currentBackBufferIndex));
+	commandList->SetPipelineState(transparencyPipeState);
+
+	for (auto transparentEntity : transparentEntities)
+	{
+		DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 	}
 }
 

@@ -57,6 +57,15 @@ public:
 	void Init();
 	void OnResize();
 	void Update(float deltaTime, float totalTime);
+
+	// Create and Load
+	void CreateMaterials();
+	void CreateTextures();
+	void CreateLights();
+	void CreateResources();
+	void LoadSponza();
+
+	// Drawing 
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
 	void DrawEntity(Entity* entity);
@@ -68,12 +77,11 @@ public:
 	void CreateLights();
 	void CreateResources();
 	void DrawSky();
-	void LoadSponza();
-
 	void DrawBlur(Texture texture);
+	void DrawTransparentEntities();
 
+	// Core Gfx
 	void TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
 	// Compute Z distance from Camera
 	float ComputeZDistance(Camera* cam, XMFLOAT3 position);
 	static bool CompareByLength(const TransparentEntity& a, const TransparentEntity& b);

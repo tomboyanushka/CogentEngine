@@ -192,7 +192,7 @@ float3 DirLightPBR(DirectionalLight light, float3 normal, float3 worldPos, float
 	float3 diffuse = irradiance * surfaceColor;
 	float3 ambient = AmbientPBR(kD, metalness, diffuse, ao, specular);
 
-	return (balancedDiff * surfaceColor + spec) * 1/*light.Intensity*/ * light.DiffuseColor.rgb + ambient;
+	return (balancedDiff * surfaceColor + spec) * light.Intensity * light.DiffuseColor.rgb + ambient;
 	//float3 balancedDiff = DiffuseEnergyConserve(diff, spec, metalness);
 
 	//// Combine amount with 
