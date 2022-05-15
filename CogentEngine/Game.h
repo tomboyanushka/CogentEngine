@@ -72,10 +72,6 @@ public:
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
 	void DoubleBounceRefractionSetup(Entity* entity);
 	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth, bool doubleBounce);
-	void CreateMaterials();
-	void CreateTextures();
-	void CreateLights();
-	void CreateResources();
 	void DrawSky();
 	void DrawBlur(Texture texture);
 	void DrawTransparentEntities();

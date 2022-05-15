@@ -546,13 +546,19 @@ void Game::Update(float deltaTime, float totalTime)
 
 	if (GetAsyncKeyState(VK_TAB))
 	{
-		//bBlurEnabled = true;
-		sgbDoubleBounce = false;
+		sgbDoubleBounce = true;
 	}
 	else
 	{
-		//bBlurEnabled = false;
-		sgbDoubleBounce = true;
+		sgbDoubleBounce = false;
+	}
+	if (GetAsyncKeyState(VK_SHIFT))
+	{
+		bBlurEnabled = true;
+	}
+	else
+	{
+		bBlurEnabled = false;
 	}
 
 	//if (selectedEntityIndex != -1)
@@ -721,10 +727,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		//transparent objects are drawn last
 		//DrawTransparentEntities();
 
-		for (auto transparentEntity : transparentEntities)
-		{
-			DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
-		}
 		DoubleBounceRefractionSetup(e_capitol);
 
 		DrawRefractionEntity(e_capitol, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
