@@ -29,25 +29,29 @@ public:
 		TextureType type = WIC);
 
 	ID3D12Resource* CreateResource(
-		ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags);
+		ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	Texture CreateTextureFromResource(
 		ID3D12CommandQueue* commandQueue,
-		ID3D12Resource* resource);
+		ID3D12Resource* resource,
+		bool isDepthTexture = false,
+		DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	Entity* CreateEntity(Mesh* mesh, Material* material);
 	Entity* CreateTransparentEntity(Mesh* mesh, Material* material);
 	void CopyData(void* data, uint32_t size, ConstantBufferView cbv, uint32_t backBufferIndex);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(uint32_t index, uint32_t backBufferIndex);
+	D3D12_GPU_DESCRIPTOR_HANDLE Allocate(D3D12_CPU_DESCRIPTOR_HANDLE* handles, int num);
+	void ResetFrameCounter();
 	DescriptorHeap& GetGPUDescriptorHeap(uint32_t backBufferIndex);
 	DescriptorHeap GetGPUDescriptorHeap();
 
-
-	
+	void MarkBaseFrameHeapCounter() { baseFreameHeapCounter = frameHeapCounter; }
 
 private:
 	uint32_t frameHeapCounter = 0;
+	uint32_t baseFreameHeapCounter = 500;
 	uint32_t frameIndex;
 	uint32_t constantBufferIndex = 0;
 	uint32_t cbOffset = 0;

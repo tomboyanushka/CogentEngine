@@ -76,6 +76,11 @@ struct BlurExternalData
 struct RefractionExternalData
 {
 	XMFLOAT4X4 view;
+	XMFLOAT4X4 proj;
+	XMFLOAT4X4 projInv;
 	XMFLOAT3 cameraPosition;
-	float pad0;
+	bool doubleBounce;
+	float zNear;
+	float zFar;
+	XMFLOAT2 padding;
 };

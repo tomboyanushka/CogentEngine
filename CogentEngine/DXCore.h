@@ -90,10 +90,12 @@ protected:
 
 	ID3D12Resource* backBuffers[FRAME_BUFFER_COUNT];
 	ID3D12Resource* depthStencilBuffer;
+	ID3D12Resource* customDepthStencilBuffer;
 
 	// Pointers into the RTV desc heap
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[FRAME_BUFFER_COUNT]; 
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE customdsvHandle;
 
 	// Fence for CPU/GPU sync
 	ID3D12Fence* fences[FRAME_BUFFER_COUNT];
@@ -107,12 +109,14 @@ protected:
 	HRESULT CreateIndexBuffer(DXGI_FORMAT format, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_INDEX_BUFFER_VIEW* ibView);
 	HRESULT CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_VERTEX_BUFFER_VIEW* vbView);
 
-	D3D12_CPU_DESCRIPTOR_HANDLE CreateRenderTarget(ID3D12Resource* resource, UINT numDesc);
+	D3D12_CPU_DESCRIPTOR_HANDLE CreateRenderTarget(ID3D12Resource* resource, UINT numDesc, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	// Helper function for allocating a console window
 	void CreateConsoleWindow(int bufferLines, int bufferColumns, int windowLines, int windowColumns);
 
 	void EnableShaderBasedValidation();
+
+	void CreateCustomDepthStencil();
 
 private:
 	// Timing related data
@@ -134,5 +138,6 @@ private:
 	void UpdateTitleBarStats();	// Puts debug info in the title bar
 
 	unsigned int SizeOfDXGIFormat(DXGI_FORMAT format);
+
 };
 

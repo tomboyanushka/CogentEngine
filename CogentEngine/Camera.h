@@ -17,10 +17,14 @@ public:
 	std::string GetPositionString();
 	XMFLOAT4X4 GetViewMatrixTransposed();
 	XMFLOAT4X4 GetProjectionMatrixTransposed();
+	XMFLOAT4X4 GetProjectionMatrixInverseTransposed();
 
 	void Update(float dt);
 	void UpdateViewMatrix();
 	void UpdateProjectionMatrix(float aspectRatio);
+
+	inline constexpr float GetNearZ() { return zNear; }
+	inline constexpr float GetFarZ() { return zFar; }
 
 private:
 
@@ -35,6 +39,9 @@ private:
 
 	float roll; //x rotation
 	float pitch; //y rotation
+
+	float zNear;
+	float zFar;
 };
 
 

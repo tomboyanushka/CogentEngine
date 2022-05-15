@@ -18,18 +18,18 @@ TextureCube skyIrradianceTexture	: register(t4);
 TextureCube skyPrefilterTexture		: register(t5);
 Texture2D brdfLookUpTexture			: register(t6);
 
-SamplerState basicSampler	: register(s0);
+SamplerState basicSampler			: register(s0);
 
-float3 calculateNormalFromMap(float2 uv, float3 normal, float3 tangent)
-{
-	float3 normalFromTexture = normalTexture.Sample(basicSampler, uv).xyz;
-	float3 unpackedNormal = normalFromTexture * 2.0f - 1.0f;
-	float3 N = normal;
-	float3 T = normalize(tangent - N * dot(tangent, N));
-	float3 B = cross(N, T);
-	float3x3 TBN = float3x3(T, B, N);
-	return normalize(mul(unpackedNormal, TBN));
-}
+//float3 calculateNormalFromMap(float2 uv, float3 normal, float3 tangent)
+//{
+//	float3 normalFromTexture = normalTexture.Sample(basicSampler, uv).xyz;
+//	float3 unpackedNormal = normalFromTexture * 2.0f - 1.0f;
+//	float3 N = normal;
+//	float3 T = normalize(tangent - N * dot(tangent, N));
+//	float3 B = cross(N, T);
+//	float3x3 TBN = float3x3(T, B, N);
+//	return normalize(mul(unpackedNormal, TBN));
+//}
 
 float3 PrefilteredColor(float3 viewDir, float3 normal, float roughness)
 {
@@ -53,7 +53,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float4 surfaceColor = diffuseTexture.Sample(basicSampler, input.uv);
 
     
-	input.normal = calculateNormalFromMap(input.uv, input.normal, input.tangent);
+	input.normal = calculateNormalFromMap(input.uv, input.normal, input.tangent, normalTexture, basicSampler);
 
 	// Sample the roughness map
 	float roughness = roughnessTexture.Sample(basicSampler, input.uv).r;

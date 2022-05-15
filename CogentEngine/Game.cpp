@@ -21,7 +21,7 @@ Game::Game(HINSTANCE hInstance)
 	/*vertexBuffer = 0;
 	indexBuffer = 0;*/
 	camera = 0;
-
+	
 #if defined(DEBUG) || defined(_DEBUG)
 	CreateConsoleWindow(500, 120, 32, 120);
 	printf("Console window created successfully.  Feel free to printf() here.");
@@ -44,7 +44,8 @@ Game::~Game()
 
 	//delete entities
 	delete e_plane;
-	delete e_cube;
+	delete e_capitol;
+	delete e_capitol2;
 	delete e_sponza;
 	delete ref_sphere;
 	delete camera;
@@ -61,6 +62,7 @@ Game::~Game()
 	transparencyPipeState->Release();
 	quadPipeState->Release();
 	blurPipeState->Release();
+	refractionDepthPipeState->Release();
 	refractionPipeState->Release();
 
 	refractionResource->Release();
@@ -88,12 +90,12 @@ void Game::Init()
 		"../../Assets/Textures/default/normal.png",
 		commandQueue);
 
-	defaultRoughness = frameManager.CreateTexture(
-		"../../Assets/Textures/default/roughness.png",
-		commandQueue);
-
 	defaultMetal = frameManager.CreateTexture(
 		"../../Assets/Textures/default/metal.png",
+		commandQueue);
+
+	defaultRoughness = frameManager.CreateTexture(
+		"../../Assets/Textures/default/roughness.png",
 		commandQueue);
 	
 	CreateTextures();
@@ -109,6 +111,7 @@ void Game::Init()
 	currentIndex = 0;
 	CreateNavmesh();
 	//path = FindPath({ 0,0 }, { 16 , 16 });
+	frameManager.MarkBaseFrameHeapCounter();
 }
 
 
@@ -128,6 +131,7 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"QuadPS.cso", &quadPS);
 	D3DReadFileToBlob(L"RefractionVS.cso", &refractionVS);
 	D3DReadFileToBlob(L"RefractionPS.cso", &refractionPS);
+	D3DReadFileToBlob(L"NormalsTexture.cso", &normalsPS);
 
 	unsigned int bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255);
@@ -154,13 +158,13 @@ void Game::CreateMesh()
 	// Load meshes
 	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
-	sm_cube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
+	sm_cube = mLoader.Load("../../Assets/Models/buddha.obj", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 
 	LoadSponza();
 
 	// Create Transparent Entities
-	// To Do : Entity class should have enums for specific purposes
+	// TODO : Entity class should have enums for specific purposes
 	for (int i = 0; i < numEntities; ++i)
 	{
 		TransparentEntity entity;
@@ -170,7 +174,8 @@ void Game::CreateMesh()
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
 	ref_sphere = frameManager.CreateEntity(sm_sphere, &m_default);
-	e_cube = frameManager.CreateEntity(sm_cube, &m_default);
+	e_capitol = frameManager.CreateEntity(sm_cube, &m_default);
+	e_capitol2 = frameManager.CreateEntity(sm_sphere, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -191,7 +196,7 @@ void Game::CreateRootSigAndPipelineState()
 	// Root Sig
 	{
 		// creating descriptor ranges
-		CD3DX12_DESCRIPTOR_RANGE range[4];
+		CD3DX12_DESCRIPTOR_RANGE range[5];
 		// vertex cbv
 		range[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 		// pixel cbv
@@ -201,9 +206,11 @@ void Game::CreateRootSigAndPipelineState()
 		// texture 2 cbv
 		// to simplify separating PBR and IBL textures
 		range[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 4); // t4 - t6
+		// texture 3 cbv
+		range[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 7); // t7 - t9
 
 		// creating root parameters
-		CD3DX12_ROOT_PARAMETER rootParameters[4];
+		CD3DX12_ROOT_PARAMETER rootParameters[5];
 		// vertex
 		rootParameters[0].InitAsDescriptorTable(1, &range[0], D3D12_SHADER_VISIBILITY_VERTEX);
 		// pixel
@@ -212,9 +219,11 @@ void Game::CreateRootSigAndPipelineState()
 		rootParameters[2].InitAsDescriptorTable(1, &range[2], D3D12_SHADER_VISIBILITY_PIXEL);
 		// texture 2
 		rootParameters[3].InitAsDescriptorTable(1, &range[3], D3D12_SHADER_VISIBILITY_PIXEL);
+		// texture 3
+		rootParameters[4].InitAsDescriptorTable(1, &range[4], D3D12_SHADER_VISIBILITY_PIXEL);
 
 		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(4, rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
+		rootSignatureDesc.Init(5, rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS);
 
@@ -258,6 +267,11 @@ void Game::CreateRootSigAndPipelineState()
 		defaultRS.FillMode = D3D12_FILL_MODE_SOLID;
 		defaultRS.DepthClipEnable = true;
 
+		D3D12_RASTERIZER_DESC frontFaceRS = {};
+		frontFaceRS.CullMode = D3D12_CULL_MODE_FRONT;
+		frontFaceRS.FillMode = D3D12_FILL_MODE_SOLID;
+		frontFaceRS.DepthClipEnable = true;
+
 		D3D12_DEPTH_STENCIL_DESC defaultDS = {};
 		defaultDS.DepthEnable = true;
 		defaultDS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
@@ -284,6 +298,13 @@ void Game::CreateRootSigAndPipelineState()
 		transparencyDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, transparencyPS, defaultRS, defaultDS, CommonStates::AlphaBlend);
 		device->CreateGraphicsPipelineState(&transparencyDesc, IID_PPV_ARGS(&transparencyPipeState));
 
+		// -- Refraction depth pipe state for double bounce refraction
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDepthDesc = {};
+		refractionDepthDesc.RTVFormats[0] = DXGI_FORMAT_R32_FLOAT;
+		refractionDepthDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+		refractionDepthDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, normalsPS, frontFaceRS, defaultDS);
+		device->CreateGraphicsPipelineState(&refractionDepthDesc, IID_PPV_ARGS(&refractionDepthPipeState));
+
 		// -- Refraction pipe state --
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC refractionDesc = {};
 		refractionDesc = CreatePSODescriptor(inputElementCount, inputElements, refractionVS, refractionPS, defaultRS, defaultDS);
@@ -295,13 +316,17 @@ void Game::CreateRootSigAndPipelineState()
 		blurRS.DepthClipEnable = false;
 		D3D12_DEPTH_STENCIL_DESC blurDS = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		blurDS.DepthEnable = false;
-		D3D12_BLEND_DESC blurBlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		blurDesc = CreatePSODescriptor(0, nullptr, quadVS, blurPS, blurRS, blurDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
 		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&blurPipeState));
 
 		// -- Quad pipe state --
-		blurDesc = CreatePSODescriptor(0, nullptr, quadVS, blurPS, blurRS, blurDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
-		device->CreateGraphicsPipelineState(&blurDesc, IID_PPV_ARGS(&quadPipeState));
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC quadDesc = {};
+		D3D12_RASTERIZER_DESC quadRS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		quadRS.DepthClipEnable = false;
+		D3D12_DEPTH_STENCIL_DESC quadDS = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		quadDS.DepthEnable = false;
+		quadDesc = CreatePSODescriptor(0, nullptr, quadVS, quadPS, quadRS, quadDS, CD3DX12_BLEND_DESC(D3D12_DEFAULT));
+		device->CreateGraphicsPipelineState(&quadDesc, IID_PPV_ARGS(&quadPipeState));
 
 		// -- Outline (VS/PS) --- 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC outlineDesc = {};
@@ -346,13 +371,16 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC Game::CreatePSODescriptor(
 	// -- Shaders (VS/PS) --- 
 	psoDesc.VS.pShaderBytecode = vs->GetBufferPointer();
 	psoDesc.VS.BytecodeLength = vs->GetBufferSize();
-	psoDesc.PS.pShaderBytecode = ps->GetBufferPointer();
-	psoDesc.PS.BytecodeLength = ps->GetBufferSize();
+	if (ps)
+	{
+		psoDesc.PS.pShaderBytecode = ps->GetBufferPointer();
+		psoDesc.PS.BytecodeLength = ps->GetBufferSize();
+	}
 
 	// -- Render targets ---
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // TODO: Parameterize
-	psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT; // Parameterize
+	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;//DXGI_FORMAT_D24_UNORM_S8_UINT; // Parameterize
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
 
@@ -406,10 +434,32 @@ void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
 	DrawMesh(entity->GetMesh());
 }
 
-void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal)
+void Game::DoubleBounceRefractionSetup(Entity* entity)
 {
+	commandList->SetPipelineState(refractionDepthPipeState);
+	commandList->OMSetRenderTargets(1, &backfaceNormalHandle, true, &customdsvHandle);
+
+	// vs data
+	VertexShaderExternalData vertexData = {};
+	vertexData.world = entity->GetWorldMatrix();
+	vertexData.view = camera->GetViewMatrixTransposed();
+	vertexData.proj = camera->GetProjectionMatrixTransposed();
+
+	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
+	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
+
+	DrawMesh(entity->GetMesh());
+}
+
+//TODO: DrawQuad()
+
+void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth, bool doubleBounce)
+{
+	// Copy Scene to texture
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	TransitionResourceToState(refractionResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	TransitionResourceToState(textureIn.GetResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	TransitionResourceToState(customDepthStencilBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	commandList->SetPipelineState(quadPipeState);
 	commandList->OMSetRenderTargets(1, &refractionRTVHandle, true, nullptr);
@@ -428,9 +478,13 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	commandList->SetGraphicsRootDescriptorTable(2, backbufferTexture[currentBackBufferIndex].GetGPUHandle());
 	commandList->DrawInstanced(4, 1, 0, 0);
 
+	//****DRAW ENTITY******//
+
 	commandList->SetPipelineState(refractionPipeState);
 	TransitionResourceToState(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	TransitionResourceToState(refractionResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	TransitionResourceToState(textureIn.GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	TransitionResourceToState(backfaceNormalResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
 	commandList->OMSetRenderTargets(1, &rtvHandles[currentBackBufferIndex], true, &dsvHandle);
 	// vs data
 	VertexShaderExternalData vertexData = {};
@@ -441,30 +495,35 @@ void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture norma
 	// ps data
 	RefractionExternalData refractionData = {};
 	refractionData.view = camera->GetViewMatrixTransposed();
+	refractionData.proj = camera->GetProjectionMatrixTransposed();
+	refractionData.projInv = camera->GetProjectionMatrixInverseTransposed();
 	refractionData.cameraPosition = camera->GetPosition();
+	refractionData.doubleBounce = doubleBounce;
+	refractionData.zFar = camera->GetFarZ();
+	refractionData.zNear = camera->GetNearZ();
+
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&refractionData, sizeof(RefractionExternalData), refractionCBV, currentBackBufferIndex);
+
 	commandList->SetGraphicsRootDescriptorTable(0, frameManager.GetGPUHandle(entity->GetConstantBufferView().heapIndex, currentBackBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(1, frameManager.GetGPUHandle(refractionCBV.heapIndex, currentBackBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(2, textureIn.GetGPUHandle());
 	commandList->SetGraphicsRootDescriptorTable(3, normal.GetGPUHandle());
+	commandList->SetGraphicsRootDescriptorTable(4, customDepth.GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
+
+	TransitionResourceToState(customDepthStencilBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	TransitionResourceToState(backfaceNormalResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
 
 void Game::OnResize()
 {
 	DXCore::OnResize();
-
-	/*XMMATRIX P = XMMatrixPerspectiveFovLH(
-		0.25f * 3.1415926535f,
-		(float)width / height,
-		0.1f,
-		100.0f);
-	XMStoreFloat4x4(&projectionMatrix, XMMatrixTranspose(P)); */
 }
 
+static bool sgbDoubleBounce = false;
 
 void Game::Update(float deltaTime, float totalTime)
 {
@@ -476,27 +535,20 @@ void Game::Update(float deltaTime, float totalTime)
 
 	if (GetAsyncKeyState(VK_TAB))
 	{
+		sgbDoubleBounce = true;
+	}
+	else
+	{
+		sgbDoubleBounce = false;
+	}
+	if (GetAsyncKeyState(VK_SHIFT))
+	{
 		bBlurEnabled = true;
 	}
 	else
 	{
 		bBlurEnabled = false;
 	}
-
-	//if (selectedEntityIndex != -1)
-	//{
-	//	auto pos = entities[selectedEntityIndex]->GetPosition();
-	//	if (currentIndex < path.size())
-	//	{
-	//		XMFLOAT3 newPosition = XMFLOAT3((float)path[path.size() - currentIndex - 1].x, -4.0f, (float)path[path.size() - currentIndex - 1].y);
-	//		auto targetPos = XMLoadFloat3(&newPosition);
-
-	//		XMStoreFloat3(&pos, MoveTowards(XMLoadFloat3(&pos), targetPos, 5 * deltaTime));
-	//		entities[selectedEntityIndex]->SetPosition(pos);
-	//	}
-
-	//	pos.y = -4;
-	//}
 
 	// Scale-->Rotation-->Transform
 
@@ -513,12 +565,15 @@ void Game::Update(float deltaTime, float totalTime)
 	e_plane->SetPosition(XMFLOAT3(-2.8f, 2.0f, 2.0f));
 	e_plane->SetMaterial(&m_plane);
 
-	e_cube->SetScale(XMFLOAT3(0.5f, 0.5f, 0.5f));
-	e_cube->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
-	e_cube->SetPosition(XMFLOAT3(-10.0f, 5.0f, 12.0f));
+	e_capitol->SetScale(XMFLOAT3(5.f, 5.f, 5.f));
+	e_capitol->SetRotation(XMFLOAT3(0.0f, -120.0f, 0.0f));
+	e_capitol->SetPosition(XMFLOAT3(-10.0f, 2.0f, 12.0f));
+
+	e_capitol2->SetScale(XMFLOAT3(2.5f, 2.5f, 2.5f));
+	e_capitol2->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
+	e_capitol2->SetPosition(XMFLOAT3(-10.0f, 3.0f, 8.0f));
 
 	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
-	//e_sponza->SetRotation(XMFLOAT3(-90.0f, -90.0f, 0.0f));
 	e_sponza->SetPosition(XMFLOAT3(0, 0.0f, 10.0f));
 
 	if (job1.IsCompleted())
@@ -527,7 +582,6 @@ void Game::Update(float deltaTime, float totalTime)
 
 	if (job2.IsCompleted())
 	{
-		//job2.W = W2;
 		job2.totalTime = totalTime;
 		auto f2 = pool.Enqueue(&job2);
 	}
@@ -581,6 +635,11 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Clear the RTV
 		commandList->ClearRenderTargetView(
+			backfaceNormalHandle,
+			BG_COLOR,
+			0, 0); // No scissor rectangles
+
+		commandList->ClearRenderTargetView(
 			rtvHandles[currentBackBufferIndex],
 			BG_COLOR,
 			0, 0); // No scissor rectangles
@@ -592,6 +651,15 @@ void Game::Draw(float deltaTime, float totalTime)
 			1.0f,	// Depth = 1.0f
 			0,		// Not clearing stencil, but need a value
 			0, 0);	// No scissor rects
+
+		commandList->ClearDepthStencilView(
+			customdsvHandle,
+			D3D12_CLEAR_FLAG_DEPTH,
+			1.0f,	// Depth = 1.0f
+			0,		// Not clearing stencil, but need a value
+			0, 0);	// No scissor rects
+
+		frameManager.ResetFrameCounter();
 	}
 
 	// Rendering here!
@@ -632,7 +700,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		//transparent objects are drawn last
 		//DrawTransparentEntities();
 
-		DrawRefractionEntity(e_cube, refractionTexture, defaultNormal);
+		DoubleBounceRefractionSetup(e_capitol);
+
+		DrawRefractionEntity(e_capitol, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
 
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}
@@ -766,10 +836,17 @@ void Game::CreateLights()
 
 void Game::CreateResources()
 {
-	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	auto isDepthTexture = true;
+	blurResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"BlurResource");
 	blurTexture = frameManager.CreateTextureFromResource(commandQueue, blurResource);
-	refractionResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+	refractionResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"RefractionResource");
 	refractionTexture = frameManager.CreateTextureFromResource(commandQueue, refractionResource);
+
+	customDepthTexture = frameManager.CreateTextureFromResource(commandQueue, customDepthStencilBuffer, isDepthTexture, DXGI_FORMAT_R32_FLOAT);
+
+	backfaceNormalResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"BackfaceNormalResource");
+	backfaceNormalTexture = frameManager.CreateTextureFromResource(commandQueue, backfaceNormalResource);
 
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
@@ -778,6 +855,7 @@ void Game::CreateResources()
 
 	blurRTVHandle = CreateRenderTarget(blurResource, 1);
 	refractionRTVHandle = CreateRenderTarget(refractionResource, 1);
+	backfaceNormalHandle = CreateRenderTarget(backfaceNormalResource, 1);
 }
 
 void Game::DrawSky()

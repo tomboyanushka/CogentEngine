@@ -70,7 +70,8 @@ public:
 	void DrawMesh(Mesh* mesh);
 	void DrawEntity(Entity* entity);
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
-	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal);
+	void DoubleBounceRefractionSetup(Entity* entity);
+	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth, bool doubleBounce);
 	void DrawSky();
 	void DrawBlur(Texture texture);
 	void DrawTransparentEntities();
@@ -113,12 +114,14 @@ private:
 
 	ID3D12RootSignature* rootSignature;
 	ID3D12PipelineState* quadPipeState;
+	ID3D12PipelineState* quadDepthPipeState;
 	ID3D12PipelineState* toonShadingPipeState;
 	ID3D12PipelineState* outlinePipeState;
 	ID3D12PipelineState* pbrPipeState;
 	ID3D12PipelineState* transparencyPipeState;
 	ID3D12PipelineState* blurPipeState;
 	ID3D12PipelineState* refractionPipeState;
+	ID3D12PipelineState* refractionDepthPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	FrameManager frameManager;
@@ -144,6 +147,7 @@ private:
 	ID3DBlob* quadPS;
 	ID3DBlob* refractionVS;
 	ID3DBlob* refractionPS;
+	ID3DBlob* normalsPS;
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
@@ -162,9 +166,10 @@ private:
 	Texture skyIrradiance;
 	Texture skyPrefilter;
 	Texture brdfLookUpTexture;
-
 	Texture blurTexture;
 	Texture refractionTexture;
+	Texture customDepthTexture;
+	Texture backfaceNormalTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
 	ID3D12Resource* blurResource;
@@ -172,6 +177,9 @@ private:
 
 	ID3D12Resource* refractionResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE refractionRTVHandle;
+
+	ID3D12Resource* backfaceNormalResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE backfaceNormalHandle;
 	
 	// default
 	Texture defaultDiffuse;
@@ -193,7 +201,8 @@ private:
 
 	Entity* e_plane;
 	Entity* e_sponza;
-	Entity* e_cube;
+	Entity* e_capitol;
+	Entity* e_capitol2;
 	Entity* te_sphere1;
 	Entity* te_sphere2;
 	Entity* ref_sphere;

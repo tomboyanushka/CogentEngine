@@ -103,61 +103,59 @@ Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12Co
 	return texture;
 }
 
-ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags)
+ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName, DXGI_FORMAT format)
 {
-	// ComPtr<Resource> resource;
-	// Create Resource
-	// Push to vector
-	// return resource.Get();
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-	// Describe and create a Texture2D.
-	D3D12_RESOURCE_DESC textureDesc = {};
-	textureDesc.MipLevels = 1;
-	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.Width = SCREEN_WIDTH;
-	textureDesc.Height = SCREEN_HEIGHT;
-	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	textureDesc.DepthOrArraySize = 1;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.SampleDesc.Quality = 0;
-	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-
-	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0, 1, 0, flags);
-
-	// Describe and create a SRV for the texture.
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = textureDesc.Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = 1;
+	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(format, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0, 1, 0, flags);
+	auto clearVal = CD3DX12_CLEAR_VALUE(format, 1.f, 0.f);
 
 	device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&desc,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		nullptr,
+		&clearVal,
 		IID_PPV_ARGS(resource.GetAddressOf()));
+	resource->SetName(resourceName);
 
 	resources.push_back(resource);
 
 	return resource.Get();
 }
 
-Texture FrameManager::CreateTextureFromResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource)
+Texture FrameManager::CreateTextureFromResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, bool isDepthTexture, DXGI_FORMAT format)
 {
 	Texture texture;
-	texture.CreateTextureFromResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT);
-	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
-	{
-		device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	}
+	texture.CreateTextureFromResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT, isDepthTexture, format);
+	device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
 	texture.SetGPUHandle(handle);
 	frameHeapCounter++;
 
 	return texture;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE FrameManager::Allocate(D3D12_CPU_DESCRIPTOR_HANDLE* handles, int num)
+{
+	auto currentFrameHeapCounter = frameHeapCounter;
+	
+	for (int i = 0; i < num; ++i)
+	{
+		device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), handles[i], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		frameHeapCounter++;
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(currentFrameHeapCounter);
+	return handle;
+}
+
+void FrameManager::ResetFrameCounter()
+{
+	if (frameHeapCounter > 2048)
+	{
+		frameHeapCounter = baseFreameHeapCounter;
+	}
 }
 
 Entity* FrameManager::CreateEntity(Mesh* mesh, Material* material)

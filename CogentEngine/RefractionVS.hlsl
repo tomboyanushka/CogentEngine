@@ -19,12 +19,13 @@ struct VertexShaderInput
 // Out of the vertex shader (and eventually input to the PS)
 struct VertexToPixel
 {
-    float4 position : SV_POSITION;
-    float2 uv : TEXCOORD;
-    float3 normal : NORMAL;
-    float3 tangent : TANGENT;
-    float3 worldPos : POSITION;
-    noperspective float2 screenUV : TEXCOORD1;
+    float4 position                 : SV_POSITION;
+    float2 uv                       : TEXCOORD;
+    float3 normal                   : NORMAL;
+    float3 tangent                  : TANGENT;
+    float3 worldPos                 : POSITION;
+    noperspective float2 screenUV   : TEXCOORD1;
+    float depth                     : Depth;
 };
 
 // --------------------------------------------------------
@@ -38,6 +39,8 @@ VertexToPixel main(VertexShaderInput input)
 	// Calculate output position
     matrix worldViewProj = mul(mul(world, view), projection);
     output.position = mul(float4(input.position, 1.0f), worldViewProj);
+    
+    output.depth = output.position.z / output.position.w;
 
 	// Calculate the world position of this vertex (to be used
 	// in the pixel shader when we do point/spot lights)
