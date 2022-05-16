@@ -402,8 +402,9 @@ void Game::DrawEntity(Entity* entity)
 
 	pixelData.dirLight = directionalLight1;
 	pixelData.pointLight[0] = pointLight;
+	pixelData.sphereLight[0] = sphereLight;
 	pixelData.cameraPosition = camera->GetPosition();
-	pixelData.pointLightCount = MaxPointLights;
+	pixelData.pointLightCount = MaxLights;
 
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV, currentBackBufferIndex);
@@ -832,6 +833,9 @@ void Game::CreateLights()
 
 	// POINT LIGHTS: color position range intensity padding  =======================
 	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
+
+	// AREA LIGHTS: SPHERE: color position radius intensity ========================
+	sphereLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-10, 2, 10), float(5.0f), float(10.0f) };
 }
 
 void Game::CreateResources()

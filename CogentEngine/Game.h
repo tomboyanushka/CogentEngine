@@ -217,13 +217,17 @@ private:
 
 	XMFLOAT3 newDestination;
 
+	// Lights
 	DirectionalLight directionalLight1;
 	PointLight pointLight;
+	SphereAreaLight sphereLight;
 
+	// Camera
 	Camera* camera;
 
 	AStar::Generator generator;
 
+	// Job System
 	ThreadPool pool{ 4 };
 	MyJob job1;
 	UpdatePosJob job2;

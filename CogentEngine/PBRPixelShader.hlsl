@@ -79,11 +79,11 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 irradiance = skyIrradianceTexture.Sample(basicSampler, input.normal).rgb;
 
 	float3 dirPBR = DirLightPBR(dirLight, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor, irradiance, prefilter, brdf);
-	//float3 dirPBR = DirLightPBR(light1, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
 	//float3 pointPBR = PointLightPBR(light3, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
 	//float3 spotPBR = SpotLightPBR(light4, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
+	float3 areaLight = AreaLightSphere(sphereLight, input.position, input.worldPos, input.normal);
 
-	totalColor = dirPBR * dirLight.Intensity;
+	totalColor = dirPBR * dirLight.Intensity + areaLight;
     clip(surfaceColor.a < 0.05f ? -1 : 1);
     
 	float gamma = 2.4f;

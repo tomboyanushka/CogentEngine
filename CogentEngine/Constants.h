@@ -3,7 +3,7 @@
 
 // Dimensions
 constexpr uint32_t SCREEN_WIDTH			= 1920;
-constexpr uint32_t SCREEN_HEIGHT		= 1080;
+constexpr uint32_t SCREEN_HEIGHT		= 1061;
 
 
 /// Engine Constants
