@@ -47,6 +47,7 @@ Game::~Game()
 	delete e_buddhaStatue;
 	delete e_sponza;
 	delete ref_sphere;
+	delete e_sphereLight;
 	delete camera;
 
 	for (auto e : transparentEntities)
@@ -481,7 +482,6 @@ void Game::DoubleBounceRefractionSetup(Entity* entity)
 	DrawMesh(entity->GetMesh());
 }
 
-//TODO: DrawQuad()
 
 void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth, bool doubleBounce)
 {

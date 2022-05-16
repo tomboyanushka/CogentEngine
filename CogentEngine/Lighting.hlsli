@@ -272,9 +272,36 @@ float3 AreaLightSphere(SphereAreaLight sphereLight, float3 worldPos, float3 worl
 	float3 Lunormalized = sphereLight.LightPos - worldPos;
 	float3 L = normalize(Lunormalized);
 	float sqrDist = dot(Lunormalized, Lunormalized);
+	float illuminance = 0.f;
+
+#if WITHOUT_CORRECT_HORIZON == 1
+	// When the light is above horizon
 
 	float sqrLightRadius = sphereLight.Radius * sphereLight.Radius;
-	float illuminance = PI * (sqrLightRadius / (max(sqrLightRadius, sqrDist))) * saturate(dot(worldNormal, L));
+	illuminance = PI * (sqrLightRadius / (max(sqrLightRadius, sqrDist))) * saturate(dot(worldNormal, L));
+
+#else
+	// Tilted patch to sphere equation
+	float Beta = acos(dot(worldNormal, L));
+	float H = sqrt(sqrDist);
+	float h = H / sphereLight.Radius;
+	float x = sqrt(h * h - 1);
+	float y = -x * (1 / tan(Beta));
+	
+	if (h * cos(Beta) > 1)
+	{
+		illuminance = cos(Beta) / (h * h);
+	}
+	else
+	{
+		illuminance = (1 / (PI * h * h)) *
+			(cos(Beta) * acos(y) - x * sin(Beta) * sqrt(1 - y * y)) +
+			(1 / PI) * atan(sin(Beta) * sqrt(1 - y * y) / x);
+	}
+
+	illuminance *= PI;
+
+#endif
 
 	float3 result = illuminance * sphereLight.Intensity * sphereLight.Color;
 	return result;
