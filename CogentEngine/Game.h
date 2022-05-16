@@ -156,6 +156,7 @@ private:
 	Mesh* sm_skyCube;
 	Mesh* sm_quad;
 	Mesh* sm_cube;
+	Mesh* sm_buddhaStatue;
 	Mesh* dm_pawn;
 	Mesh* sm_plane;
 	Mesh* sm_sponza;
@@ -201,8 +202,7 @@ private:
 
 	Entity* e_plane;
 	Entity* e_sponza;
-	Entity* e_capitol;
-	Entity* e_capitol2;
+	Entity* e_buddhaStatue;
 	Entity* te_sphere1;
 	Entity* te_sphere2;
 	Entity* ref_sphere;
@@ -211,6 +211,10 @@ private:
 	std::vector<Entity*> selectedEntities;
 	std::vector<TransparentEntity> transparentEntities;
 	std::vector<TransparentEntity> depthSortedEntities;
+	std::vector<Material> pbrMaterials;
+	std::vector<Entity*> pbrEntities;
+	const int pbrSphereCount = 4;
+	const int pbrCubeCount = 8;
 	int selectedEntityIndex = -1;
 	bool isSelected = false;
 	bool bBlurEnabled = false;

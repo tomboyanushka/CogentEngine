@@ -2,7 +2,7 @@
 #include <cstdint>
 
 // Dimensions
-constexpr uint32_t SCREEN_WIDTH			= 1920;
+constexpr uint32_t SCREEN_WIDTH			= 1910;
 constexpr uint32_t SCREEN_HEIGHT		= 1061;
 
 

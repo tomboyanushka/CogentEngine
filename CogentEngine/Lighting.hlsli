@@ -267,42 +267,16 @@ float3 SpotLightPBR(SpotLight light, float3 normal, float3 worldPos, float3 camP
 
 // Area Lights from moving_frostbite_to_pbr:
 // https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
-float3 AreaLightSphere(SphereAreaLight sphereLight, float3 lightPos, float3 worldPos, float3 worldNormal)
+float3 AreaLightSphere(SphereAreaLight sphereLight, float3 worldPos, float3 worldNormal)
 {
-	float3 Lunormalized = lightPos - worldPos;
+	float3 Lunormalized = sphereLight.LightPos - worldPos;
 	float3 L = normalize(Lunormalized);
 	float sqrDist = dot(Lunormalized, Lunormalized);
-	float3 result = 0;
 
-#if WITHOUT_CORRECT_HORIZON // Analytical solution above horizon
-	// Patch to Sphere frontal equation ( Quilez version )
 	float sqrLightRadius = sphereLight.Radius * sphereLight.Radius;
-	// Do not allow object to penetrate the light ( max )
-	// Form factor equation include a (1 / FB_PI ) that need to be cancel
-	// thus the " FB_PI *"
 	float illuminance = PI * (sqrLightRadius / (max(sqrLightRadius, sqrDist))) * saturate(dot(worldNormal, L));
 
-# else 
-	// Analytical solution with horizon
-	// Tilted patch to sphere equation
-	float Beta = acos(dot(worldNormal, L));
-	float H = sqrt(sqrDist);
-	float h = sphereLight.Radius;
-	float x = sqrt(h * h - 1);
-	float y = -x * (1 / tan(Beta));
-		 float illuminance = 0;
-	if (h * cos(Beta) > 1)
-		illuminance = cos(Beta) / (h * h);
-	else
-	{
-		illuminance = (1 / (PI * h * h)) *
-		(cos(Beta) * acos(y) - x * sin(Beta) * sqrt(1 - y * y)) +
-		(1 / PI) * atan(sin(Beta) * sqrt(1 - y * y) / x);
-	}
-	illuminance *= PI;
-# endif
-	
-	result = illuminance * sphereLight.Intensity * sphereLight.Color;
+	float3 result = illuminance * sphereLight.Intensity * sphereLight.Color;
 	return result;
 
 }

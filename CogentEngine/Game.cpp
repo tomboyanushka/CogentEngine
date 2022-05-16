@@ -44,8 +44,7 @@ Game::~Game()
 
 	//delete entities
 	delete e_plane;
-	delete e_capitol;
-	delete e_capitol2;
+	delete e_buddhaStatue;
 	delete e_sponza;
 	delete ref_sphere;
 	delete camera;
@@ -53,6 +52,13 @@ Game::~Game()
 	for (auto e : transparentEntities)
 	{
 		delete e.t_Entity;
+	}
+	if (!pbrEntities.empty())
+	{
+		for (auto e : pbrEntities)
+		{
+			delete e;
+		}
 	}
 
 	rootSignature->Release();
@@ -158,7 +164,8 @@ void Game::CreateMesh()
 	// Load meshes
 	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
-	sm_cube = mLoader.Load("../../Assets/Models/buddha.obj", device.Get(), commandList);
+	sm_cube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
+	sm_buddhaStatue = mLoader.Load("../../Assets/Models/buddha.obj", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 
 	LoadSponza();
@@ -174,8 +181,18 @@ void Game::CreateMesh()
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
 	ref_sphere = frameManager.CreateEntity(sm_sphere, &m_default);
-	e_capitol = frameManager.CreateEntity(sm_cube, &m_default);
-	e_capitol2 = frameManager.CreateEntity(sm_sphere, &m_default);
+	e_buddhaStatue = frameManager.CreateEntity(sm_buddhaStatue, &m_default);
+
+	for (int i = 0; i < pbrSphereCount; ++i)
+	{
+		Entity* e = frameManager.CreateEntity(sm_sphere, &pbrMaterials[i]);
+		pbrEntities.push_back(e);
+	}
+	for (int i = pbrSphereCount; i < pbrCubeCount; ++i)
+	{
+		Entity* e = frameManager.CreateEntity(sm_cube, &pbrMaterials[i - pbrSphereCount]);
+		pbrEntities.push_back(e);
+	}
 
 	CloseExecuteAndResetCommandList();
 }
@@ -552,6 +569,7 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 
 	// Scale-->Rotation-->Transform
+	// For reference, to place object in front of camera start with position: (-8.0f, 1.0f, 12.0f)
 
 	transparentEntities[0].t_Entity->SetPosition(XMFLOAT3(0.0f, 3.0f, 10.0f));
 	transparentEntities[0].t_Entity->SetMaterial(&m_default);
@@ -566,16 +584,18 @@ void Game::Update(float deltaTime, float totalTime)
 	e_plane->SetPosition(XMFLOAT3(-2.8f, 2.0f, 2.0f));
 	e_plane->SetMaterial(&m_plane);
 
-	e_capitol->SetScale(XMFLOAT3(5.f, 5.f, 5.f));
-	e_capitol->SetRotation(XMFLOAT3(0.0f, -120.0f, 0.0f));
-	e_capitol->SetPosition(XMFLOAT3(-10.0f, 2.0f, 12.0f));
-
-	e_capitol2->SetScale(XMFLOAT3(2.5f, 2.5f, 2.5f));
-	e_capitol2->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
-	e_capitol2->SetPosition(XMFLOAT3(-10.0f, 3.0f, 8.0f));
+	e_buddhaStatue->SetScale(XMFLOAT3(5.f, 5.f, 5.f));
+	e_buddhaStatue->SetRotation(XMFLOAT3(0.0f, -120.0f, 0.0f));
+	e_buddhaStatue->SetPosition(XMFLOAT3(-10.0f, 2.0f, 20.0f));
 
 	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	e_sponza->SetPosition(XMFLOAT3(0, 0.0f, 10.0f));
+
+	for (int i = 0; i < pbrEntities.size(); ++i)
+	{
+		pbrEntities[i]->SetScale(XMFLOAT3(2.0f, 2.0f, 2.0f));
+		pbrEntities[i]->SetPosition(XMFLOAT3(-8.0f + float(i * 3), 1.0f, 13.0f));
+	}
 
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
@@ -691,7 +711,12 @@ void Game::Draw(float deltaTime, float totalTime)
 			skyIrradiance.GetGPUHandle());
 
 		commandList->SetPipelineState(pbrPipeState);
+		for (auto e : pbrEntities)
+		{
+			DrawEntity(e);
+		}
 		DrawEntity(e_sponza);
+
 
 		commandList->SetPipelineState(toonShadingPipeState);
 		DrawEntity(e_plane);
@@ -701,9 +726,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		//transparent objects are drawn last
 		//DrawTransparentEntities();
 
-		DoubleBounceRefractionSetup(e_capitol);
+		DoubleBounceRefractionSetup(e_buddhaStatue);
 
-		DrawRefractionEntity(e_capitol, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
+		DrawRefractionEntity(e_buddhaStatue, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
 
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}
@@ -764,6 +789,7 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/floor/metal.png",
 		"../../Assets/Textures/floor/roughness.png",
 		commandQueue);
+	pbrMaterials.push_back(m_floor);
 
 	m_scratchedPaint = frameManager.CreateMaterial(
 		"../../Assets/Textures/scratched/diffuse.png",
@@ -771,6 +797,7 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/scratched/metal.png",
 		"../../Assets/Textures/scratched/roughness.png",
 		commandQueue);
+	pbrMaterials.push_back(m_scratchedPaint);
 
 	m_cobbleStone = frameManager.CreateMaterial(
 		"../../Assets/Textures/cobbleStone/diffuse.png",
@@ -778,6 +805,7 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/cobbleStone/metal.png",
 		"../../Assets/Textures/cobbleStone/roughness.png",
 		commandQueue);
+	pbrMaterials.push_back(m_cobbleStone);
 
 	m_paint = frameManager.CreateMaterial(
 		"../../Assets/Textures/paint/diffuse.png",
@@ -785,6 +813,7 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/paint/metal.png",
 		"../../Assets/Textures/paint/roughness.png",
 		commandQueue);
+	pbrMaterials.push_back(m_paint);
 
 	m_water = frameManager.CreateMaterial(
 		"../../Assets/Textures/water/diffuse.png",
@@ -835,7 +864,7 @@ void Game::CreateLights()
 	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
 
 	// AREA LIGHTS: SPHERE: color position radius intensity ========================
-	sphereLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-10, 2, 10), float(5.0f), float(10.0f) };
+	sphereLight = { XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f), XMFLOAT3(-10, 2, 10), float(1.0f), float(10.0f) };
 }
 
 void Game::CreateResources()

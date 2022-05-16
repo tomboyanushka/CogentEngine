@@ -107,7 +107,7 @@ ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D
 {
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(format, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0, 1, 0, flags);
-	auto clearVal = CD3DX12_CLEAR_VALUE(format, 1.f, 0.f);
+	auto clearVal = CD3DX12_CLEAR_VALUE(format, 1.f, 0);
 
 	device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
