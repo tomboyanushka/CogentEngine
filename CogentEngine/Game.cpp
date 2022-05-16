@@ -70,6 +70,7 @@ Game::~Game()
 	blurPipeState->Release();
 	refractionDepthPipeState->Release();
 	refractionPipeState->Release();
+	areaLightEntityPipeState->Release();
 
 	refractionResource->Release();
 	blurResource->Release();
@@ -138,6 +139,7 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"RefractionVS.cso", &refractionVS);
 	D3DReadFileToBlob(L"RefractionPS.cso", &refractionPS);
 	D3DReadFileToBlob(L"NormalsTexture.cso", &normalsPS);
+	D3DReadFileToBlob(L"AreaLightEntityPS.cso", &areaLightEntityPS);
 
 	unsigned int bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255);
@@ -193,6 +195,9 @@ void Game::CreateMesh()
 		Entity* e = frameManager.CreateEntity(sm_cube, &pbrMaterials[i - pbrSphereCount]);
 		pbrEntities.push_back(e);
 	}
+
+	e_sphereLight = frameManager.CreateEntity(sm_sphere, &m_default);
+	sphereAreaLightMap[e_sphereLight] = sphereLight;
 
 	CloseExecuteAndResetCommandList();
 }
@@ -305,6 +310,11 @@ void Game::CreateRootSigAndPipelineState()
 		toonDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, toonPS, defaultRS, defaultDS, defaultBS);
 		device->CreateGraphicsPipelineState(&toonDesc, IID_PPV_ARGS(&toonShadingPipeState));
 
+		// -- Area Light Entity pipe state --
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC areaLightDesc = {};
+		areaLightDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, areaLightEntityPS, defaultRS, defaultDS, defaultBS);
+		device->CreateGraphicsPipelineState(&areaLightDesc, IID_PPV_ARGS(&areaLightEntityPipeState));
+
 		// -- PBR pipe state --
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC pbrDesc = {};
 		pbrDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, pbrPS, defaultRS, defaultDS, defaultBS);
@@ -410,7 +420,7 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC Game::CreatePSODescriptor(
 	return psoDesc;
 }
 
-void Game::DrawEntity(Entity* entity)
+void Game::DrawEntity(Entity* entity, XMFLOAT3 position)
 {
 	VertexShaderExternalData vertexData = {};
 	vertexData.world = entity->GetWorldMatrix();
@@ -431,6 +441,7 @@ void Game::DrawEntity(Entity* entity)
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
+	entity->SetPosition(position);
 }
 
 void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
@@ -700,12 +711,16 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Set constant buffer
 		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap(currentBackBufferIndex).pDescriptorHeap.GetAddressOf());
 
-		//for pixel shader
+		// Set Descriptor Tables
+		// Pixel Shader
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
 			frameManager.GetGPUHandle(pixelCBV.heapIndex, currentBackBufferIndex));
 
-		//for image based lighting
+		// Area Lights
+		DrawSphereAreaLights(e_sphereLight);
+
+		// Image Based Lighting
 		commandList->SetGraphicsRootDescriptorTable(
 			3,
 			skyIrradiance.GetGPUHandle());
@@ -717,19 +732,19 @@ void Game::Draw(float deltaTime, float totalTime)
 		}
 		DrawEntity(e_sponza);
 
-
 		commandList->SetPipelineState(toonShadingPipeState);
 		DrawEntity(e_plane);
 
 		DrawSky();
 
-		//transparent objects are drawn last
+		// -- Transparent objects are drawn last --
 		//DrawTransparentEntities();
 
+		// -- Draw Refraction Entities --
 		DoubleBounceRefractionSetup(e_buddhaStatue);
-
 		DrawRefractionEntity(e_buddhaStatue, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
 
+		// -- Draw Post Process --
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}
 
@@ -864,7 +879,7 @@ void Game::CreateLights()
 	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
 
 	// AREA LIGHTS: SPHERE: color position radius intensity ========================
-	sphereLight = { XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f), XMFLOAT3(-10, 2, 10), float(1.0f), float(10.0f) };
+	sphereLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-10, 1, 10), float(1.0f), float(10.0f) };
 }
 
 void Game::CreateResources()
@@ -1001,6 +1016,17 @@ void Game::DrawTransparentEntities()
 	{
 		DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 	}
+}
+
+void Game::DrawSphereAreaLights(Entity* entity)
+{
+	commandList->SetPipelineState(areaLightEntityPipeState);
+	auto it = sphereAreaLightMap.find(entity);
+	if (it != sphereAreaLightMap.end())
+	{
+		DrawEntity(entity, it->second.LightPos);
+	}
+	
 }
 
 

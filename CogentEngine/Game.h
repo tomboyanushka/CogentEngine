@@ -33,6 +33,7 @@
 #include "Material.h"
 
 #include "AStar.h"
+#include <map>
 
 struct TransparentEntity
 {
@@ -68,13 +69,14 @@ public:
 	// Drawing 
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
-	void DrawEntity(Entity* entity);
+	void DrawEntity(Entity* entity, XMFLOAT3 position = XMFLOAT3(0, 0, 0));
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
 	void DoubleBounceRefractionSetup(Entity* entity);
 	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth, bool doubleBounce);
 	void DrawSky();
 	void DrawBlur(Texture texture);
 	void DrawTransparentEntities();
+	void DrawSphereAreaLights(Entity* entity);
 
 	// Core Gfx
 	void TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
@@ -122,6 +124,7 @@ private:
 	ID3D12PipelineState* blurPipeState;
 	ID3D12PipelineState* refractionPipeState;
 	ID3D12PipelineState* refractionDepthPipeState;
+	ID3D12PipelineState* areaLightEntityPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	FrameManager frameManager;
@@ -148,6 +151,7 @@ private:
 	ID3DBlob* refractionVS;
 	ID3DBlob* refractionPS;
 	ID3DBlob* normalsPS;
+	ID3DBlob* areaLightEntityPS;
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
@@ -206,20 +210,23 @@ private:
 	Entity* te_sphere1;
 	Entity* te_sphere2;
 	Entity* ref_sphere;
+	Entity* e_sphereLight;
 
+	// Containers
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;
 	std::vector<TransparentEntity> transparentEntities;
 	std::vector<TransparentEntity> depthSortedEntities;
 	std::vector<Material> pbrMaterials;
 	std::vector<Entity*> pbrEntities;
+	std::map<Entity*, SphereAreaLight> sphereAreaLightMap;
+
+	// constants
 	const int pbrSphereCount = 4;
 	const int pbrCubeCount = 8;
 	int selectedEntityIndex = -1;
 	bool isSelected = false;
 	bool bBlurEnabled = false;
-
-	XMFLOAT3 newDestination;
 
 	// Lights
 	DirectionalLight directionalLight1;
@@ -230,6 +237,7 @@ private:
 	Camera* camera;
 
 	AStar::Generator generator;
+	XMFLOAT3 newDestination;
 
 	// Job System
 	ThreadPool pool{ 4 };
