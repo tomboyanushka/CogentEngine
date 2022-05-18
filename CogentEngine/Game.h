@@ -232,6 +232,7 @@ private:
 	DirectionalLight directionalLight1;
 	PointLight pointLight;
 	SphereAreaLight sphereLight;
+	DiscAreaLight discLight;
 
 	// Camera
 	Camera* camera;

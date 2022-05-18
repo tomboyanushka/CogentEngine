@@ -61,6 +61,7 @@ Game::~Game()
 			delete e;
 		}
 	}
+	//delete e_sphereLight;
 
 	rootSignature->Release();
 	toonShadingPipeState->Release();
@@ -431,6 +432,7 @@ void Game::DrawEntity(Entity* entity, XMFLOAT3 position)
 	pixelData.dirLight = directionalLight1;
 	pixelData.pointLight[0] = pointLight;
 	pixelData.sphereLight[0] = sphereLight;
+	pixelData.discLight[0] = discLight;
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.pointLightCount = MaxLights;
 
@@ -636,6 +638,19 @@ void Game::Update(float deltaTime, float totalTime)
 	std::sort(transparentEntities.begin(), transparentEntities.end(), CompareByLength);
 }
 
+/// <summary>
+/// Sponza rotation
+///			+Y
+///			^      ^ +X
+///			|     /
+///			|    /
+///			|   /
+///			|  /
+///			| /
+///			 --------------->  -Z
+/// </summary>
+/// <param name="deltaTime"></param>
+/// <param name="totalTime"></param>
 
 void Game::Draw(float deltaTime, float totalTime)
 {
@@ -876,10 +891,15 @@ void Game::CreateLights()
 	directionalLight1 = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 0.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(0.3) };
 
 	// POINT LIGHTS: color position range intensity padding  =======================
-	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
+	pointLight = { XMFLOAT4(0.5f, 0, 0.5f, 0), XMFLOAT3(15, 1, 10), 10, 5.0f };
 
-	// AREA LIGHTS: SPHERE: color position radius intensity ========================
+	// AREA LIGHTS ================================================================= 
+	// SPHERE: color position radius intensity
 	sphereLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-10, 1, 10), float(1.0f), float(10.0f) };
+
+	// DISC : color position radius planeNormal intensity
+	discLight = { XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(-10, 1, 10), float(1.0f), XMFLOAT3(-1, 1, 1), float(100.0f) };
+
 }
 
 void Game::CreateResources()

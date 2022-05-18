@@ -6,6 +6,7 @@ cbuffer externalData : register(b0)
 	DirectionalLight dirLight;
 	PointLight pointLight[MAX_LIGHTS];
     SphereAreaLight sphereLight[MAX_LIGHTS];
+    DiscAreaLight discLight[MAX_LIGHTS];
 	float3 cameraPosition;
 	int pointLightCount;
 }
