@@ -26,42 +26,53 @@ Entity::~Entity()
 
 XMFLOAT3 Entity::GetPosition()
 {
-	return position;
+	return m_position;
+}
+
+XMFLOAT3 Entity::GetRotation()
+{
+	return m_rotation;
 }
 
 void Entity::SetPosition(XMFLOAT3 setPos)
 {
-	position = setPos;
+	m_position = setPos;
 }
 
 void Entity::SetScale(XMFLOAT3 setScale)
 {
-	scale = setScale;
+	m_scale = setScale;
 	//this->boundingOrientedBox = GetBoundingOrientedBox();
 	boundingOrientedBox.Extents.x *= setScale.x;
 	boundingOrientedBox.Extents.y *= setScale.y;
 	boundingOrientedBox.Extents.z *= setScale.z;
 }
 
+// Overload function if scale is uniform
+void Entity::SetScale(float scale)
+{
+	m_scale = XMFLOAT3(scale, scale, scale);
+}
+
 void Entity::SetRotation(XMFLOAT3 setRot)
 {
-	rotation.x = setRot.x * XM_PI / 180;
-	rotation.y = setRot.y * XM_PI / 180;
-	rotation.z = setRot.z * XM_PI / 180;
+	m_rotation.x = setRot.x * XM_PI / 180;
+	m_rotation.y = setRot.y * XM_PI / 180;
+	m_rotation.z = setRot.z * XM_PI / 180;
 }
 
 void Entity::Move(float x, float y, float z)
 {
-	position.x += x;
-	position.y += y;
-	position.z += z;
+	m_position.x += x;
+	m_position.y += y;
+	m_position.z += z;
 }
 
 void Entity::Rotate(float x, float y, float z)
 {
-	rotation.x += x;
-	rotation.y += y;
-	rotation.z += z;
+	m_rotation.x += x;
+	m_rotation.y += y;
+	m_rotation.z += z;
 }
 
 Mesh * Entity::GetMesh()
@@ -78,9 +89,9 @@ void Entity::SetMesh(Mesh * mesh)
 XMFLOAT4X4 Entity::GetWorldMatrix()
 {
 	//coverting them to vectors
-	XMVECTOR vPosition = XMLoadFloat3(&position);
-	XMVECTOR vRotation = XMLoadFloat3(&rotation);
-	XMVECTOR vScale = XMLoadFloat3(&scale);
+	XMVECTOR vPosition = XMLoadFloat3(&m_position);
+	XMVECTOR vRotation = XMLoadFloat3(&m_rotation);
+	XMVECTOR vScale = XMLoadFloat3(&m_scale);
 
 	//coverting to matrices
 	XMMATRIX mPosition = XMMatrixTranslationFromVector(vPosition);
@@ -95,22 +106,19 @@ XMFLOAT4X4 Entity::GetWorldMatrix()
 
 	//storing the world matrix
 
-	XMStoreFloat4x4(&worldMatrix, XMMatrixTranspose(world));
+	XMStoreFloat4x4(&m_worldMatrix, XMMatrixTranspose(world));
 
-	return worldMatrix;
+	return m_worldMatrix;
 }
 
 void Entity::UpdateWorldMatrix()
 {
-	XMMATRIX trans = XMMatrixTranslation(position.x, position.y, position.z);
-	XMMATRIX rot = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
-	//XMMATRIX rotX = XMMatrixRotationX(rotation.x);
-	//XMMATRIX rotY = XMMatrixRotationY(rotation.y);
-	//XMMATRIX rotZ = XMMatrixRotationZ(rotation.z);
-	XMMATRIX sc = XMMatrixScaling(scale.x, scale.y, scale.z);
+	XMMATRIX trans = XMMatrixTranslation(m_position.x, m_position.y, m_position.z);
+	XMMATRIX rot = XMMatrixRotationRollPitchYaw(m_rotation.x, m_rotation.y, m_rotation.z);
+	XMMATRIX sc = XMMatrixScaling(m_scale.x, m_scale.y, m_scale.z);
 
 	XMMATRIX total = sc * rot * trans;
-	XMStoreFloat4x4(&worldMatrix, XMMatrixTranspose(total));
+	XMStoreFloat4x4(&m_worldMatrix, XMMatrixTranspose(total));
 }
 
 char * Entity::GetAddress()
@@ -156,11 +164,11 @@ void Entity::SetSRVHandle(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle)
 BoundingOrientedBox & Entity::GetBoundingOrientedBox()
 {
 	box = mesh->GetBoundingBox();
-	box.Center = position;
-	box.Extents.x *= scale.x;
-	box.Extents.y *= scale.y;
-	box.Extents.z *= scale.z;
-	XMVECTOR quaternion = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&rotation));
+	box.Center = m_position;
+	box.Extents.x *= m_scale.x;
+	box.Extents.y *= m_scale.y;
+	box.Extents.z *= m_scale.z;
+	XMVECTOR quaternion = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&m_rotation));
 	XMFLOAT4 rotationQuaternion;
 	XMStoreFloat4(&rotationQuaternion, quaternion);
 	box.Orientation = rotationQuaternion;

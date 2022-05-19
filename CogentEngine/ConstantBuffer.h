@@ -28,7 +28,8 @@ struct SphereAreaLight
 	XMFLOAT3 LightPos;
 	float Radius;
 	float Intensity;
-	XMFLOAT3 padding;
+	float AboveHorizon;
+	XMFLOAT2 padding;
 };
 
 struct DiscAreaLight

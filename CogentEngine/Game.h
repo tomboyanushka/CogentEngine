@@ -58,6 +58,8 @@ public:
 	void Init();
 	void OnResize();
 	void Update(float deltaTime, float totalTime);
+	void UpdateAreaLights();
+	void UpdateAreaLightDirection(Entity* areaLightEntity);
 
 	// Create and Load
 	void CreateMaterials();
@@ -76,7 +78,7 @@ public:
 	void DrawSky();
 	void DrawBlur(Texture texture);
 	void DrawTransparentEntities();
-	void DrawSphereAreaLights(Entity* entity);
+	void DrawAreaLights(Entity* entity, AreaLightType type);
 
 	// Core Gfx
 	void TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
@@ -164,6 +166,7 @@ private:
 	Mesh* dm_pawn;
 	Mesh* sm_plane;
 	Mesh* sm_sponza;
+	Mesh* sm_disc;
 
 	ModelLoader mLoader;
 
@@ -211,6 +214,7 @@ private:
 	Entity* te_sphere2;
 	Entity* ref_sphere;
 	Entity* e_sphereLight;
+	Entity* e_discLight;
 
 	// Containers
 	std::vector<Entity*> entities;
@@ -220,6 +224,7 @@ private:
 	std::vector<Material> pbrMaterials;
 	std::vector<Entity*> pbrEntities;
 	std::map<Entity*, SphereAreaLight> sphereAreaLightMap;
+	std::map<Entity*, DiscAreaLight> discAreaLightMap;
 
 	// constants
 	const int pbrSphereCount = 4;

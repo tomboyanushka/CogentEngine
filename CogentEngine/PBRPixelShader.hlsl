@@ -84,7 +84,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 sphereLightResult = AreaLightSphere(sphereLight, input.worldPos, input.normal);
 	float3 discLightResult = AreaLightDisc(discLight, input.worldPos, input.normal);
 
-    totalColor = dirPBR * dirLight.Intensity + pointPBR + sphereLightResult + discLightResult;
+    totalColor = dirPBR * dirLight.Intensity + pointPBR + /*sphereLightResult*/ + discLightResult;
 
     clip(surfaceColor.a < 0.05f ? -1 : 1);
     

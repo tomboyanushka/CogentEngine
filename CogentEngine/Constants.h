@@ -14,6 +14,13 @@ constexpr uint32_t HEAPSIZE					= 4096;
 
 constexpr float BG_COLOR[] = { 0.0f, 0.2f, 0.3f, 1.0f };
 
+enum class AreaLightType
+{
+    Sphere,
+    Disc
+};
+
+
 
 // Typedefs
 typedef uint32_t uint32;
