@@ -41,6 +41,8 @@ Game::~Game()
 	delete sm_cube;
 	delete sm_plane;
 	delete sm_sponza;
+	delete sm_disc;
+	delete sm_buddhaStatue;
 
 	//delete entities
 	delete e_plane;
@@ -48,6 +50,7 @@ Game::~Game()
 	delete e_sponza;
 	delete ref_sphere;
 	delete e_sphereLight;
+	delete e_discLight;
 	delete camera;
 
 	for (auto e : transparentEntities)
@@ -613,7 +616,7 @@ void Game::Update(float deltaTime, float totalTime)
 		pbrEntities[i]->SetPosition(XMFLOAT3(-8.0f + float(i * 3), 1.0f, 13.0f));
 	}
 
-	e_sphereLight->SetPosition(XMFLOAT3(-10, 1, 20));
+	e_sphereLight->SetPosition(XMFLOAT3(5 + sin(totalTime) * 5, 1, 10));
 
 	e_discLight->SetScale(XMFLOAT3(0.01f, 0.01f, 0.01f));
 	e_discLight->SetRotation(XMFLOAT3(0.0f, 90.0f, 30.0f));
@@ -927,7 +930,7 @@ void Game::CreateLights()
 
 	// AREA LIGHTS ================================================================= 
 	// SPHERE: color position radius intensity aboveHorizon
-	sphereLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-10, 1, 10), float(1.0f), float(10.0f), float(1.0f)};
+	sphereLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-10, 1, 10), float(1.0f), float(5.0f), float(1.0f)};
 
 	// DISC : color position radius planeNormal intensity
 	discLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0, 0, 0), float(1.0f), XMFLOAT3(0, 0, 1), float(10.0f) };
@@ -1087,7 +1090,7 @@ void Game::DrawAreaLights(Entity* entity, AreaLightType type)
 		auto it = discAreaLightMap.find(entity);
 		if (it != discAreaLightMap.end())
 		{
-			DrawEntity(entity, XMFLOAT3(-5, 5, 8));
+			DrawEntity(entity);
 		}
 
 	}

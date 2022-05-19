@@ -160,13 +160,12 @@ private:
 
 	Mesh* sm_sphere;
 	Mesh* sm_skyCube;
-	Mesh* sm_quad;
 	Mesh* sm_cube;
 	Mesh* sm_buddhaStatue;
-	Mesh* dm_pawn;
 	Mesh* sm_plane;
 	Mesh* sm_sponza;
 	Mesh* sm_disc;
+	Mesh* dm_pawn;
 
 	ModelLoader mLoader;
 
