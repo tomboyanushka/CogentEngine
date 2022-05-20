@@ -41,6 +41,19 @@ struct DiscAreaLight
 	float Intensity;
 };
 
+struct RectAreaLight
+{
+	XMFLOAT4 Color;
+	XMFLOAT3 LightPos;
+	float Intensity;
+	XMFLOAT3 LightLeft;
+	float LightWidth;
+	XMFLOAT3 LightUp;
+	float LighHeight;
+	XMFLOAT3 PlaneNormal;
+	float padding;
+};
+
 struct VertexShaderExternalData
 {
 	XMFLOAT4X4 world;
@@ -62,6 +75,7 @@ struct PixelShaderExternalData
 	PointLight pointLight[MaxLights];
 	SphereAreaLight sphereLight[MaxLights];
 	DiscAreaLight discLight[MaxLights];
+	RectAreaLight rectLight[MaxLights];
 	XMFLOAT3 cameraPosition;
 	int pointLightCount;
 };

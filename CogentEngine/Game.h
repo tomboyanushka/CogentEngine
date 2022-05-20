@@ -160,6 +160,7 @@ private:
 
 	Mesh* sm_sphere;
 	Mesh* sm_skyCube;
+	Mesh* sm_quad;
 	Mesh* sm_cube;
 	Mesh* sm_buddhaStatue;
 	Mesh* sm_plane;
@@ -214,6 +215,7 @@ private:
 	Entity* ref_sphere;
 	Entity* e_sphereLight;
 	Entity* e_discLight;
+	Entity* e_rectLight;
 
 	// Containers
 	std::vector<Entity*> entities;
@@ -224,6 +226,7 @@ private:
 	std::vector<Entity*> pbrEntities;
 	std::map<Entity*, SphereAreaLight> sphereAreaLightMap;
 	std::map<Entity*, DiscAreaLight> discAreaLightMap;
+	std::map<Entity*, RectAreaLight> rectAreaLightMap;
 
 	// constants
 	const int pbrSphereCount = 4;
@@ -237,6 +240,7 @@ private:
 	PointLight pointLight;
 	SphereAreaLight sphereLight;
 	DiscAreaLight discLight;
+	RectAreaLight rectLight;
 
 	// Camera
 	Camera* camera;

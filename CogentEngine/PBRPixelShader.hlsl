@@ -75,7 +75,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//IBL calculations
 	float3 viewDir = normalize(cameraPosition - input.worldPos);
 	float3 prefilter = PrefilteredColor(viewDir, input.normal, roughness);
-	float2 brdf = BrdfLUT(input.normal, viewDir, roughness);
+    float3 dominantDirectionForDiffuse = GetDiffuseDominantDirection(input.normal, viewDir, roughness);
+	
+    float2 brdf = BrdfLUT(input.normal, viewDir, roughness);
 	float3 irradiance = skyIrradianceTexture.Sample(basicSampler, input.normal).rgb;
 
 	float3 dirPBR = DirLightPBR(dirLight, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor, irradiance, prefilter, brdf);
@@ -83,8 +85,10 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//float3 spotPBR = SpotLightPBR(light4, input.normal, input.worldPos, cameraPosition, roughness, metalness, surfaceColor.rgb, specColor);
 	float3 sphereLightResult = AreaLightSphere(sphereLight, input.worldPos, input.normal);
 	float3 discLightResult = AreaLightDisc(discLight, input.worldPos, input.normal);
+    float3 rectLightResult = AreaLightRect(rectLight, input.worldPos, input.normal);
 
-    totalColor = dirPBR * dirLight.Intensity + pointPBR + sphereLightResult + discLightResult;
+	
+    totalColor = dirPBR * dirLight.Intensity + pointPBR + sphereLightResult + discLightResult + rectLightResult;
 
     clip(surfaceColor.a < 0.05f ? -1 : 1);
     

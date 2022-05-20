@@ -43,6 +43,7 @@ Game::~Game()
 	delete sm_sponza;
 	delete sm_disc;
 	delete sm_buddhaStatue;
+	delete sm_quad;
 
 	//delete entities
 	delete e_plane;
@@ -51,6 +52,7 @@ Game::~Game()
 	delete ref_sphere;
 	delete e_sphereLight;
 	delete e_discLight;
+	delete e_rectLight;
 	delete camera;
 
 	for (auto e : transparentEntities)
@@ -175,6 +177,7 @@ void Game::CreateMesh()
 	sm_buddhaStatue = mLoader.Load("../../Assets/Models/buddha.obj", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
 	sm_disc = mLoader.Load("../../Assets/Models/coin.obj", device.Get(), commandList);
+	sm_quad = mLoader.Load("../../Assets/Models/quad.obj", device.Get(), commandList);
 
 	LoadSponza();
 
@@ -202,11 +205,14 @@ void Game::CreateMesh()
 		pbrEntities.push_back(e);
 	}
 
+	// Area Light Entities
 	e_sphereLight = frameManager.CreateEntity(sm_sphere, &m_default);
 	sphereAreaLightMap[e_sphereLight] = sphereLight;
 
 	e_discLight = frameManager.CreateEntity(sm_disc, &m_default);
 	discAreaLightMap[e_discLight] = discLight;
+
+	e_rectLight = frameManager.CreateEntity(sm_quad, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -440,6 +446,7 @@ void Game::DrawEntity(Entity* entity, XMFLOAT3 position)
 	pixelData.pointLight[0] = pointLight;
 	pixelData.sphereLight[0] = sphereLight;
 	pixelData.discLight[0] = discLight;
+	pixelData.rectLight[0] = rectLight;
 	pixelData.cameraPosition = camera->GetPosition();
 	pixelData.pointLightCount = MaxLights;
 
@@ -622,6 +629,10 @@ void Game::Update(float deltaTime, float totalTime)
 	e_discLight->SetRotation(XMFLOAT3(0.0f, 90.0f, 30.0f));
 	e_discLight->SetPosition(XMFLOAT3(-5, sin(totalTime * 3) + 2, 8));
 
+	e_rectLight->SetScale(XMFLOAT3(10, 1, 10));
+	e_rectLight->SetRotation(XMFLOAT3(0, 0, 90));
+	e_rectLight->SetPosition(XMFLOAT3(18, 1, 11));
+
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
 
@@ -672,7 +683,7 @@ void Game::UpdateAreaLightDirection(Entity* areaLightEntity)
 }
 
 /// <summary>
-/// Sponza rotation
+/// Scene coordinates
 ///			+Y
 ///			^      ^ +X
 ///			|     /
@@ -769,6 +780,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Area Lights
 		DrawAreaLights(e_sphereLight, AreaLightType::Sphere);
 		DrawAreaLights(e_discLight, AreaLightType::Disc);
+		DrawAreaLights(e_rectLight, AreaLightType::Rect);
 
 		// Image Based Lighting
 		commandList->SetGraphicsRootDescriptorTable(
@@ -935,6 +947,9 @@ void Game::CreateLights()
 	// DISC : color position radius planeNormal intensity
 	discLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0, 0, 0), float(1.0f), XMFLOAT3(0, 0, 1), float(10.0f) };
 
+	// RECT: Color position intensity lightLeft lightWidth lightUp lighHeight planeNormal
+	rectLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(18, 1, 11), float(1.0f), XMFLOAT3(0, 0, -1), float(10.f), XMFLOAT3(0, 1, 0), float(10.f), XMFLOAT3(-1, 0, 0) };
+
 }
 
 void Game::CreateResources()
@@ -1092,7 +1107,10 @@ void Game::DrawAreaLights(Entity* entity, AreaLightType type)
 		{
 			DrawEntity(entity);
 		}
-
+	}
+	if (type == AreaLightType::Rect)
+	{
+		DrawEntity(e_rectLight, XMFLOAT3(-10.0f, 2.0f, 5.0f));
 	}
 	
 }
