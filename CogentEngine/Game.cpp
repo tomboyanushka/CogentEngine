@@ -210,9 +210,10 @@ void Game::CreateMesh()
 	sphereAreaLightMap[e_sphereLight] = sphereLight;
 
 	e_discLight = frameManager.CreateEntity(sm_disc, &m_default);
-	discAreaLightMap[e_discLight] = discLight;
+	discAreaLightMap[e_discLight] = &discLight;
 
 	e_rectLight = frameManager.CreateEntity(sm_quad, &m_default);
+	rectAreaLightMap[e_rectLight] = &rectLight;
 
 	CloseExecuteAndResetCommandList();
 }
@@ -629,9 +630,9 @@ void Game::Update(float deltaTime, float totalTime)
 	e_discLight->SetRotation(XMFLOAT3(0.0f, 90.0f, 30.0f));
 	e_discLight->SetPosition(XMFLOAT3(-5, sin(totalTime * 3) + 2, 8));
 
-	e_rectLight->SetScale(XMFLOAT3(10, 1, 10));
+	e_rectLight->SetScale(XMFLOAT3(5, 1, 5));
 	e_rectLight->SetRotation(XMFLOAT3(0, 0, 90));
-	e_rectLight->SetPosition(XMFLOAT3(18, 1, 11));
+	e_rectLight->SetPosition(XMFLOAT3(18, 2 + sin(totalTime * 3), 11));
 
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
@@ -668,18 +669,45 @@ void Game::UpdateAreaLights()
 	// Order: Scale -- Rotation -- Position
 	sphereLight.LightPos = e_sphereLight->GetPosition();
 	discLight.LightPos = e_discLight->GetPosition();
-	UpdateAreaLightDirection(e_discLight);
+	UpdateDiscLightDirection(e_discLight);
+	UpdateRectLights(e_rectLight);
 }
 
-void Game::UpdateAreaLightDirection(Entity* areaLightEntity)
+void Game::UpdateDiscLightDirection(Entity* areaLightEntity)
 {
-	auto rotation = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&areaLightEntity->GetRotation())); // 0 90 0 -> Direction (-1,0,0)
-	auto lightDirection = XMFLOAT3(0, 0, 0);
-	auto direction = XMVectorSet(-1.f, 0.f, 0.f, 0.f);
-	direction = XMVector3Rotate(direction, rotation);
-	//areaLightEntity->SetRotation(direction);
-	XMStoreFloat3(&lightDirection, direction);
-	discLight.PlaneNormal = lightDirection;
+	auto &it = discAreaLightMap.find(areaLightEntity);
+	if (it != discAreaLightMap.end())
+	{
+		auto rotation = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&areaLightEntity->GetRotation()));
+		auto lightDirection = XMFLOAT3(0, 0, 0);
+		auto direction = XMVectorSet(-1.f, 0.f, 0.f, 0.f);
+		direction = XMVector3Rotate(direction, rotation);
+		XMStoreFloat3(&lightDirection, direction);
+		it->second->PlaneNormal = lightDirection;
+	}
+}
+
+void Game::UpdateRectLights(Entity* areaLightEntity)
+{
+	auto defaultUpVector = XMFLOAT3(0, 1, 0);
+	auto &it = rectAreaLightMap.find(areaLightEntity);
+	if (it != rectAreaLightMap.end())
+	{
+		it->second->LightPos = areaLightEntity->GetPosition();
+		it->second->LightUp = defaultUpVector; // default up vector
+		auto rotation = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&areaLightEntity->GetRotation()));
+		auto lightDirection = XMFLOAT3(0, 0, 0);
+		auto direction = XMVectorSet(-1.f, 5.9f, 0.f, 0.f);
+		direction = XMVector3Rotate(direction, rotation);
+
+		XMStoreFloat3(&lightDirection, direction);
+		//auto leftVector = gameUtil.CalculateLeftVector(defaultUpVector, lightDirection);
+
+		//it->second->PlaneNormal = lightDirection;
+		it->second->LightLeft = XMFLOAT3(0,0,-1);
+		it->second->LightWidth = areaLightEntity->GetScale().x;
+		it->second->LightHeight = areaLightEntity->GetScale().z;
+	}
 }
 
 /// <summary>
@@ -947,7 +975,7 @@ void Game::CreateLights()
 	// DISC : color position radius planeNormal intensity
 	discLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0, 0, 0), float(1.0f), XMFLOAT3(0, 0, 1), float(10.0f) };
 
-	// RECT: Color position intensity lightLeft lightWidth lightUp lighHeight planeNormal
+	// RECT: color position intensity lightLeft lightWidth lightUp lighHeight planeNormal
 	rectLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(18, 1, 11), float(1.0f), XMFLOAT3(0, 0, -1), float(10.f), XMFLOAT3(0, 1, 0), float(10.f), XMFLOAT3(-1, 0, 0) };
 
 }

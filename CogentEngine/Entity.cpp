@@ -34,6 +34,11 @@ XMFLOAT3 Entity::GetRotation()
 	return m_rotation;
 }
 
+XMFLOAT3 Entity::GetScale()
+{
+	return m_scale;
+}
+
 void Entity::SetPosition(XMFLOAT3 setPos)
 {
 	m_position = setPos;

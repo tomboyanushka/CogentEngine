@@ -49,7 +49,7 @@ struct RectAreaLight
 	XMFLOAT3 LightLeft;
 	float LightWidth;
 	XMFLOAT3 LightUp;
-	float LighHeight;
+	float LightHeight;
 	XMFLOAT3 PlaneNormal;
 	float padding;
 };

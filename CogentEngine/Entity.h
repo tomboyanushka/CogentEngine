@@ -14,6 +14,7 @@ public:
 
 	XMFLOAT3 GetPosition(); 
 	XMFLOAT3 GetRotation(); 
+	XMFLOAT3 GetScale();
 
 	void SetPosition(XMFLOAT3 position);
 	void SetScale(XMFLOAT3 scale);

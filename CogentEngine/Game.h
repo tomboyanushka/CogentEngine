@@ -34,6 +34,7 @@
 
 #include "AStar.h"
 #include <map>
+#include "GameUtility.h"
 
 struct TransparentEntity
 {
@@ -59,7 +60,8 @@ public:
 	void OnResize();
 	void Update(float deltaTime, float totalTime);
 	void UpdateAreaLights();
-	void UpdateAreaLightDirection(Entity* areaLightEntity);
+	void UpdateDiscLightDirection(Entity* areaLightEntity);
+	void UpdateRectLights(Entity* areaLightEntity);
 
 	// Create and Load
 	void CreateMaterials();
@@ -136,6 +138,7 @@ private:
 	ConstantBufferView blurCBV;
 	ConstantBufferView dofCBV;
 	ConstantBufferView refractionCBV;
+	GameUtility gameUtil;
 
 	ID3DBlob* vertexShaderByteCode;
 	ID3DBlob* pixelShaderByteCode;
@@ -225,8 +228,8 @@ private:
 	std::vector<Material> pbrMaterials;
 	std::vector<Entity*> pbrEntities;
 	std::map<Entity*, SphereAreaLight> sphereAreaLightMap;
-	std::map<Entity*, DiscAreaLight> discAreaLightMap;
-	std::map<Entity*, RectAreaLight> rectAreaLightMap;
+	std::map<Entity*, DiscAreaLight*> discAreaLightMap;
+	std::map<Entity*, RectAreaLight*> rectAreaLightMap;
 
 	// constants
 	const int pbrSphereCount = 4;
