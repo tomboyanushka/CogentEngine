@@ -5,6 +5,8 @@ static const float MIN_ROUGHNESS = 0.0000001f; // 6 zeros after decimal
 
 static const float PI = 3.14159265359f;
 
+static bool WITHOUT_CORRECT_HORIZON = false;
+
 struct DirectionalLight
 {
 	float4 AmbientColor;
@@ -31,6 +33,38 @@ struct SpotLight
 	float Range;
 	float SpotFalloff;
 	float3 padding;
+};
+
+struct SphereAreaLight
+{
+	float4 Color;
+	float3 LightPos;
+	float Radius;
+	float Intensity;
+	float AboveHorizon;
+	float2 padding;
+};
+
+struct DiscAreaLight
+{
+	float4 Color;
+	float3 LightPos;
+	float Radius;
+	float3 PlaneNormal;
+	float Intensity;
+};
+
+struct RectAreaLight
+{
+	float4 Color;
+	float3 LightPos;
+	float Intensity;
+	float3 LightLeft;
+    float LightWidth;
+	float3 LightUp;
+	float LightHeight;
+	float3 PlaneNormal;
+	float padding;
 };
 
 float Diffuse(float3 normal, float3 dirToLight)
@@ -253,3 +287,179 @@ float3 SpotLightPBR(SpotLight light, float3 normal, float3 worldPos, float3 camP
 	// Note: This could be optimized a bit
 	return final;
 }
+
+// Area Lights utility functions
+float3 GetDiffuseDominantDirection(float3 normal, float3 viewDir, float roughness)
+{
+    float NdotV = dot(normal, viewDir);
+    float a = 1.02341f * roughness - 1.51174f;
+    float b = -0.511705f * roughness + 0.755868f;
+    float lerpFactor = saturate((NdotV * a + b) * roughness);
+    return normalize(lerp(normal, viewDir, lerpFactor));
+}
+float3 GetSpecularDominantDirectionAreaLights(float3 N, float3 R, float roughness)
+{
+	// Simple linear approximation
+    float lerpFactor = (1 - roughness);
+
+    return normalize(lerp(N, R, lerpFactor));
+}
+float cot(float x)
+{
+	return cos(x) / sin(x);
+}
+float acot(float x)
+{
+	return atan(1 / x);
+}
+
+// Area Lights from moving_frostbite_to_pbr:
+// https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
+float3 AreaLightSphere(SphereAreaLight sphereLight, float3 worldPos, float3 worldNormal)
+{
+	float3 Lunormalized = sphereLight.LightPos - worldPos;
+	float3 L = normalize(Lunormalized);
+	float sqrDist = dot(Lunormalized, Lunormalized);
+	float illuminance = 0.f;
+
+	// When the light is above horizon
+	if(sphereLight.AboveHorizon > 0.f)
+	{
+		float sqrLightRadius = sphereLight.Radius * sphereLight.Radius;
+		illuminance = PI * (sqrLightRadius / (max(sqrLightRadius, sqrDist))) * saturate(dot(worldNormal, L));
+	}
+	else
+	{
+		// Tilted patch to sphere equation
+		float Beta = acos(dot(worldNormal, L));
+		float H = sqrt(sqrDist);
+		float h = H / sphereLight.Radius;
+		float x = sqrt(h * h - 1);
+		float y = -x * (1 / tan(Beta));
+	
+		if (h * cos(Beta) > 1)
+		{
+			illuminance = cos(Beta) / (h * h);
+		}
+		else
+		{
+			illuminance = (1 / (PI * h * h)) *
+			(cos(Beta) * acos(y) - x * sin(Beta) * sqrt(1 - y * y)) +
+			(1 / PI) * atan(sin(Beta) * sqrt(1 - y * y) / x);
+		}
+
+		illuminance *= PI;
+	}
+
+	float3 result = illuminance * sphereLight.Intensity * sphereLight.Color;
+	return result;
+}
+
+float3 AreaLightDisc(DiscAreaLight discLight, float3 worldPos, float3 worldNormal)
+{
+	float3 Lunormalized = discLight.LightPos - worldPos;
+	float3 L = normalize(Lunormalized);
+	float sqrDist = dot(Lunormalized, Lunormalized);
+	float illuminance = 0.f;
+
+	float3 planeNormal = normalize(discLight.PlaneNormal);
+
+	illuminance = PI * saturate(dot(planeNormal, -L));
+	illuminance *= saturate(dot(worldNormal, L));
+	float div = sqrDist / (discLight.Radius * discLight.Radius);
+	div += 1.0f;
+	illuminance /= (sqrDist / (discLight.Radius * discLight.Radius) + 1);
+	float3 result = illuminance * discLight.Intensity * discLight.Color;
+	return result;
+}
+
+float RightPyramidSolidAngle(float dist, float halfWidth, float halfHeight)
+{
+	float a = halfWidth;
+	float b = halfHeight;
+	float h = dist;
+	
+    return 4 * asin(a * b / sqrt((a * a + h * h) * (b * b + h * h)));
+}
+
+// Most representative point: Drobot [Dro14b] proposes to approximate the illuminance integral with a single
+// representative diffusepoint light weighted by the light’ s solid angle
+//  The MRP is the point with the highest value when performing the diffuse lighting integral. 
+// The method correctly handles the horizoncase as the light position will be moved to the MRP
+
+float RectangleSolidAngle(float3 worldPos, float3 p0, float3 p1, float3 p2, float3 p3)
+{
+	float3 v0 = p0 - worldPos;
+	float3 v1 = p1 - worldPos;
+	float3 v2 = p2 - worldPos;
+	float3 v3 = p3 - worldPos;
+	
+	float3 n0 = normalize(cross(v0, v1));
+	float3 n1 = normalize(cross(v1, v2));
+	float3 n2 = normalize(cross(v2, v3));
+	float3 n3 = normalize(cross(v3, v0));
+	
+	float g0 = acos(dot(-n0, n1));
+	float g1 = acos(dot(-n1, n2));
+	float g2 = acos(dot(-n2, n3));
+	float g3 = acos(dot(-n3, n0));
+
+	return g0 + g1 + g2 + g3 - 2 * PI;
+}
+
+float3 RayPlaneIntersect(in float3 rayOrigin, in float3 rayDirection, in float3 planeOrigin, in float3 planeNormal)
+{
+	float distance = dot(planeNormal, planeOrigin - rayOrigin) / dot(planeNormal, rayDirection);
+	return rayOrigin + rayDirection * distance;
+}
+
+float3 closestPointRect(in float3 pos, in float3 planeOrigin, in float3 left, in float3 up, in float halfWidth, in float halfHeight)
+{
+	float3 dir = pos - planeOrigin;
+	// Project in 2D plane ( forward is the light direction away from the plane )
+	// Clamp inside the rectangle
+	// Calculate new world position
+
+	float2 dist2D = float2(dot(dir, left), dot(dir, up));
+
+	float rectHalfSize = float2(halfWidth, halfHeight);
+	dist2D = clamp ( dist2D , - rectHalfSize , rectHalfSize );
+	return planeOrigin + dist2D.x * left + dist2D.y * up;
+}
+
+float AreaLightRect(RectAreaLight rectLight, float3 worldPos, float3 worldNormal)
+{
+    float illuminance = 0.0f;
+	
+	if(dot(worldPos - rectLight.LightPos, rectLight.PlaneNormal) > 0)
+    {
+        float clampCosAngle = 0.001 + saturate(dot(worldNormal, rectLight.PlaneNormal));
+		// clamp d0 to the positive hemisphere of surface norma
+        float3 d0 = normalize(-rectLight.PlaneNormal + worldNormal * clampCosAngle);
+		// clamp d1 to the negative hemisphere of light plane normal
+        float3 d1 = normalize(worldNormal - rectLight.PlaneNormal * clampCosAngle);
+        float3 dh = normalize(d0 + d1);
+	
+        float lightHalfWidth = rectLight.LightWidth * 0.5;
+        float lightHalfHeight = rectLight.LightHeight * 0.5;
+
+        float3 ph = RayPlaneIntersect(worldPos, dh, rectLight.LightPos, rectLight.PlaneNormal);
+        ph = closestPointRect(ph, rectLight.LightPos, rectLight.LightLeft, rectLight.LightUp, lightHalfWidth, lightHalfHeight);
+	
+        float3 p0 = rectLight.LightPos + rectLight.LightLeft * -lightHalfWidth + rectLight.LightUp * lightHalfHeight;
+        float3 p1 = rectLight.LightPos + rectLight.LightLeft * -lightHalfWidth + rectLight.LightUp * -lightHalfHeight;
+        float3 p2 = rectLight.LightPos + rectLight.LightLeft * lightHalfWidth + rectLight.LightUp * -lightHalfHeight;
+        float3 p3 = rectLight.LightPos + rectLight.LightLeft * lightHalfWidth + rectLight.LightUp * lightHalfHeight;
+	
+        float solidAngle = RectangleSolidAngle(worldPos, p0, p1, p2, p3);
+	
+        float3 unormLightVector = ph - worldPos;
+        float sqrDist = dot(unormLightVector, unormLightVector);
+        float3 L = normalize(unormLightVector);
+        illuminance = solidAngle * saturate(dot(worldNormal, L));
+    }
+	
+    float3 result = illuminance * rectLight.Color * rectLight.Intensity;
+    return result;
+}
+

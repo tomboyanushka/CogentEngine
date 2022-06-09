@@ -1,6 +1,6 @@
 #pragma once
 #include <DirectXMath.h>
-constexpr int MaxPointLights = 1;
+constexpr int MaxLights = 1;
 
 using namespace DirectX;
 
@@ -19,7 +19,39 @@ struct PointLight
 	XMFLOAT3 Position;
 	float Range;
 	float Intensity;
-	float padding[3];
+	XMFLOAT3 padding;
+};
+
+struct SphereAreaLight
+{
+	XMFLOAT4 Color;
+	XMFLOAT3 LightPos;
+	float Radius;
+	float Intensity;
+	float AboveHorizon;
+	XMFLOAT2 padding;
+};
+
+struct DiscAreaLight
+{
+	XMFLOAT4 Color;
+	XMFLOAT3 LightPos;
+	float Radius;
+	XMFLOAT3 PlaneNormal;
+	float Intensity;
+};
+
+struct RectAreaLight
+{
+	XMFLOAT4 Color;
+	XMFLOAT3 LightPos;
+	float Intensity;
+	XMFLOAT3 LightLeft;
+	float LightWidth;
+	XMFLOAT3 LightUp;
+	float LightHeight;
+	XMFLOAT3 PlaneNormal;
+	float padding;
 };
 
 struct VertexShaderExternalData
@@ -36,11 +68,14 @@ struct SkyboxExternalData
 	XMFLOAT4X4 proj;
 };
 
-// ----------Default PS------------
+// ----------Default & PBR PS------------
 struct PixelShaderExternalData
 {
 	DirectionalLight dirLight;
-	PointLight pointLight[MaxPointLights];
+	PointLight pointLight[MaxLights];
+	SphereAreaLight sphereLight[MaxLights];
+	DiscAreaLight discLight[MaxLights];
+	RectAreaLight rectLight[MaxLights];
 	XMFLOAT3 cameraPosition;
 	int pointLightCount;
 };

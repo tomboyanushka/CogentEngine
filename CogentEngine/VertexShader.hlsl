@@ -9,7 +9,6 @@ cbuffer externalData : register(b0)
 
 struct VertexShaderInput
 {
-
 	float3 position		: POSITION;     // XYZ position
 	float3 normal		: NORMAL;        // Normals
 	float2 uv           : TEXCOORD;     //UVs

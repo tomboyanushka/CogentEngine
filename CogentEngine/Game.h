@@ -33,6 +33,8 @@
 #include "Material.h"
 
 #include "AStar.h"
+#include <map>
+#include "GameUtility.h"
 
 struct TransparentEntity
 {
@@ -57,6 +59,9 @@ public:
 	void Init();
 	void OnResize();
 	void Update(float deltaTime, float totalTime);
+	void UpdateAreaLights();
+	void UpdateDiscLightDirection(Entity* areaLightEntity);
+	void UpdateRectLights(Entity* areaLightEntity);
 
 	// Create and Load
 	void CreateMaterials();
@@ -68,13 +73,14 @@ public:
 	// Drawing 
 	void Draw(float deltaTime, float totalTime);
 	void DrawMesh(Mesh* mesh);
-	void DrawEntity(Entity* entity);
+	void DrawEntity(Entity* entity, XMFLOAT3 position = XMFLOAT3(0, 0, 0));
 	void DrawTransparentEntity(Entity* entity, float blendAmount);
 	void DoubleBounceRefractionSetup(Entity* entity);
 	void DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth, bool doubleBounce);
 	void DrawSky();
 	void DrawBlur(Texture texture);
 	void DrawTransparentEntities();
+	void DrawAreaLights(Entity* entity, AreaLightType type);
 
 	// Core Gfx
 	void TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
@@ -122,6 +128,7 @@ private:
 	ID3D12PipelineState* blurPipeState;
 	ID3D12PipelineState* refractionPipeState;
 	ID3D12PipelineState* refractionDepthPipeState;
+	ID3D12PipelineState* areaLightEntityPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
 
 	FrameManager frameManager;
@@ -131,6 +138,7 @@ private:
 	ConstantBufferView blurCBV;
 	ConstantBufferView dofCBV;
 	ConstantBufferView refractionCBV;
+	GameUtility gameUtil;
 
 	ID3DBlob* vertexShaderByteCode;
 	ID3DBlob* pixelShaderByteCode;
@@ -148,6 +156,7 @@ private:
 	ID3DBlob* refractionVS;
 	ID3DBlob* refractionPS;
 	ID3DBlob* normalsPS;
+	ID3DBlob* areaLightEntityPS;
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
@@ -156,9 +165,11 @@ private:
 	Mesh* sm_skyCube;
 	Mesh* sm_quad;
 	Mesh* sm_cube;
-	Mesh* dm_pawn;
+	Mesh* sm_buddhaStatue;
 	Mesh* sm_plane;
 	Mesh* sm_sponza;
+	Mesh* sm_disc;
+	Mesh* dm_pawn;
 
 	ModelLoader mLoader;
 
@@ -201,29 +212,46 @@ private:
 
 	Entity* e_plane;
 	Entity* e_sponza;
-	Entity* e_capitol;
-	Entity* e_capitol2;
+	Entity* e_buddhaStatue;
 	Entity* te_sphere1;
 	Entity* te_sphere2;
 	Entity* ref_sphere;
+	Entity* e_sphereLight;
+	Entity* e_discLight;
+	Entity* e_rectLight;
 
+	// Containers
 	std::vector<Entity*> entities;
 	std::vector<Entity*> selectedEntities;
 	std::vector<TransparentEntity> transparentEntities;
 	std::vector<TransparentEntity> depthSortedEntities;
+	std::vector<Material> pbrMaterials;
+	std::vector<Entity*> pbrEntities;
+	std::map<Entity*, SphereAreaLight> sphereAreaLightMap;
+	std::map<Entity*, DiscAreaLight*> discAreaLightMap;
+	std::map<Entity*, RectAreaLight*> rectAreaLightMap;
+
+	// constants
+	const int pbrSphereCount = 4;
+	const int pbrCubeCount = 8;
 	int selectedEntityIndex = -1;
 	bool isSelected = false;
 	bool bBlurEnabled = false;
 
-	XMFLOAT3 newDestination;
-
+	// Lights
 	DirectionalLight directionalLight1;
 	PointLight pointLight;
+	SphereAreaLight sphereLight;
+	DiscAreaLight discLight;
+	RectAreaLight rectLight;
 
+	// Camera
 	Camera* camera;
 
 	AStar::Generator generator;
+	XMFLOAT3 newDestination;
 
+	// Job System
 	ThreadPool pool{ 4 };
 	MyJob job1;
 	UpdatePosJob job2;

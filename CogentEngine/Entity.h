@@ -13,9 +13,12 @@ public:
 	~Entity();
 
 	XMFLOAT3 GetPosition(); 
+	XMFLOAT3 GetRotation(); 
+	XMFLOAT3 GetScale();
 
 	void SetPosition(XMFLOAT3 position);
 	void SetScale(XMFLOAT3 scale);
+	void SetScale(float scale);
 	void SetRotation(XMFLOAT3 rotation);
 
 	void Move(float x, float y, float z);
@@ -40,10 +43,10 @@ public:
 	BoundingOrientedBox& GetBoundingOrientedBox();
 
 private:
-	XMFLOAT4X4 worldMatrix;
-	XMFLOAT3 position;
-	XMFLOAT3 rotation;
-	XMFLOAT3 scale;
+	XMFLOAT4X4 m_worldMatrix;
+	XMFLOAT3 m_position;
+	XMFLOAT3 m_rotation;
+	XMFLOAT3 m_scale;
 	Mesh* mesh;
 	uint32_t constantBufferIndex;
 	Material* material;

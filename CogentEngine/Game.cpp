@@ -41,19 +41,32 @@ Game::~Game()
 	delete sm_cube;
 	delete sm_plane;
 	delete sm_sponza;
+	delete sm_disc;
+	delete sm_buddhaStatue;
+	delete sm_quad;
 
 	//delete entities
 	delete e_plane;
-	delete e_capitol;
-	delete e_capitol2;
+	delete e_buddhaStatue;
 	delete e_sponza;
 	delete ref_sphere;
+	delete e_sphereLight;
+	delete e_discLight;
+	delete e_rectLight;
 	delete camera;
 
 	for (auto e : transparentEntities)
 	{
 		delete e.t_Entity;
 	}
+	if (!pbrEntities.empty())
+	{
+		for (auto e : pbrEntities)
+		{
+			delete e;
+		}
+	}
+	sphereAreaLightMap.clear();
 
 	rootSignature->Release();
 	toonShadingPipeState->Release();
@@ -64,6 +77,7 @@ Game::~Game()
 	blurPipeState->Release();
 	refractionDepthPipeState->Release();
 	refractionPipeState->Release();
+	areaLightEntityPipeState->Release();
 
 	refractionResource->Release();
 	blurResource->Release();
@@ -132,6 +146,7 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"RefractionVS.cso", &refractionVS);
 	D3DReadFileToBlob(L"RefractionPS.cso", &refractionPS);
 	D3DReadFileToBlob(L"NormalsTexture.cso", &normalsPS);
+	D3DReadFileToBlob(L"AreaLightEntityPS.cso", &areaLightEntityPS);
 
 	unsigned int bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255);
@@ -158,8 +173,11 @@ void Game::CreateMesh()
 	// Load meshes
 	sm_sphere = mLoader.Load("../../Assets/Models/sphere.obj", device.Get(), commandList);
 	sm_skyCube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
-	sm_cube = mLoader.Load("../../Assets/Models/buddha.obj", device.Get(), commandList);
+	sm_cube = mLoader.Load("../../Assets/Models/cube.obj", device.Get(), commandList);
+	sm_buddhaStatue = mLoader.Load("../../Assets/Models/buddha.obj", device.Get(), commandList);
 	sm_plane = mLoader.Load("../../Assets/Models/lowPolyPlane.fbx", device.Get(), commandList);
+	sm_disc = mLoader.Load("../../Assets/Models/coin.obj", device.Get(), commandList);
+	sm_quad = mLoader.Load("../../Assets/Models/quad.obj", device.Get(), commandList);
 
 	LoadSponza();
 
@@ -174,8 +192,28 @@ void Game::CreateMesh()
 	e_plane = frameManager.CreateEntity(sm_plane, &m_plane);
 	e_sponza = frameManager.CreateEntity(sm_sponza, &m_default);
 	ref_sphere = frameManager.CreateEntity(sm_sphere, &m_default);
-	e_capitol = frameManager.CreateEntity(sm_cube, &m_default);
-	e_capitol2 = frameManager.CreateEntity(sm_sphere, &m_default);
+	e_buddhaStatue = frameManager.CreateEntity(sm_buddhaStatue, &m_default);
+
+	for (int i = 0; i < pbrSphereCount; ++i)
+	{
+		Entity* e = frameManager.CreateEntity(sm_sphere, &pbrMaterials[i]);
+		pbrEntities.push_back(e);
+	}
+	for (int i = pbrSphereCount; i < pbrCubeCount; ++i)
+	{
+		Entity* e = frameManager.CreateEntity(sm_cube, &pbrMaterials[i - pbrSphereCount]);
+		pbrEntities.push_back(e);
+	}
+
+	// Area Light Entities
+	e_sphereLight = frameManager.CreateEntity(sm_sphere, &m_default);
+	sphereAreaLightMap[e_sphereLight] = sphereLight;
+
+	e_discLight = frameManager.CreateEntity(sm_disc, &m_default);
+	discAreaLightMap[e_discLight] = &discLight;
+
+	e_rectLight = frameManager.CreateEntity(sm_quad, &m_default);
+	rectAreaLightMap[e_rectLight] = &rectLight;
 
 	CloseExecuteAndResetCommandList();
 }
@@ -288,6 +326,11 @@ void Game::CreateRootSigAndPipelineState()
 		toonDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, toonPS, defaultRS, defaultDS, defaultBS);
 		device->CreateGraphicsPipelineState(&toonDesc, IID_PPV_ARGS(&toonShadingPipeState));
 
+		// -- Area Light Entity pipe state --
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC areaLightDesc = {};
+		areaLightDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, areaLightEntityPS, defaultRS, defaultDS, defaultBS);
+		device->CreateGraphicsPipelineState(&areaLightDesc, IID_PPV_ARGS(&areaLightEntityPipeState));
+
 		// -- PBR pipe state --
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC pbrDesc = {};
 		pbrDesc = CreatePSODescriptor(inputElementCount, inputElements, vertexShaderByteCode, pbrPS, defaultRS, defaultDS, defaultBS);
@@ -393,7 +436,7 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC Game::CreatePSODescriptor(
 	return psoDesc;
 }
 
-void Game::DrawEntity(Entity* entity)
+void Game::DrawEntity(Entity* entity, XMFLOAT3 position)
 {
 	VertexShaderExternalData vertexData = {};
 	vertexData.world = entity->GetWorldMatrix();
@@ -402,8 +445,11 @@ void Game::DrawEntity(Entity* entity)
 
 	pixelData.dirLight = directionalLight1;
 	pixelData.pointLight[0] = pointLight;
+	pixelData.sphereLight[0] = sphereLight;
+	pixelData.discLight[0] = discLight;
+	pixelData.rectLight[0] = rectLight;
 	pixelData.cameraPosition = camera->GetPosition();
-	pixelData.pointLightCount = MaxPointLights;
+	pixelData.pointLightCount = MaxLights;
 
 	frameManager.CopyData(&vertexData, sizeof(VertexShaderExternalData), entity->GetConstantBufferView(), currentBackBufferIndex);
 	frameManager.CopyData(&pixelData, sizeof(PixelShaderExternalData), pixelCBV, currentBackBufferIndex);
@@ -413,6 +459,7 @@ void Game::DrawEntity(Entity* entity)
 	commandList->SetGraphicsRootDescriptorTable(2, entity->GetMaterial()->GetGPUHandle());
 
 	DrawMesh(entity->GetMesh());
+	entity->SetPosition(position);
 }
 
 void Game::DrawTransparentEntity(Entity* entity, float blendAmount)
@@ -452,7 +499,6 @@ void Game::DoubleBounceRefractionSetup(Entity* entity)
 	DrawMesh(entity->GetMesh());
 }
 
-//TODO: DrawQuad()
 
 void Game::DrawRefractionEntity(Entity* entity, Texture textureIn, Texture normal, Texture customDepth, bool doubleBounce)
 {
@@ -524,7 +570,6 @@ void Game::OnResize()
 }
 
 static bool sgbDoubleBounce = false;
-
 void Game::Update(float deltaTime, float totalTime)
 {
 	// Quit if the escape key is pressed
@@ -551,6 +596,7 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 
 	// Scale-->Rotation-->Transform
+	// For reference, to place object in front of camera start with position: (-8.0f, 1.0f, 12.0f)
 
 	transparentEntities[0].t_Entity->SetPosition(XMFLOAT3(0.0f, 3.0f, 10.0f));
 	transparentEntities[0].t_Entity->SetMaterial(&m_default);
@@ -565,16 +611,28 @@ void Game::Update(float deltaTime, float totalTime)
 	e_plane->SetPosition(XMFLOAT3(-2.8f, 2.0f, 2.0f));
 	e_plane->SetMaterial(&m_plane);
 
-	e_capitol->SetScale(XMFLOAT3(5.f, 5.f, 5.f));
-	e_capitol->SetRotation(XMFLOAT3(0.0f, -120.0f, 0.0f));
-	e_capitol->SetPosition(XMFLOAT3(-10.0f, 2.0f, 12.0f));
-
-	e_capitol2->SetScale(XMFLOAT3(2.5f, 2.5f, 2.5f));
-	e_capitol2->SetRotation(XMFLOAT3(0.0f, 90.0f, 0.0f));
-	e_capitol2->SetPosition(XMFLOAT3(-10.0f, 3.0f, 8.0f));
+	e_buddhaStatue->SetScale(XMFLOAT3(5.f, 5.f, 5.f));
+	e_buddhaStatue->SetRotation(XMFLOAT3(0.0f, -120.0f, 0.0f));
+	e_buddhaStatue->SetPosition(XMFLOAT3(-10.0f, 2.0f, 20.0f));
 
 	e_sponza->SetScale(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	e_sponza->SetPosition(XMFLOAT3(0, 0.0f, 10.0f));
+
+	for (int i = 0; i < pbrEntities.size(); ++i)
+	{
+		pbrEntities[i]->SetScale(XMFLOAT3(2.0f, 2.0f, 2.0f));
+		pbrEntities[i]->SetPosition(XMFLOAT3(-8.0f + float(i * 3), 1.0f, 13.0f));
+	}
+
+	e_sphereLight->SetPosition(XMFLOAT3(5 + sin(totalTime) * 5, 1, 10));
+
+	e_discLight->SetScale(XMFLOAT3(0.01f, 0.01f, 0.01f));
+	e_discLight->SetRotation(XMFLOAT3(0.0f, 90.0f, 30.0f));
+	e_discLight->SetPosition(XMFLOAT3(-5, sin(totalTime * 3) + 2, 8));
+
+	e_rectLight->SetScale(XMFLOAT3(5, 1, 5));
+	e_rectLight->SetRotation(XMFLOAT3(0, 0, 90));
+	e_rectLight->SetPosition(XMFLOAT3(18, 2 + sin(totalTime * 3), 11));
 
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
@@ -600,10 +658,71 @@ void Game::Update(float deltaTime, float totalTime)
 		t.zPosition = ComputeZDistance(camera, t.t_Entity->GetPosition());
 	}
 
+	UpdateAreaLights();
+
 	// Sort the vector
 	std::sort(transparentEntities.begin(), transparentEntities.end(), CompareByLength);
 }
 
+void Game::UpdateAreaLights()
+{
+	// Order: Scale -- Rotation -- Position
+	sphereLight.LightPos = e_sphereLight->GetPosition();
+	discLight.LightPos = e_discLight->GetPosition();
+	UpdateDiscLightDirection(e_discLight);
+	UpdateRectLights(e_rectLight);
+}
+
+void Game::UpdateDiscLightDirection(Entity* areaLightEntity)
+{
+	auto &it = discAreaLightMap.find(areaLightEntity);
+	if (it != discAreaLightMap.end())
+	{
+		auto rotation = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&areaLightEntity->GetRotation()));
+		auto lightDirection = XMFLOAT3(0, 0, 0);
+		auto direction = XMVectorSet(-1.f, 0.f, 0.f, 0.f);
+		direction = XMVector3Rotate(direction, rotation);
+		XMStoreFloat3(&lightDirection, direction);
+		it->second->PlaneNormal = lightDirection;
+	}
+}
+
+void Game::UpdateRectLights(Entity* areaLightEntity)
+{
+	auto defaultUpVector = XMFLOAT3(0, 1, 0);
+	auto &it = rectAreaLightMap.find(areaLightEntity);
+	if (it != rectAreaLightMap.end())
+	{
+		it->second->LightPos = areaLightEntity->GetPosition();
+		it->second->LightUp = defaultUpVector; // default up vector
+		auto rotation = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&areaLightEntity->GetRotation()));
+		auto lightDirection = XMFLOAT3(0, 0, 0);
+		auto direction = XMVectorSet(-1.f, 5.9f, 0.f, 0.f);
+		direction = XMVector3Rotate(direction, rotation);
+
+		XMStoreFloat3(&lightDirection, direction);
+		//auto leftVector = gameUtil.CalculateLeftVector(defaultUpVector, lightDirection);
+
+		//it->second->PlaneNormal = lightDirection;
+		it->second->LightLeft = XMFLOAT3(0,0,-1);
+		it->second->LightWidth = areaLightEntity->GetScale().x;
+		it->second->LightHeight = areaLightEntity->GetScale().z;
+	}
+}
+
+/// <summary>
+/// Scene coordinates
+///			+Y
+///			^      ^ +X
+///			|     /
+///			|    /
+///			|   /
+///			|  /
+///			| /
+///			 --------------->  -Z
+/// </summary>
+/// <param name="deltaTime"></param>
+/// <param name="totalTime"></param>
 
 void Game::Draw(float deltaTime, float totalTime)
 {
@@ -632,6 +751,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		rb.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		commandList->ResourceBarrier(1, &rb);
+
 
 		// Clear the RTV
 		commandList->ClearRenderTargetView(
@@ -679,17 +799,27 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Set constant buffer
 		commandList->SetDescriptorHeaps(1, frameManager.GetGPUDescriptorHeap(currentBackBufferIndex).pDescriptorHeap.GetAddressOf());
 
-		//for pixel shader
+		// Set Descriptor Tables
+		// Pixel Shader
 		commandList->SetGraphicsRootDescriptorTable(
 			1,
 			frameManager.GetGPUHandle(pixelCBV.heapIndex, currentBackBufferIndex));
 
-		//for image based lighting
+		// Area Lights
+		DrawAreaLights(e_sphereLight, AreaLightType::Sphere);
+		DrawAreaLights(e_discLight, AreaLightType::Disc);
+		DrawAreaLights(e_rectLight, AreaLightType::Rect);
+
+		// Image Based Lighting
 		commandList->SetGraphicsRootDescriptorTable(
 			3,
 			skyIrradiance.GetGPUHandle());
 
 		commandList->SetPipelineState(pbrPipeState);
+		for (auto e : pbrEntities)
+		{
+			DrawEntity(e);
+		}
 		DrawEntity(e_sponza);
 
 		commandList->SetPipelineState(toonShadingPipeState);
@@ -697,13 +827,14 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		DrawSky();
 
-		//transparent objects are drawn last
+		// -- Transparent objects are drawn last --
 		//DrawTransparentEntities();
 
-		DoubleBounceRefractionSetup(e_capitol);
+		// -- Draw Refraction Entities --
+		DoubleBounceRefractionSetup(e_buddhaStatue);
+		DrawRefractionEntity(e_buddhaStatue, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
 
-		DrawRefractionEntity(e_capitol, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
-
+		// -- Draw Post Process --
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
 	}
 
@@ -763,6 +894,7 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/floor/metal.png",
 		"../../Assets/Textures/floor/roughness.png",
 		commandQueue);
+	pbrMaterials.push_back(m_floor);
 
 	m_scratchedPaint = frameManager.CreateMaterial(
 		"../../Assets/Textures/scratched/diffuse.png",
@@ -770,6 +902,7 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/scratched/metal.png",
 		"../../Assets/Textures/scratched/roughness.png",
 		commandQueue);
+	pbrMaterials.push_back(m_scratchedPaint);
 
 	m_cobbleStone = frameManager.CreateMaterial(
 		"../../Assets/Textures/cobbleStone/diffuse.png",
@@ -777,6 +910,7 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/cobbleStone/metal.png",
 		"../../Assets/Textures/cobbleStone/roughness.png",
 		commandQueue);
+	pbrMaterials.push_back(m_cobbleStone);
 
 	m_paint = frameManager.CreateMaterial(
 		"../../Assets/Textures/paint/diffuse.png",
@@ -784,6 +918,7 @@ void Game::CreateMaterials()
 		"../../Assets/Textures/paint/metal.png",
 		"../../Assets/Textures/paint/roughness.png",
 		commandQueue);
+	pbrMaterials.push_back(m_paint);
 
 	m_water = frameManager.CreateMaterial(
 		"../../Assets/Textures/water/diffuse.png",
@@ -831,7 +966,18 @@ void Game::CreateLights()
 	directionalLight1 = { XMFLOAT4(+0.1f, +0.1f, +0.1f, 0.0f), XMFLOAT4(+1.0f, +1.0f, +1.0f, +1.0f), XMFLOAT3(0.2f, -2.0f, 1.8f), float(0.3) };
 
 	// POINT LIGHTS: color position range intensity padding  =======================
-	pointLight = { XMFLOAT4(0.5f, 0, 0, 0), XMFLOAT3(1, 0, 0), 10, 1 };
+	pointLight = { XMFLOAT4(0.5f, 0, 0.5f, 0), XMFLOAT3(15, 1, 10), 10, 5.0f };
+
+	// AREA LIGHTS ================================================================= 
+	// SPHERE: color position radius intensity aboveHorizon
+	sphereLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-10, 1, 10), float(1.0f), float(5.0f), float(1.0f)};
+
+	// DISC : color position radius planeNormal intensity
+	discLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0, 0, 0), float(1.0f), XMFLOAT3(0, 0, 1), float(10.0f) };
+
+	// RECT: color position intensity lightLeft lightWidth lightUp lighHeight planeNormal
+	rectLight = { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(18, 1, 11), float(1.0f), XMFLOAT3(0, 0, -1), float(10.f), XMFLOAT3(0, 1, 0), float(10.f), XMFLOAT3(-1, 0, 0) };
+
 }
 
 void Game::CreateResources()
@@ -968,6 +1114,33 @@ void Game::DrawTransparentEntities()
 	{
 		DrawTransparentEntity(transparentEntity.t_Entity, 0.05f);
 	}
+}
+
+void Game::DrawAreaLights(Entity* entity, AreaLightType type)
+{
+	commandList->SetPipelineState(areaLightEntityPipeState);
+
+	if (type == AreaLightType::Sphere)
+	{
+		auto it = sphereAreaLightMap.find(entity);
+		if (it != sphereAreaLightMap.end())
+		{
+			DrawEntity(entity);
+		}
+	}
+	if (type == AreaLightType::Disc)
+	{
+		auto it = discAreaLightMap.find(entity);
+		if (it != discAreaLightMap.end())
+		{
+			DrawEntity(entity);
+		}
+	}
+	if (type == AreaLightType::Rect)
+	{
+		DrawEntity(e_rectLight, XMFLOAT3(-10.0f, 2.0f, 5.0f));
+	}
+	
 }
 
 
