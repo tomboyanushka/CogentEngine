@@ -108,6 +108,7 @@ private:
 	void CreateMatrices();
 	void CreateMesh();
 	void CreateRootSigAndPipelineState();
+	void CreateComputeRootSigAndPipelineState();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC CreatePSODescriptor(
 		const unsigned int inputElementCount,
 		D3D12_INPUT_ELEMENT_DESC inputElements[],

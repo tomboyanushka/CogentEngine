@@ -394,6 +394,16 @@ void Game::CreateRootSigAndPipelineState()
 	}
 }
 
+void Game::CreateComputeRootSigAndPipelineState()
+{
+	// Root Sig
+	{
+		CD3DX12_DESCRIPTOR_RANGE1 myTextureUAV(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+		CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+		rootParameters[0].InitAsDescriptorTable(1, &myTextureUAV);
+	}
+}
+
 D3D12_GRAPHICS_PIPELINE_STATE_DESC Game::CreatePSODescriptor(
 	const unsigned int inputElementCount,
 	D3D12_INPUT_ELEMENT_DESC inputElements[],
