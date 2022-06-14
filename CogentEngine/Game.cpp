@@ -115,8 +115,10 @@ void Game::Init()
 	CreateTextures();
 	CreateMaterials();
 	CreateMesh();
-	CreateResources();
+
 	CreateRootSigAndPipelineState();
+	CreateComputeRootSigAndPipelineState();
+	CreateResources();
 
 	//AI Initialization
 	//entities[0]->SetPosition(XMFLOAT3(0, -4, 0));
@@ -147,6 +149,7 @@ void Game::LoadShaders()
 	D3DReadFileToBlob(L"RefractionPS.cso", &refractionPS);
 	D3DReadFileToBlob(L"NormalsTexture.cso", &normalsPS);
 	D3DReadFileToBlob(L"AreaLightEntityPS.cso", &areaLightEntityPS);
+	D3DReadFileToBlob(L"GameOfLifeCS.cso", &gameOfLifeCS);
 
 	unsigned int bufferSize = sizeof(PixelShaderExternalData);
 	bufferSize = (bufferSize + 255);
@@ -396,12 +399,34 @@ void Game::CreateRootSigAndPipelineState()
 
 void Game::CreateComputeRootSigAndPipelineState()
 {
-	// Root Sig
-	{
-		CD3DX12_DESCRIPTOR_RANGE1 myTextureUAV(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
-		CD3DX12_ROOT_PARAMETER1 rootParameters[1];
-		rootParameters[0].InitAsDescriptorTable(1, &myTextureUAV);
-	}
+	// Root Signature setup
+	CD3DX12_DESCRIPTOR_RANGE1 myTextureUAV(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	rootParameters[0].InitAsDescriptorTable(1, &myTextureUAV);
+
+	//Setting Root Signature
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc(
+			1, rootParameters,
+			0, nullptr
+		);
+
+	// Serialize the root signature.
+	Microsoft::WRL::ComPtr<ID3DBlob> rootSignatureBlob;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
+	D3DX12SerializeVersionedRootSignature(&rootSignatureDesc,
+		D3D_ROOT_SIGNATURE_VERSION_1_1, &rootSignatureBlob, &errorBlob);
+
+	// Create the root signature.
+	device->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(),
+		rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&computeRootSignature));
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineDesc = {};
+	computePipelineDesc.pRootSignature = computeRootSignature.Get();
+	computePipelineDesc.CS.pShaderBytecode = gameOfLifeCS->GetBufferPointer();
+	computePipelineDesc.CS.BytecodeLength = gameOfLifeCS->GetBufferSize();
+	computePipelineDesc.NodeMask = 0;
+
+	device->CreateComputePipelineState(&computePipelineDesc, IID_PPV_ARGS(&gameOfLifePipeState));
 }
 
 D3D12_GRAPHICS_PIPELINE_STATE_DESC Game::CreatePSODescriptor(
@@ -846,6 +871,8 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// -- Draw Post Process --
 		DrawBlur(backbufferTexture[currentBackBufferIndex]);
+
+		DispatchCompute();
 	}
 
 	// Present
@@ -1004,6 +1031,9 @@ void Game::CreateResources()
 	backfaceNormalResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"BackfaceNormalResource");
 	backfaceNormalTexture = frameManager.CreateTextureFromResource(commandQueue, backfaceNormalResource);
 
+	gameOfLifeResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, L"GameOfLifeResource", DXGI_FORMAT_R32G32B32A32_FLOAT, true);
+	gameOfLifeHandle = CreateUnorderedAccessView(gameOfLifeResource, DXGI_FORMAT_R32G32B32A32_FLOAT);
+
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
 		backbufferTexture[i] = frameManager.CreateTextureFromResource(commandQueue, backBuffers[i]);
@@ -1151,6 +1181,28 @@ void Game::DrawAreaLights(Entity* entity, AreaLightType type)
 		DrawEntity(e_rectLight, XMFLOAT3(-10.0f, 2.0f, 5.0f));
 	}
 	
+}
+
+void Game::DispatchCompute()
+{
+	commandList->SetPipelineState(gameOfLifePipeState.Get());
+	commandList->SetComputeRootSignature(computeRootSignature.Get());
+	//commandList->SetDescriptorHeaps(1, uavHeap.GetAddressOf());
+
+	// transition resource
+	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	device->CopyDescriptorsSimple(
+		1,
+		gameOfLifeHandle,
+		uavHeap->GetCPUDescriptorHandleForHeapStart(),
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	commandList->SetComputeRootDescriptorTable(0, uavHeap->GetGPUDescriptorHandleForHeapStart());
+	//dispatch cs
+	commandList->Dispatch(10, 10, 1);
+	// transition back
+	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+	// Reset to default
 }
 
 

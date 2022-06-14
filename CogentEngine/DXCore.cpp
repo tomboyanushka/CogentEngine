@@ -271,6 +271,13 @@ HRESULT DXCore::InitDirectX()
 		rtvHandles[i] = CreateRenderTarget(backBuffers[i], FRAME_BUFFER_COUNT);
 	}
 
+	// Create uav heap for compute pipeline
+	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
+	descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	descriptorHeapDesc.NumDescriptors = RENDER_TARGET_COUNT;
+	descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&uavHeap));
+
 
 	// Create depth stencil buffer
 	D3D12_RESOURCE_DESC depthBufferDesc = {};
@@ -555,6 +562,22 @@ D3D12_CPU_DESCRIPTOR_HANDLE DXCore::CreateRenderTarget(ID3D12Resource* resource,
 	rtvIndex++;
 
 	return rtvHandle;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DXCore::CreateUnorderedAccessView(ID3D12Resource* resource, DXGI_FORMAT format)
+{
+	size_t descriptorHeapIncrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+	uavDesc.Format = format;
+	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D; 
+	
+	D3D12_CPU_DESCRIPTOR_HANDLE uavHandle = uavHeap->GetCPUDescriptorHandleForHeapStart();
+	uavHandle.ptr += descriptorHeapIncrementSize * uavIndex;
+
+	device->CreateUnorderedAccessView(resource, nullptr, &uavDesc, uavHandle);
+
+	return uavHandle;
 }
 
 // --------------------------------------------------------

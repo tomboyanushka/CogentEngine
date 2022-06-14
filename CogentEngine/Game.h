@@ -81,6 +81,7 @@ public:
 	void DrawBlur(Texture texture);
 	void DrawTransparentEntities();
 	void DrawAreaLights(Entity* entity, AreaLightType type);
+	void DispatchCompute();
 
 	// Core Gfx
 	void TransitionResourceToState(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
@@ -120,6 +121,8 @@ private:
 	);
 
 	ID3D12RootSignature* rootSignature;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> computeRootSignature;
+
 	ID3D12PipelineState* quadPipeState;
 	ID3D12PipelineState* quadDepthPipeState;
 	ID3D12PipelineState* toonShadingPipeState;
@@ -131,6 +134,7 @@ private:
 	ID3D12PipelineState* refractionDepthPipeState;
 	ID3D12PipelineState* areaLightEntityPipeState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> skyPipeState;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> gameOfLifePipeState;
 
 	FrameManager frameManager;
 	ConstantBufferView pixelCBV;
@@ -158,6 +162,7 @@ private:
 	ID3DBlob* refractionPS;
 	ID3DBlob* normalsPS;
 	ID3DBlob* areaLightEntityPS;
+	ID3DBlob* gameOfLifeCS;
 
 	PixelShaderExternalData pixelData = {};
 	TransparencyExternalData transparencyData;
@@ -182,6 +187,7 @@ private:
 	Texture refractionTexture;
 	Texture customDepthTexture;
 	Texture backfaceNormalTexture;
+	Texture gameOfLifeTexture;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
 	ID3D12Resource* blurResource;
@@ -192,6 +198,9 @@ private:
 
 	ID3D12Resource* backfaceNormalResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE backfaceNormalHandle;
+
+	ID3D12Resource* gameOfLifeResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE gameOfLifeHandle;
 	
 	// default
 	Texture defaultDiffuse;

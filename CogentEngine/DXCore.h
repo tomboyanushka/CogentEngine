@@ -83,10 +83,12 @@ protected:
 	ID3D12CommandAllocator*		commandAllocator[FRAME_BUFFER_COUNT];
 
 	unsigned int			rtvDescriptorSize;
+	unsigned int			uavDescriptorSize;
 	// Heap that will store RTV's 
 	ID3D12DescriptorHeap*	rtvHeap;
 	ID3D12DescriptorHeap*	dsvHeap;
 	ID3D12DescriptorHeap*	srvHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> uavHeap;
 
 	ID3D12Resource* backBuffers[FRAME_BUFFER_COUNT];
 	ID3D12Resource* depthStencilBuffer;
@@ -110,6 +112,7 @@ protected:
 	HRESULT CreateVertexBuffer(unsigned int dataStride, unsigned int dataCount, void* data, ID3D12Resource** buffer, D3D12_VERTEX_BUFFER_VIEW* vbView);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE CreateRenderTarget(ID3D12Resource* resource, UINT numDesc, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
+	D3D12_CPU_DESCRIPTOR_HANDLE CreateUnorderedAccessView(ID3D12Resource* resource, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	// Helper function for allocating a console window
 	void CreateConsoleWindow(int bufferLines, int bufferColumns, int windowLines, int windowColumns);
@@ -133,6 +136,7 @@ private:
 
 	// Render Target tracking
 	int rtvIndex = 0;
+	int uavIndex = 0;
 
 	void UpdateTimer();			// Updates the timer for this frame
 	void UpdateTitleBarStats();	// Puts debug info in the title bar
