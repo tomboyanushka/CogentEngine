@@ -1031,8 +1031,8 @@ void Game::CreateResources()
 	backfaceNormalResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"BackfaceNormalResource");
 	backfaceNormalTexture = frameManager.CreateTextureFromResource(commandQueue, backfaceNormalResource);
 
-	gameOfLifeResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, L"GameOfLifeResource", DXGI_FORMAT_R32G32B32A32_FLOAT, true);
-	gameOfLifeHandle = CreateUnorderedAccessView(gameOfLifeResource, DXGI_FORMAT_R32G32B32A32_FLOAT);
+	gameOfLifeResource = frameManager.CreateUAVResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, L"GameOfLifeResource", DXGI_FORMAT_R32G32B32A32_FLOAT);
+	gameOfLifeTexture = frameManager.CreateTextureFromUAVResource(commandQueue, gameOfLifeResource, DXGI_FORMAT_R32G32B32A32_FLOAT);
 
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
@@ -1191,18 +1191,16 @@ void Game::DispatchCompute()
 
 	// transition resource
 	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	device->CopyDescriptorsSimple(
-		1,
-		gameOfLifeHandle,
-		uavHeap->GetCPUDescriptorHandleForHeapStart(),
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	commandList->SetComputeRootDescriptorTable(0, uavHeap->GetGPUDescriptorHandleForHeapStart());
+
 	//dispatch cs
 	commandList->Dispatch(10, 10, 1);
 	// transition back
 	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	// Reset to default
+	commandList->SetPipelineState(outlinePipeState);
+	// Root sig (must happen before root descriptor table)
+	commandList->SetGraphicsRootSignature(rootSignature);
 }
 
 

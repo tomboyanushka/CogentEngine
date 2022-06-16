@@ -42,34 +42,37 @@ uint32 Texture::CreateTexture(ID3D12Device* device, const std::string& fileName,
 uint32 Texture::CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resourceIn, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, bool isDepthTexture, DXGI_FORMAT format)
 {
 	textureIndexTracker++;
-	// Describe and create a Texture2D.
-	D3D12_RESOURCE_DESC textureDesc = {};
-	textureDesc.MipLevels = 1;
-	if (isDepthTexture)
+	auto srvFormat = format;
+	if (!isDepthTexture)
 	{
-		textureDesc.Format = format;
+		srvFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
-	else
-	{
-		textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	}
-	textureDesc.Width = textureWidth;
-	textureDesc.Height = textureHeight;
-	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	textureDesc.DepthOrArraySize = 1;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.SampleDesc.Quality = 0;
-	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
 	// Describe and create a SRV for the texture.
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = textureDesc.Format;
+	srvDesc.Format = srvFormat;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
+
 	this->resource = resourceIn;
 	this->textureCPUHandle = textureHeap->handleCPU(textureIndexTracker);
 	device->CreateShaderResourceView(resourceIn, &srvDesc, textureCPUHandle);
+	textureIndex = textureIndexTracker;
+	return textureIndexTracker;
+}
+
+uint32 Texture::CreateTextureFromUAVResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resourceIn, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, DXGI_FORMAT format)
+{
+	textureIndexTracker++;
+
+	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+	uavDesc.Format = format;
+	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+
+	this->resource = resourceIn;
+	this->textureCPUHandle = textureHeap->handleCPU(textureIndexTracker);
+	device->CreateUnorderedAccessView(resourceIn, nullptr, &uavDesc, textureCPUHandle);
 	textureIndex = textureIndexTracker;
 	return textureIndexTracker;
 }

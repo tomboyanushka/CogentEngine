@@ -103,22 +103,11 @@ Texture FrameManager::CreateTexture(const std::string& textureFileName, ID3D12Co
 	return texture;
 }
 
-ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName, DXGI_FORMAT format, bool isCompute)
+ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName, DXGI_FORMAT format)
 {
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(format, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0, 1, 0, flags);
 	auto clearVal = CD3DX12_CLEAR_VALUE(format, 1.f, 0);
-	if (isCompute)
-	{
-		device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_NONE,
-			&desc,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			nullptr,
-			IID_PPV_ARGS(&resource));
-	}
-	else
 	{
 		device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -129,11 +118,27 @@ ID3D12Resource* FrameManager::CreateResource(ID3D12CommandQueue* commandQueue, D
 			IID_PPV_ARGS(resource.GetAddressOf()));
 	}
 
-	
 	resource->SetName(resourceName);
-
 	resources.push_back(resource);
+	return resource.Get();
+}
 
+ID3D12Resource* FrameManager::CreateUAVResource(ID3D12CommandQueue* commandQueue, D3D12_RESOURCE_FLAGS flags, LPCWSTR resourceName, DXGI_FORMAT format)
+{
+	Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+	auto desc = CD3DX12_RESOURCE_DESC::Tex2D(format, SCREEN_WIDTH, SCREEN_HEIGHT, 1, 0, 1, 0, flags);
+	auto clearVal = CD3DX12_CLEAR_VALUE(format, 1.f, 0);
+
+	device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&desc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		nullptr,
+		IID_PPV_ARGS(&resource));
+
+	resource->SetName(resourceName);
+	resources.push_back(resource);
 	return resource.Get();
 }
 
@@ -141,6 +146,19 @@ Texture FrameManager::CreateTextureFromResource(ID3D12CommandQueue* commandQueue
 {
 	Texture texture;
 	texture.CreateTextureFromResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT, isDepthTexture, format);
+	device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
+	texture.SetGPUHandle(handle);
+	frameHeapCounter++;
+
+	return texture;
+}
+
+Texture FrameManager::CreateTextureFromUAVResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DXGI_FORMAT format)
+{
+	Texture texture;
+	texture.CreateTextureFromUAVResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT, format);
 	device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
