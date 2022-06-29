@@ -1192,6 +1192,8 @@ void Game::DispatchCompute()
 	// transition resource
 	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
+	commandList->SetComputeRootDescriptorTable(0, gameOfLifeTexture.GetGPUHandle());
+
 	//dispatch cs
 	commandList->Dispatch(10, 10, 1);
 	// transition back
