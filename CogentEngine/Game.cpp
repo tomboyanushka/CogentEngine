@@ -675,6 +675,7 @@ void Game::Update(float deltaTime, float totalTime)
 	e_gameOfLife->SetScale(XMFLOAT3(5, 1, 5));
 	e_gameOfLife->SetRotation(XMFLOAT3(0, 0, 90));
 	e_gameOfLife->SetPosition(XMFLOAT3(-4, 2, 11));
+	e_gameOfLife->SetMaterial(&m_gameOfLife);
 
 
 	if (job1.IsCompleted())
@@ -864,6 +865,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			DrawEntity(e);
 		}
 		DrawEntity(e_sponza);
+		DrawEntity(e_gameOfLife);
 
 		commandList->SetPipelineState(toonShadingPipeState);
 		DrawEntity(e_plane);
@@ -1047,6 +1049,8 @@ void Game::CreateResources()
 	gameOfLifeResource = frameManager.CreateUAVResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, L"GameOfLifeResource", DXGI_FORMAT_R32G32B32A32_FLOAT);
 	gameOfLifeUAV = frameManager.CreateUAVTextureFromResource(commandQueue, gameOfLifeResource, DXGI_FORMAT_R32G32B32A32_FLOAT);
 	gameOfLifeSRV = frameManager.CreateTextureFromResource(commandQueue, gameOfLifeResource, false, DXGI_FORMAT_R32G32B32A32_FLOAT);
+	m_gameOfLife = frameManager.CreateMaterial(commandQueue, gameOfLifeSRV, defaultNormal, defaultMetal, defaultRoughness, "GameOfLifeMaterial");
+
 
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{

@@ -63,8 +63,8 @@ Material FrameManager::CreateMaterial(
 			metalTextureFileName,
 			roughnessTextureFileName,
 			commandQueue,
-			&materialHeap,
 			&textureHeap,
+			&materialHeap,
 			this,
 			FRAME_BUFFER_COUNT,
 			type);
@@ -77,6 +77,37 @@ Material FrameManager::CreateMaterial(
 		materialMap.insert({ materialName, material });
 	}
 
+	return material;
+}
+
+Material FrameManager::CreateMaterial(ID3D12CommandQueue* commandQueue, Texture& diffuseTextureFileName, Texture& normalTextureFileName, Texture& metalTextureFileName, Texture& roughnessTextureFileName, const std::string& materialName, TextureType type)
+{
+	Material material;
+	if (materialMap.find(materialName) != materialMap.end())
+	{
+		material = materialMap[materialName];
+	}
+	else
+	{
+		material.Create(device,
+			diffuseTextureFileName,
+			normalTextureFileName,
+			metalTextureFileName,
+			roughnessTextureFileName,
+			commandQueue,
+			&textureHeap,
+			&materialHeap,
+			this,
+			FRAME_BUFFER_COUNT,
+			type);
+
+		device->CopyDescriptorsSimple(4, gpuHeap.handleCPU(frameHeapCounter), material.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);
+		material.SetGPUHandle(handle);
+		frameHeapCounter += 4;
+		materialMap.insert({ materialName, material });
+	}
 	return material;
 }
 

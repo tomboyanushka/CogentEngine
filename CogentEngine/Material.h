@@ -27,6 +27,18 @@ public:
 		uint32_t heapCount,
 		TextureType type = WIC);
 
+	uint32_t Create(ID3D12Device* device,
+		Texture& diffuse,
+		Texture& normal,
+		Texture& metalness,
+		Texture& roughness,
+		ID3D12CommandQueue* commandQueue,
+		const DescriptorHeap* textureHeap,
+		const DescriptorHeap* materialHeap,
+		FrameManager* frameManager,
+		uint32_t heapCount,
+		TextureType type = WIC);
+
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle();
 	void SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle);
 

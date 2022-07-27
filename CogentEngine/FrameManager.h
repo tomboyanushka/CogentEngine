@@ -23,6 +23,15 @@ public:
 		const std::string& metalTextureFileName = defaultMetalFile,
 		const std::string& roughnessTextureFileName = defaultRoughnessFile);
 
+	Material CreateMaterial(
+		ID3D12CommandQueue* commandQueue,
+		Texture& diffuseTextureFileName,
+		Texture& normalTextureFileName,
+		Texture& metalTextureFileName,
+		Texture& roughnessTextureFileName,
+		const std::string& materialName,
+		TextureType type = WIC);
+
 	Texture CreateTexture(
 		const std::string& textureFileName,
 		ID3D12CommandQueue* commandQueue,
