@@ -17,9 +17,9 @@ class Texture
 public:
 	uint32 CreateTexture(ID3D12Device* device, const std::string& fileName, ID3D12CommandQueue* commandQueue, const DescriptorHeap* textureHeap, TextureType type = WIC);
 
-	uint32 CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, bool isDepthTexture, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
+	uint32 CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, bool isDepthTexture = false, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
-	uint32 CreateTextureFromUAVResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
+	uint32 CreateUAVTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	ID3D12Resource* GetResource();
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle();

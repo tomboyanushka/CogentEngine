@@ -1,9 +1,10 @@
 #pragma once
 #include <cstdint>
+#include <string>
 
 // Dimensions
-constexpr uint32_t SCREEN_WIDTH			= 1910;
-constexpr uint32_t SCREEN_HEIGHT		= 1061;
+constexpr uint32_t SCREEN_WIDTH			= 1920;
+constexpr uint32_t SCREEN_HEIGHT		= 1080;
 
 
 /// Engine Constants
@@ -21,6 +22,10 @@ enum class AreaLightType
     Rect
 };
 
+static const std::string defaultDiffuseFile = "../../Assets/Textures/default/diffuse.png";
+static const std::string defaultNormalFile = "../../Assets/Textures/default/normal.png";
+static const std::string defaultMetalFile = "../../Assets/Textures/default/metal.png";
+static const std::string defaultRoughnessFile = "../../Assets/Textures/default/roughness.png";
 
 
 // Typedefs

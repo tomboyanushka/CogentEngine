@@ -38,7 +38,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	uint numSamples = 0;
 
     float width = 1 / 1920.0;
-    float height = 1 / 1080.0;
+    float height = 1 / 1061.0;
 	
 	int blurAmount = 3.0f;
 	float depth = DepthBuffer.Sample(Sampler, input.uv).r;

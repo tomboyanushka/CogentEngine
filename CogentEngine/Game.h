@@ -187,7 +187,8 @@ private:
 	Texture refractionTexture;
 	Texture customDepthTexture;
 	Texture backfaceNormalTexture;
-	Texture gameOfLifeTexture;
+	Texture gameOfLifeUAV;
+	Texture gameOfLifeSRV;
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
 	ID3D12Resource* blurResource;
@@ -214,6 +215,7 @@ private:
 	Material m_paint;
 	Material m_water;
 	Material m_plane;
+	Material m_gameOfLife;
 	Material* m_sponza;
 	Material m_default;
 	std::vector<Material> sponzaMat;
@@ -229,6 +231,7 @@ private:
 	Entity* e_sphereLight;
 	Entity* e_discLight;
 	Entity* e_rectLight;
+	Entity* e_gameOfLife;
 
 	// Containers
 	std::vector<Entity*> entities;

@@ -43,9 +43,9 @@ uint32 Texture::CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQue
 {
 	textureIndexTracker++;
 	auto srvFormat = format;
-	if (!isDepthTexture)
+	if (isDepthTexture)
 	{
-		srvFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		srvFormat = DXGI_FORMAT_R32_FLOAT;
 	}
 
 	// Describe and create a SRV for the texture.
@@ -62,7 +62,7 @@ uint32 Texture::CreateTextureFromResource(ID3D12Device* device, ID3D12CommandQue
 	return textureIndexTracker;
 }
 
-uint32 Texture::CreateTextureFromUAVResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resourceIn, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, DXGI_FORMAT format)
+uint32 Texture::CreateUAVTextureFromResource(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12Resource* resourceIn, DescriptorHeap* textureHeap, uint32 textureWidth, uint32 textureHeight, DXGI_FORMAT format)
 {
 	textureIndexTracker++;
 

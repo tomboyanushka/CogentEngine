@@ -16,12 +16,12 @@ public:
 	void Initialize(ID3D12Device* device);
 	ConstantBufferView CreateConstantBufferView(uint32_t bufferSize);
 	Material CreateMaterial(
-		const std::string& diffuseTextureFileName,
-		const std::string& normalTextureFileName,
-		const std::string& metalTextureFileName,
-		const std::string& roughTextureFileName,
 		ID3D12CommandQueue* commandQueue,
-		TextureType type = WIC);
+		TextureType type = WIC,
+		const std::string& diffuseTextureFileName = defaultDiffuseFile,
+		const std::string& normalTextureFileName = defaultNormalFile,
+		const std::string& metalTextureFileName = defaultMetalFile,
+		const std::string& roughnessTextureFileName = defaultRoughnessFile);
 
 	Texture CreateTexture(
 		const std::string& textureFileName,
@@ -40,7 +40,7 @@ public:
 		bool isDepthTexture = false,
 		DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 
-	Texture CreateTextureFromUAVResource(
+	Texture CreateUAVTextureFromResource(
 		ID3D12CommandQueue* commandQueue,
 		ID3D12Resource* resource,
 		DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);

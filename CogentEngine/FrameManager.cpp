@@ -41,12 +41,12 @@ ConstantBufferView FrameManager::CreateConstantBufferView(uint32_t bufferSize)
 }
 
 Material FrameManager::CreateMaterial(
+	ID3D12CommandQueue* commandQueue,
+	TextureType type,
 	const std::string& diffuseTextureFileName,
 	const std::string& normalTextureFileName,
 	const std::string& metalTextureFileName,
-	const std::string& roughnessTextureFileName,
-	ID3D12CommandQueue* commandQueue,
-	TextureType type)
+	const std::string& roughnessTextureFileName)
 {
 	Material material;
 	std::string materialName = diffuseTextureFileName + normalTextureFileName + metalTextureFileName + roughnessTextureFileName;
@@ -155,10 +155,10 @@ Texture FrameManager::CreateTextureFromResource(ID3D12CommandQueue* commandQueue
 	return texture;
 }
 
-Texture FrameManager::CreateTextureFromUAVResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DXGI_FORMAT format)
+Texture FrameManager::CreateUAVTextureFromResource(ID3D12CommandQueue* commandQueue, ID3D12Resource* resource, DXGI_FORMAT format)
 {
 	Texture texture;
-	texture.CreateTextureFromUAVResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT, format);
+	texture.CreateUAVTextureFromResource(device, commandQueue, resource, &textureHeap, SCREEN_WIDTH, SCREEN_HEIGHT, format);
 	device->CopyDescriptorsSimple(1, gpuHeap.handleCPU(frameHeapCounter), texture.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = gpuHeap.handleGPU(frameHeapCounter);

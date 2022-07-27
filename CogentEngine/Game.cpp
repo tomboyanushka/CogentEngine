@@ -53,6 +53,7 @@ Game::~Game()
 	delete e_sphereLight;
 	delete e_discLight;
 	delete e_rectLight;
+	delete e_gameOfLife;
 	delete camera;
 
 	for (auto e : transparentEntities)
@@ -217,6 +218,8 @@ void Game::CreateMesh()
 
 	e_rectLight = frameManager.CreateEntity(sm_quad, &m_default);
 	rectAreaLightMap[e_rectLight] = &rectLight;
+
+	e_gameOfLife = frameManager.CreateEntity(sm_quad, &m_default);
 
 	CloseExecuteAndResetCommandList();
 }
@@ -613,7 +616,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	camera->Update(deltaTime);
 
-	if (GetAsyncKeyState(VK_TAB))
+	if (GetAsyncKeyState(VK_F1))
 	{
 		sgbDoubleBounce = true;
 	}
@@ -621,7 +624,7 @@ void Game::Update(float deltaTime, float totalTime)
 	{
 		sgbDoubleBounce = false;
 	}
-	if (GetAsyncKeyState(VK_SHIFT))
+	if (GetAsyncKeyState(VK_F2))
 	{
 		bBlurEnabled = true;
 	}
@@ -668,6 +671,11 @@ void Game::Update(float deltaTime, float totalTime)
 	e_rectLight->SetScale(XMFLOAT3(5, 1, 5));
 	e_rectLight->SetRotation(XMFLOAT3(0, 0, 90));
 	e_rectLight->SetPosition(XMFLOAT3(18, 2 + sin(totalTime * 3), 11));
+
+	e_gameOfLife->SetScale(XMFLOAT3(5, 1, 5));
+	e_gameOfLife->SetRotation(XMFLOAT3(0, 0, 90));
+	e_gameOfLife->SetPosition(XMFLOAT3(-4, 2, 11));
+
 
 	if (job1.IsCompleted())
 		auto f1 = pool.Enqueue(&job1);
@@ -870,7 +878,10 @@ void Game::Draw(float deltaTime, float totalTime)
 		DrawRefractionEntity(e_buddhaStatue, refractionTexture, defaultNormal, customDepthTexture, sgbDoubleBounce);
 
 		// -- Draw Post Process --
-		DrawBlur(backbufferTexture[currentBackBufferIndex]);
+		if (bBlurEnabled)
+		{
+			DrawBlur(backbufferTexture[currentBackBufferIndex]);
+		}
 
 		DispatchCompute();
 	}
@@ -918,58 +929,60 @@ void Game::DrawMesh(Mesh* mesh)
 void Game::CreateMaterials()
 {
 	m_default = frameManager.CreateMaterial(
-		"../../Assets/Textures/default/diffuse.png",
-		"../../Assets/Textures/default/normal.png",
-		"../../Assets/Textures/default/metal.png",
-		"../../Assets/Textures/default/roughness.png",
 		commandQueue);
 
-
 	m_floor = frameManager.CreateMaterial(
+		commandQueue,
+		WIC,
 		"../../Assets/Textures/floor/diffuse.png",
 		"../../Assets/Textures/floor/normal.png",
 		"../../Assets/Textures/floor/metal.png",
-		"../../Assets/Textures/floor/roughness.png",
-		commandQueue);
+		"../../Assets/Textures/floor/roughness.png");
 	pbrMaterials.push_back(m_floor);
 
 	m_scratchedPaint = frameManager.CreateMaterial(
+		commandQueue,
+		WIC,
 		"../../Assets/Textures/scratched/diffuse.png",
 		"../../Assets/Textures/scratched/normal.png",
 		"../../Assets/Textures/scratched/metal.png",
-		"../../Assets/Textures/scratched/roughness.png",
-		commandQueue);
+		"../../Assets/Textures/scratched/roughness.png");
 	pbrMaterials.push_back(m_scratchedPaint);
 
 	m_cobbleStone = frameManager.CreateMaterial(
+		commandQueue,
+		WIC,
 		"../../Assets/Textures/cobbleStone/diffuse.png",
 		"../../Assets/Textures/cobbleStone/normal.png",
 		"../../Assets/Textures/cobbleStone/metal.png",
-		"../../Assets/Textures/cobbleStone/roughness.png",
-		commandQueue);
+		"../../Assets/Textures/cobbleStone/roughness.png");
+
 	pbrMaterials.push_back(m_cobbleStone);
 
 	m_paint = frameManager.CreateMaterial(
+		commandQueue,
+		WIC,
 		"../../Assets/Textures/paint/diffuse.png",
 		"../../Assets/Textures/paint/normal.png",
 		"../../Assets/Textures/paint/metal.png",
-		"../../Assets/Textures/paint/roughness.png",
-		commandQueue);
+		"../../Assets/Textures/paint/roughness.png");
 	pbrMaterials.push_back(m_paint);
 
 	m_water = frameManager.CreateMaterial(
+		commandQueue,
+		WIC,
 		"../../Assets/Textures/water/diffuse.png",
 		"../../Assets/Textures/water/normal.png",
 		"../../Assets/Textures/default_metal.png",
-		"../../Assets/Textures/water/roughness.png",
-		commandQueue);
+		"../../Assets/Textures/water/roughness.png");
 
 	m_plane = frameManager.CreateMaterial(
+		commandQueue,
+		WIC,
 		"../../Assets/Textures/plane/diffuse.png",
 		"../../Assets/Textures/plane/normal.png",
 		"../../Assets/Textures/default_metal.png",
-		"../../Assets/Textures/default_roughness.png",
-		commandQueue);
+		"../../Assets/Textures/default_roughness.png");
 }
 
 void Game::CreateTextures()
@@ -1032,7 +1045,8 @@ void Game::CreateResources()
 	backfaceNormalTexture = frameManager.CreateTextureFromResource(commandQueue, backfaceNormalResource);
 
 	gameOfLifeResource = frameManager.CreateUAVResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, L"GameOfLifeResource", DXGI_FORMAT_R32G32B32A32_FLOAT);
-	gameOfLifeTexture = frameManager.CreateTextureFromUAVResource(commandQueue, gameOfLifeResource, DXGI_FORMAT_R32G32B32A32_FLOAT);
+	gameOfLifeUAV = frameManager.CreateUAVTextureFromResource(commandQueue, gameOfLifeResource, DXGI_FORMAT_R32G32B32A32_FLOAT);
+	gameOfLifeSRV = frameManager.CreateTextureFromResource(commandQueue, gameOfLifeResource, false, DXGI_FORMAT_R32G32B32A32_FLOAT);
 
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
@@ -1094,7 +1108,7 @@ void Game::LoadSponza()
 		metal.replace(metal.size() - 3, 3, "DDS");
 		roughness.replace(roughness.size() - 3, 3, "DDS");
 
-		Material m = frameManager.CreateMaterial(diffuse, normal, metal, roughness, commandQueue, DDS);
+		Material m = frameManager.CreateMaterial(commandQueue, DDS, diffuse, normal, metal, roughness);
 		sponzaMat.push_back(m);
 	}
 }
@@ -1137,10 +1151,7 @@ void Game::DrawBlur(Texture textureIn)
 	TransitionResourceToState(blurResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	commandList->SetGraphicsRootDescriptorTable(2, blurTexture.GetGPUHandle());
 	commandList->SetPipelineState(quadPipeState);
-	if (bBlurEnabled)
-	{
-		commandList->DrawInstanced(4, 1, 0, 0);
-	}
+	commandList->DrawInstanced(4, 1, 0, 0);
 }
 
 void Game::DrawTransparentEntities()
@@ -1187,21 +1198,18 @@ void Game::DispatchCompute()
 {
 	commandList->SetPipelineState(gameOfLifePipeState.Get());
 	commandList->SetComputeRootSignature(computeRootSignature.Get());
-	//commandList->SetDescriptorHeaps(1, uavHeap.GetAddressOf());
 
 	// transition resource
 	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-	commandList->SetComputeRootDescriptorTable(0, gameOfLifeTexture.GetGPUHandle());
+	commandList->SetComputeRootDescriptorTable(0, gameOfLifeUAV.GetGPUHandle());
 
 	//dispatch cs
 	commandList->Dispatch(10, 10, 1);
-	// transition back
+
 	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	// Reset to default
 	commandList->SetPipelineState(outlinePipeState);
-	// Root sig (must happen before root descriptor table)
 	commandList->SetGraphicsRootSignature(rootSignature);
 }
 
