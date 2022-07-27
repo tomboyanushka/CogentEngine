@@ -161,6 +161,7 @@ void Game::LoadShaders()
 	skyCBV = frameManager.CreateConstantBufferView(sizeof(SkyboxExternalData));
 	blurCBV = frameManager.CreateConstantBufferView(sizeof(BlurExternalData));
 	refractionCBV = frameManager.CreateConstantBufferView(sizeof(RefractionExternalData));
+	gameOfLifeCBV = frameManager.CreateConstantBufferView(sizeof(GameOfLifeExternalData));
 }
 
 void Game::CreateMatrices()
@@ -403,13 +404,23 @@ void Game::CreateRootSigAndPipelineState()
 void Game::CreateComputeRootSigAndPipelineState()
 {
 	// Root Signature setup
-	CD3DX12_DESCRIPTOR_RANGE1 myTextureUAV(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
-	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
-	rootParameters[0].InitAsDescriptorTable(1, &myTextureUAV);
+	CD3DX12_DESCRIPTOR_RANGE1 range[3];
+
+	range[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	range[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+
+	range[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	//CD3DX12_DESCRIPTOR_RANGE1 myTextureUAV(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
+	rootParameters[0].InitAsDescriptorTable(1, &range[0], D3D12_SHADER_VISIBILITY_ALL);
+	rootParameters[1].InitAsDescriptorTable(1, &range[1], D3D12_SHADER_VISIBILITY_ALL);
+	rootParameters[2].InitAsDescriptorTable(1, &range[2], D3D12_SHADER_VISIBILITY_ALL);
 
 	//Setting Root Signature
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc(
-			1, rootParameters,
+			3, rootParameters,
 			0, nullptr
 		);
 
@@ -633,6 +644,24 @@ void Game::Update(float deltaTime, float totalTime)
 		bBlurEnabled = false;
 	}
 
+
+	if (GetAsyncKeyState(VK_F3))
+	{
+		gameOfLifeInitiated = false;
+	}
+
+	if (golTimer > 0.1)
+	{
+		golTimer = 0.f;
+		golUpdate = true;
+	}
+
+	golTimer += deltaTime;
+	//else
+	//{
+	//	bBlurEnabled = false;
+	//}
+
 	// Scale-->Rotation-->Transform
 	// For reference, to place object in front of camera start with position: (-8.0f, 1.0f, 12.0f)
 
@@ -674,8 +703,8 @@ void Game::Update(float deltaTime, float totalTime)
 
 	e_gameOfLife->SetScale(XMFLOAT3(5, 1, 5));
 	e_gameOfLife->SetRotation(XMFLOAT3(0, 0, 90));
-	e_gameOfLife->SetPosition(XMFLOAT3(-4, 2, 11));
-	e_gameOfLife->SetMaterial(&m_gameOfLife);
+	e_gameOfLife->SetPosition(XMFLOAT3(-8, 2, 12));
+	e_gameOfLife->SetMaterial(&m_gameOfLife[currentGameOfLifeTextureIndex]);
 
 
 	if (job1.IsCompleted())
@@ -885,7 +914,8 @@ void Game::Draw(float deltaTime, float totalTime)
 			DrawBlur(backbufferTexture[currentBackBufferIndex]);
 		}
 
-		DispatchCompute();
+		if(!gameOfLifeInitiated || golUpdate)
+			DispatchCompute();
 	}
 
 	// Present
@@ -1045,12 +1075,16 @@ void Game::CreateResources()
 
 	backfaceNormalResource = frameManager.CreateResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, L"BackfaceNormalResource");
 	backfaceNormalTexture = frameManager.CreateTextureFromResource(commandQueue, backfaceNormalResource);
+	for (int i = 0; i < 2; ++i)
+	{
+		gameOfLifeResources[i] = frameManager.CreateUAVResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, L"GameOfLifeResource", DXGI_FORMAT_R32G32B32A32_FLOAT);
+		gameOfLifeUAVTexture[i] = frameManager.CreateUAVTextureFromResource(commandQueue, gameOfLifeResources[i], DXGI_FORMAT_R32G32B32A32_FLOAT);
+		gameOfLifeSRVTexture[i] = frameManager.CreateTextureFromResource(commandQueue, gameOfLifeResources[i], false, DXGI_FORMAT_R32G32B32A32_FLOAT);
+		std::string gameOfLifeMaterialName = "GameOfLifeMaterial";
+		gameOfLifeMaterialName = gameOfLifeMaterialName + std::to_string(i);
 
-	gameOfLifeResource = frameManager.CreateUAVResource(commandQueue, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, L"GameOfLifeResource", DXGI_FORMAT_R32G32B32A32_FLOAT);
-	gameOfLifeUAV = frameManager.CreateUAVTextureFromResource(commandQueue, gameOfLifeResource, DXGI_FORMAT_R32G32B32A32_FLOAT);
-	gameOfLifeSRV = frameManager.CreateTextureFromResource(commandQueue, gameOfLifeResource, false, DXGI_FORMAT_R32G32B32A32_FLOAT);
-	m_gameOfLife = frameManager.CreateMaterial(commandQueue, gameOfLifeSRV, defaultNormal, defaultMetal, defaultRoughness, "GameOfLifeMaterial");
-
+		m_gameOfLife[i] = frameManager.CreateMaterial(commandQueue, gameOfLifeSRVTexture[i], defaultNormal, defaultMetal, defaultRoughness, gameOfLifeMaterialName);
+	}
 
 	for (int i = 0; i < FRAME_BUFFER_COUNT; ++i)
 	{
@@ -1200,21 +1234,46 @@ void Game::DrawAreaLights(Entity* entity, AreaLightType type)
 
 void Game::DispatchCompute()
 {
+	golUpdate = false;
+	GameOfLifeExternalData data = {};
+	//data.init = true;
+	if (gameOfLifeInitiated)
+	{
+		data.init = false;
+	}
+	else
+	{
+		data.init = true;
+		gameOfLifeInitiated = true;
+		//if(currentGameOfLifeTextureIndex == 1)
+
+	}
+
+	frameManager.CopyData(&data, sizeof(GameOfLifeExternalData), gameOfLifeCBV, currentBackBufferIndex);
+
 	commandList->SetPipelineState(gameOfLifePipeState.Get());
 	commandList->SetComputeRootSignature(computeRootSignature.Get());
-
+	uint32_t nextIndex = (currentGameOfLifeTextureIndex + 1) % 2;
 	// transition resource
-	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	commandList->SetComputeRootDescriptorTable(0, gameOfLifeUAV.GetGPUHandle());
+	TransitionResourceToState(gameOfLifeResources[currentGameOfLifeTextureIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	commandList->SetComputeRootDescriptorTable(0, gameOfLifeUAVTexture[currentGameOfLifeTextureIndex].GetGPUHandle());
+	commandList->SetComputeRootDescriptorTable(1, frameManager.GetGPUHandle(gameOfLifeCBV.heapIndex, currentBackBufferIndex));
+	commandList->SetComputeRootDescriptorTable(2, gameOfLifeSRVTexture[nextIndex].GetGPUHandle());
 
 	//dispatch cs
 	commandList->Dispatch(10, 10, 1);
 
-	TransitionResourceToState(gameOfLifeResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	TransitionResourceToState(gameOfLifeResources[currentGameOfLifeTextureIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	// Reset to default
 	commandList->SetPipelineState(outlinePipeState);
 	commandList->SetGraphicsRootSignature(rootSignature);
+
+	currentGameOfLifeTextureIndex++;
+	if (currentGameOfLifeTextureIndex == numGameOfLifeBuffers)
+	{
+		currentGameOfLifeTextureIndex = 0;
+	}
 }
 
 

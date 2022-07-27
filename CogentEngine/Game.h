@@ -143,6 +143,7 @@ private:
 	ConstantBufferView blurCBV;
 	ConstantBufferView dofCBV;
 	ConstantBufferView refractionCBV;
+	ConstantBufferView gameOfLifeCBV;
 	GameUtility gameUtil;
 
 	ID3DBlob* vertexShaderByteCode;
@@ -187,8 +188,12 @@ private:
 	Texture refractionTexture;
 	Texture customDepthTexture;
 	Texture backfaceNormalTexture;
-	Texture gameOfLifeUAV;
-	Texture gameOfLifeSRV;
+	//Texture gameOfLifeUAV;
+	//Texture gameOfLifeSRV;
+	Texture gameOfLifeUAVTexture[2];
+	Texture gameOfLifeSRVTexture[2];
+	bool gameOfLifeInitiated = false;
+
 	Texture backbufferTexture[FRAME_BUFFER_COUNT];
 
 	ID3D12Resource* blurResource;
@@ -200,8 +205,12 @@ private:
 	ID3D12Resource* backfaceNormalResource;
 	D3D12_CPU_DESCRIPTOR_HANDLE backfaceNormalHandle;
 
-	ID3D12Resource* gameOfLifeResource;
-	D3D12_CPU_DESCRIPTOR_HANDLE gameOfLifeHandle;
+	//ID3D12Resource* gameOfLifeResource;
+	ID3D12Resource* gameOfLifeResources[2];
+	int currentGameOfLifeTextureIndex = 0;
+	int numGameOfLifeBuffers = 2;
+	float golTimer = 0;
+	bool golUpdate = false;
 	
 	// default
 	Texture defaultDiffuse;
@@ -215,7 +224,8 @@ private:
 	Material m_paint;
 	Material m_water;
 	Material m_plane;
-	Material m_gameOfLife;
+	//Material m_gameOfLife;
+	Material m_gameOfLife[2];
 	Material* m_sponza;
 	Material m_default;
 	std::vector<Material> sponzaMat;

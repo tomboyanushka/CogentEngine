@@ -34,6 +34,11 @@ uint32_t Material::Create(ID3D12Device* device,
 
 uint32_t Material::Create(ID3D12Device* device, Texture& diffuse, Texture& normal, Texture& metalness, Texture& roughness, ID3D12CommandQueue* commandQueue, const DescriptorHeap* textureHeap, const DescriptorHeap* materialHeap, FrameManager* frameManager, uint32_t heapCount, TextureType type)
 {
+	diffuseTexture = diffuse;
+	normalTexture = normal;
+	metalnessTexture = metalness;
+	roughnessTexture = roughness;
+
 	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker), diffuse.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker + 1), normal.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	device->CopyDescriptorsSimple(1, materialHeap->handleCPU(materialIndexTracker + 2), metalness.GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);

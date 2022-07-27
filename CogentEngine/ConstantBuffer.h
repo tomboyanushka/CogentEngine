@@ -119,3 +119,8 @@ struct RefractionExternalData
 	float zFar;
 	XMFLOAT2 padding;
 };
+
+struct GameOfLifeExternalData
+{
+	bool init;
+};
