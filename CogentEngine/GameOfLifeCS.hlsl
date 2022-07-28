@@ -39,11 +39,13 @@ void main(uint3 ThreadID : SV_DispatchThreadID)
 
         if (Source[ThreadID.xy].x > 0)
         {
-            Result[ThreadID.xy] = (sum == 2 || sum == 3) ? float4(1, 1, 1, 1) : float4(0, 0, 0, 1);
+            Result[ThreadID.xy] = (sum == 2 || sum == 3) ? float4(1, 1, 1, 1) : float4(0, 0, 0, 0);
+            Result[ThreadID.xy] *= 2.f;
         }
         else
         {
-            Result[ThreadID.xy] = (sum == 3) ? float4(1, 1, 1, 1) : float4(0, 0, 0, 1);
+            Result[ThreadID.xy] = (sum == 3) ? float4(1, 1, 1, 1) : float4(0, 0, 0, 0);
+            Result[ThreadID.xy] *= 2.f;
         }
     }
 }

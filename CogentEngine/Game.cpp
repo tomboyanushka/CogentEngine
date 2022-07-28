@@ -657,11 +657,6 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 
 	golTimer += deltaTime;
-	//else
-	//{
-	//	bBlurEnabled = false;
-	//}
-
 	// Scale-->Rotation-->Transform
 	// For reference, to place object in front of camera start with position: (-8.0f, 1.0f, 12.0f)
 
@@ -701,9 +696,9 @@ void Game::Update(float deltaTime, float totalTime)
 	e_rectLight->SetRotation(XMFLOAT3(0, 0, 90));
 	e_rectLight->SetPosition(XMFLOAT3(18, 2 + sin(totalTime * 3), 11));
 
-	e_gameOfLife->SetScale(XMFLOAT3(5, 1, 5));
-	e_gameOfLife->SetRotation(XMFLOAT3(0, 0, 90));
-	e_gameOfLife->SetPosition(XMFLOAT3(-8, 2, 12));
+	e_gameOfLife->SetScale(XMFLOAT3(10, 1, 10));
+	e_gameOfLife->SetRotation(XMFLOAT3(0, -90, 90));
+	e_gameOfLife->SetPosition(XMFLOAT3(-10, 14, 21));
 	e_gameOfLife->SetMaterial(&m_gameOfLife[currentGameOfLifeTextureIndex]);
 
 
@@ -1236,7 +1231,6 @@ void Game::DispatchCompute()
 {
 	golUpdate = false;
 	GameOfLifeExternalData data = {};
-	//data.init = true;
 	if (gameOfLifeInitiated)
 	{
 		data.init = false;
@@ -1245,8 +1239,6 @@ void Game::DispatchCompute()
 	{
 		data.init = true;
 		gameOfLifeInitiated = true;
-		//if(currentGameOfLifeTextureIndex == 1)
-
 	}
 
 	frameManager.CopyData(&data, sizeof(GameOfLifeExternalData), gameOfLifeCBV, currentBackBufferIndex);
@@ -1261,7 +1253,7 @@ void Game::DispatchCompute()
 	commandList->SetComputeRootDescriptorTable(2, gameOfLifeSRVTexture[nextIndex].GetGPUHandle());
 
 	//dispatch cs
-	commandList->Dispatch(10, 10, 1);
+	commandList->Dispatch(20, 20, 1);
 
 	TransitionResourceToState(gameOfLifeResources[currentGameOfLifeTextureIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
