@@ -650,7 +650,7 @@ void Game::Update(float deltaTime, float totalTime)
 		gameOfLifeInitiated = false;
 	}
 
-	if (golTimer > 0.1)
+	if (golTimer > 0.01)
 	{
 		golTimer = 0.f;
 		golUpdate = true;
@@ -697,8 +697,8 @@ void Game::Update(float deltaTime, float totalTime)
 	e_rectLight->SetPosition(XMFLOAT3(18, 2 + sin(totalTime * 3), 11));
 
 	e_gameOfLife->SetScale(XMFLOAT3(10, 1, 10));
-	e_gameOfLife->SetRotation(XMFLOAT3(0, -90, 90));
-	e_gameOfLife->SetPosition(XMFLOAT3(-10, 14, 21));
+	e_gameOfLife->SetRotation(XMFLOAT3(0, 0, 90));
+	e_gameOfLife->SetPosition(XMFLOAT3(-10, 14, 18));
 	e_gameOfLife->SetMaterial(&m_gameOfLife[currentGameOfLifeTextureIndex]);
 
 

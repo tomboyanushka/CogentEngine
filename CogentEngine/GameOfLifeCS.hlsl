@@ -22,6 +22,7 @@ void main(uint3 ThreadID : SV_DispatchThreadID)
     {
         float rnd = rand(ThreadID.xy);
         Result[ThreadID.xy] = rnd > .75 ? float4(1, 1, 1, 1) : float4(0, 0, 0, 0);
+        Result[ThreadID.xy] *= 2.f;
     }
     else
     {
